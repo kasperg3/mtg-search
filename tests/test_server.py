@@ -75,12 +75,63 @@ def test_empty_filter_result(svc):
 
 
 def test_multiple_queries_fused(svc):
-    out = svc.search_cards(queries=["counter target spell", "draw a card"], limit=4)
-    assert [c[0] for c in svc.backend.calls] == ["counter target spell", "draw a card"]
-    assert all(c[1] >= 50 for c in svc.backend.calls)
-    assert len(names_in(out)) == 4
+    from mtg_search.fusion import rrf
+
+    qs = ["counter target spell", "draw a card"]
+    out = svc.search_cards(queries=qs, color_identity="U", limit=4)
+    calls = svc.backend.calls
+    assert [c[0] for c in calls] == qs  # exactly what was sent, nothing appended
+    assert all(c[1] >= 50 for c in calls)
+    assert calls[0][2].tolist() == calls[1][2].tolist()  # shared filter mask
+    lists = [FakeBackend(svc.cards).search(q, calls[0][1], calls[0][2]) for q in qs]
+    expect = [svc.cards["name"][int(r)] for r, _ in rrf(lists, k=60, limit=4)]
+    assert names_in(out) == expect
+    assert out.splitlines()[0].startswith('search: "counter target spell | draw a card"')
     with pytest.raises(ValueError):
         svc.search_cards()
+
+
+def test_query_is_single_item_queries(svc):
+    a = svc.search_cards("counter target spell", limit=5)
+    b = svc.search_cards(queries=["counter target spell"], limit=5)
+    assert a == b
+    assert [c[0] for c in svc.backend.calls] == ["counter target spell"] * 2
+    # query + duplicate in queries collapse to one search
+    svc.search_cards("draw a card", queries=["draw a card"], limit=5)
+    assert [c[0] for c in svc.backend.calls[2:]] == ["draw a card"]
+
+
+def test_queries_capped_at_four(svc):
+    four = ["reach", "destroy target creature with flying", "draw a card", "counter target spell"]
+    svc.search_cards(queries=four, limit=5)
+    assert len(svc.backend.calls) == 4
+    svc.backend.calls.clear()
+    with pytest.raises(ValueError, match=r"at most 4 distinct queries per call \(got 5\)"):
+        svc.search_cards(queries=[*four, "gain life"])
+    with pytest.raises(ValueError, match=r"got 5"):  # `query` counts toward the cap
+        svc.search_cards("gain life", queries=four)
+    assert not svc.backend.calls
+
+
+def test_mcp_rejects_too_many_queries(svc):
+    from mcp.server.mcpserver.exceptions import ToolError
+
+    mcp = server.build_mcp(svc)
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    sch = tools["search_cards"].input_schema["properties"]["queries"]
+    assert any(o.get("maxItems") == server.MAX_QUERIES for o in sch.get("anyOf", [sch]))
+    with pytest.raises(ToolError, match="4"):
+        asyncio.run(mcp.call_tool("search_cards", {"queries": ["a", "b", "c", "d", "e"]}))
+    with pytest.raises(ToolError, match="at most 4 distinct queries"):
+        asyncio.run(mcp.call_tool("search_cards", {"query": "e", "queries": ["a", "b", "c", "d"]}))
+    assert not svc.backend.calls
+
+
+def test_search_doc_has_rewrite_guidance():
+    doc = server.SEARCH_DOC
+    for s in ('"Destroy target creature with flying."', '"Reach"', "filter arguments",
+              "1 precise query", "2-4 `queries`", "one clean sentence", "text relevance only"):
+        assert s in doc, s
 
 
 def test_limit_clamped(svc):

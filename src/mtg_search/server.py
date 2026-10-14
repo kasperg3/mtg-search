@@ -40,7 +40,7 @@ log = logging.getLogger("mtg_search.server")
 
 MAX_LIMIT = 50
 DEFAULT_LIMIT = 15
-MAX_QUERIES = 8
+MAX_QUERIES = 4  # EXP-003: 1-4 rules-text rewrites, fused with RRF
 
 
 class Backend:  # protocol: see nextplaid.NextPlaidBackend
@@ -198,10 +198,14 @@ class CardService:
     # ----------------------------------------------------------------- tools
     def search_cards(self, query: str | None = None, queries: list[str] | None = None,
                      limit: int = DEFAULT_LIMIT, detail: str = "compact", **flt: Any) -> str:
+        # Only what the caller sends is searched; the user's raw request is never added (EXP-003).
         qs = [q.strip() for q in ([query] if query else []) + list(queries or []) if q and q.strip()]
-        qs = list(dict.fromkeys(qs))[:MAX_QUERIES]
+        qs = list(dict.fromkeys(qs))
         if not qs:
             raise ValueError("give `query` (a string) or `queries` (a list of strings)")
+        if len(qs) > MAX_QUERIES:
+            raise ValueError(f"at most {MAX_QUERIES} distinct queries per call (got {len(qs)}); "
+                             "keep the 2-4 that describe the most different mechanisms")
         limit = self._limit(limit)
         flt = self._clean_filters(flt)
         t0 = time.perf_counter()
@@ -216,7 +220,7 @@ class CardService:
         else:
             depth = max(50, 2 * limit)
             lists = [self.backend.search(q, depth, allowed) for q in qs]
-            hits = [(int(r), s) for r, s in rrf(lists, limit=limit)]
+            hits = [(int(r), s) for r, s in rrf(lists, limit=limit)]  # k=60, equal weights
         ms = (time.perf_counter() - t0) * 1000
         log.info("search_cards %r %s -> %d hits in %.0f ms", qs, active, len(hits), ms)
         lines = [f"{head} · {len(hits)} shown of {allowed.size:,} matching filters"]
@@ -393,20 +397,22 @@ Commander-eligible / partner kind, Game Changer (WotC's official Commander brack
 Reserved and layout.
 """
 
-SEARCH_DOC = f"""Semantic search over every Magic: The Gathering card (oracle text, types, costs).
+SEARCH_DOC = f"""Semantic search over every Magic: The Gathering card, matched against Oracle rules text.
 
-Use it to find cards that fill a role in a deck. Write the query like the rules text you
-want ("whenever another creature you control dies, draw a card", "counter target spell unless
-its controller pays", "sacrifice a creature: add mana") or describe the effect plainly
-("cheap green ramp creatures", "board wipe that spares my creatures"). Put hard constraints
-(colours, format, mana value, card types) in the filter parameters, not in the query text.
-For a vague deck need, pass several phrasings/angles in `queries` (e.g. ["destroy target
-artifact", "exile target artifact or enchantment", "artifacts your opponents control"]); their
-result lists are fused. Results are ordered by text relevance to the query only; call get_card
-for full text and rulings.
+Phrase each query the way the card itself is worded, not the way a player describes it, e.g.
+"Destroy target creature with flying.", "Whenever another creature you control dies, draw a
+card.", "Counter target spell unless its controller pays {{3}}." Put colour, format, type and
+mana-value constraints in the filter arguments, not in the query text.
+- Narrow effect: send 1 precise query.
+- Open-ended deck need: send 2-4 `queries`, each a *different* mechanism that solves it, e.g.
+  "I keep losing to fliers" -> ["Reach", "Destroy target creature with flying.",
+  "Creatures you control gain reach until end of turn."]. Their rankings are fused (RRF).
+Write one clean sentence per query, not a whole invented card (type line plus abilities), and
+don't add the user's own wording as a query. Results are ranked by text relevance only, never
+by how widely played a card is; call get_card for full text and rulings.
 
-Args: query or queries (at least one); limit = cards to return (default 15, max 50 — use 30-50
-when surveying options); detail = "compact" (oracle text cut at ~250 chars per face) or "full".
+Args: query or queries (1-{MAX_QUERIES} in total); limit = cards to return (default 15, max 50; use
+30-50 when surveying options); detail = "compact" (oracle text cut at ~250 chars per face) or "full".
 {FILTER_DOC}{OUTPUT_DOC}"""
 
 SIMILAR_DOC = f"""Find cards that play like a given card (functional substitutes, upgrades, redundancy).
@@ -449,9 +455,9 @@ def build_mcp(service: CardService):
     detail_p = _P("detail", Literal["compact", "full"], "compact",
                   "compact = oracle text truncated to ~250 chars per face; full = complete text.")
     search = _make_tool("search_cards", service.search_cards, [
-        _P("query", str | None, None, "What the card should do, phrased like rules text or a plain description."),
-        _P("queries", list[str] | None, None,
-           "Several phrasings/angles of the same need; rankings are fused. Use instead of or with `query`."),
+        _P("query", str | None, None, "One query phrased like Oracle rules text (shorthand for queries=[query])."),
+        _P("queries", Annotated[list[str], Field(max_length=MAX_QUERIES)] | None, None,
+           f"1-{MAX_QUERIES} rules-text queries, each a different mechanism; rankings are fused (RRF)."),
         *fp, limit_p, detail_p], SEARCH_DOC)
     similar = _make_tool("find_similar", service.find_similar, [
         _P("card_name", str, desc="Name of the reference card (fuzzy matched)."),
