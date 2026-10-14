@@ -78,10 +78,14 @@ def gain(rate: float | None, thresholds) -> int:
     return 0
 
 
+DATA_CODE = [f"bench/precon/{f}" for f in ("build_dataset.py", "collect_mtgjson.py", "collect_edhrec.py",
+                                           "edhrec_fetch.py", "upload_hf.py", "dataset_card.md")]
+
+
 def git_sha() -> str:
     sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     dirty = subprocess.run(
-        ["git", "status", "--porcelain", "bench/precon"], cwd=ROOT, capture_output=True, text=True
+        ["git", "status", "--porcelain", "--", *DATA_CODE], cwd=ROOT, capture_output=True, text=True
     ).stdout.strip()
     return sha + ("-dirty" if dirty else "")
 
