@@ -61,7 +61,23 @@ MODEL_LOAD: dict[str, dict] = {
         "code_revision": GTE_CODE_REVISION,
         "repair_gte": True,
     },
+    # SPLADE-style, NOT inference-free: queries run through the encoder too. Remote
+    # code (custom_st.SpladeSTModule) applies the "[Q] "/"[D] " prompts itself (attended,
+    # not pooled) and truncates to query 128 / doc 512 tokens. Its load() ignores
+    # `revision`, so we pin by loading from a local snapshot of that revision.
+    # Verified under transformers 5.19 / sentence-transformers 6.1: the model-card
+    # example scores [[113.2993, 0], [7.0030, 99.1291]] reproduce exactly, no repair needed.
+    # Logits are [B, L, 50370] fp32 (several copies) -> keep batches small on a T4.
+    "Linkup-Platform/linkup-sparseup-embed-v1": {
+        "trust_remote_code": True,
+        "local_snapshot": True,
+        "doc_max_length": 512,
+        "batch_size": 16,
+        "query_encoder": "transformer: [Q] prefix, max 128 tokens, ModernBERT MLM -> log1p(relu(x-15)) -> top12/pos -> maxpool -> vocab fold",
+    },
 }
+
+ENCODE_ONLY_KEYS = ("repair_gte", "local_snapshot", "doc_max_length", "batch_size", "query_encoder")
 
 
 def model_slug(model_id: str) -> str:
@@ -155,27 +171,43 @@ def load_model(kind: str, model_id: str, device: str, revision: str | None = Non
 
     cfg = dict(MODEL_LOAD.get(model_id, {}))
     repair = cfg.pop("repair_gte", False)
+    local_snapshot = cfg.pop("local_snapshot", False)
+    fixed_doc_len = cfg.pop("doc_max_length", None)
+    for k in ENCODE_ONLY_KEYS:
+        cfg.pop(k, None)
     code_revision = cfg.pop("code_revision", None)
     model_kwargs = {"dtype": torch.float32}
     if code_revision:
         model_kwargs["code_revision"] = code_revision
+    path = model_id
+    if local_snapshot:
+        from huggingface_hub import snapshot_download
+
+        path = snapshot_download(model_id, revision=revision)
+        log(f"loading {model_id} from local snapshot {path}")
+        revision = None
     common = dict(device=device, revision=revision, model_kwargs=model_kwargs, **cfg)
+    model_id_or_path = path
     if kind == "late":
         from sentence_transformers import MultiVectorEncoder
 
-        model = MultiVectorEncoder(model_id, **common)
+        model = MultiVectorEncoder(model_id_or_path, **common)
     elif kind == "dense":
         from sentence_transformers import SentenceTransformer
 
-        model = SentenceTransformer(model_id, **common)
+        model = SentenceTransformer(model_id_or_path, **common)
     elif kind == "sparse":
         from sentence_transformers import SparseEncoder
 
-        model = SparseEncoder(model_id, **common)
+        model = SparseEncoder(model_id_or_path, **common)
     else:
         raise ValueError(kind)
     if repair:
         _repair_gte(model, model_id, revision)
+    if fixed_doc_len:
+        model._fixed_doc_max_length = int(fixed_doc_len)
+        model.eval()
+        return model
     msl = getattr(model, "max_seq_length", None)
     if not (isinstance(msl, int) and 0 < msl < 1_000_000):
         # e.g. embeddinggemma-2 reports no limit; its context window is 8192 tokens.
@@ -186,6 +218,8 @@ def load_model(kind: str, model_id: str, device: str, revision: str | None = Non
 
 def doc_max_length(model) -> int:
     """Effective document token limit of the first (Transformer) module."""
+    if getattr(model, "_fixed_doc_max_length", None):
+        return model._fixed_doc_max_length
     first = model[0]
     for attr in ("document_length", "max_seq_length"):
         v = getattr(first, attr, None)
@@ -270,7 +304,7 @@ def main(argv=None):
     ap.add_argument("--revision", default=None, help="model revision (default: resolved main sha)")
     ap.add_argument("--cards", default=None, help="local cards.parquet (default: download from HF repo)")
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--batch-size", type=int, default=64)
+    ap.add_argument("--batch-size", type=int, default=None, help="default 64, or the model's MODEL_LOAD batch_size")
     ap.add_argument("--device", default=None, help="cuda/cpu (default: cuda if available)")
     ap.add_argument("--require-gpu", action="store_true", help="fail instead of falling back to CPU")
     ap.add_argument("--out", default="out")
@@ -301,6 +335,7 @@ def main(argv=None):
 
     t_load = time.perf_counter()
     model = load_model(args.kind, args.model, device, revision)
+    batch_size = args.batch_size or MODEL_LOAD.get(args.model, {}).get("batch_size", 64)
     log(f"loaded in {time.perf_counter() - t_load:.1f}s: {model}")
 
     prompts = dict(getattr(model, "prompts", None) or {})
@@ -326,7 +361,7 @@ def main(argv=None):
         "doc_tokens_p50": float(np.median(lengths)),
         "doc_tokens_max": int(lengths.max()),
         "truncated_docs": truncated,
-        "load_kwargs": {k: v for k, v in MODEL_LOAD.get(args.model, {}).items() if k != "repair_gte"},
+        "load_kwargs": {k: v for k, v in MODEL_LOAD.get(args.model, {}).items() if k not in ENCODE_ONLY_KEYS},
         "versions": {
             "torch": torch.__version__,
             "transformers": transformers.__version__,
@@ -339,7 +374,7 @@ def main(argv=None):
     t0 = time.perf_counter()
     with torch.inference_mode():
         if args.kind == "late":
-            tokens, offsets = encode_late(model, texts, args.batch_size)
+            tokens, offsets = encode_late(model, texts, batch_size)
             d = out / "late" / slug
             d.mkdir(parents=True, exist_ok=True)
             np.save(d / "tokens.npy", tokens)
@@ -348,7 +383,7 @@ def main(argv=None):
             files = [d / "tokens.npy", d / "offsets.npy", d / "meta.json"]
             meta_path = d / "meta.json"
         elif args.kind == "dense":
-            mat = encode_dense(model, texts, args.batch_size, doc_prompt)
+            mat = encode_dense(model, texts, batch_size, doc_prompt)
             if not np.isfinite(mat).all():
                 sys.exit("non-finite values in dense embeddings")
             d = out / "dense"
@@ -360,7 +395,7 @@ def main(argv=None):
         else:
             import scipy.sparse as sp
 
-            mat = encode_sparse(model, texts, args.batch_size)
+            mat = encode_sparse(model, texts, batch_size)
             d = out / "sparse"
             d.mkdir(parents=True, exist_ok=True)
             sp.save_npz(d / f"{slug}.npz", mat, compressed=True)
@@ -369,7 +404,9 @@ def main(argv=None):
                 nnz=int(mat.nnz),
                 nnz_per_doc=float(mat.nnz / max(1, mat.shape[0])),
                 dtype="float32",
-                query_encoder="inference-free: query_0_SparseStaticEmbedding (tokenizer + weight lookup)",
+                query_encoder=MODEL_LOAD.get(args.model, {}).get(
+                    "query_encoder", "inference-free: query_0_SparseStaticEmbedding (tokenizer + weight lookup)"
+                ),
             )
             meta_path = d / f"{slug}.json"
             files = [d / f"{slug}.npz", meta_path]
