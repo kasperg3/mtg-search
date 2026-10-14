@@ -22,3 +22,6 @@ SURFACES: dict[str, dict[str, str]] = {
 SURFACES["v3"] = {**SURFACES["v2"], "instructions": SURFACES["v2"]["instructions"] + (
     "\nBefore you answer a deck-building request, use the tools: search for candidate cards and check exact card "
     "text, colour identity and legality of your picks.")}
+# v3al = v3 + Claude Code's `anthropic/alwaysLoad` tool meta on search_cards and get_card (load upfront even when
+# MCP tools are deferred behind ToolSearch). Not model-facing text; read by ShippedToolset.
+SURFACES["v3al"] = {**SURFACES["v3"], "_always_load": "search_cards,get_card"}

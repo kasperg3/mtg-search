@@ -351,6 +351,10 @@ class ShippedToolset(MCPToolset):
                              t.input_schema.get("required", [])) for t in anyio.run(self.mcp.list_tools)]
         for sc, t in zip(self._schemas, anyio.run(self.mcp.list_tools)):
             sc["function"]["parameters"] = dict(t.input_schema)  # keep $defs / constraints verbatim
+        always = [x for x in SURFACES[surface].get("_always_load", "").split(",") if x]
+        for sc in self._schemas:  # MCP tool _meta, passed through by the Claude Code proxy only
+            if sc["function"]["name"] in always:
+                sc["meta"] = {"anthropic/alwaysLoad": True}
 
     def config(self) -> dict:
         return {"tools": "shipped", "surface": self.surface, "backend": self.backend_name, "n_denied_tags": len(self.deny),

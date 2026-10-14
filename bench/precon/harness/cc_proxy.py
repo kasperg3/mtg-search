@@ -80,7 +80,7 @@ def main() -> None:
     async def on_list_tools(ctx, params) -> types.ListToolsResult:
         return types.ListToolsResult(tools=[
             types.Tool(name=s["function"]["name"], description=s["function"]["description"],
-                       input_schema=s["function"]["parameters"]) for s in schemas])
+                       input_schema=s["function"]["parameters"], meta=s.get("meta")) for s in schemas])
 
     async def on_call_tool(ctx, params: types.CallToolRequestParams) -> types.CallToolResult:
         args = dict(params.arguments or {})
