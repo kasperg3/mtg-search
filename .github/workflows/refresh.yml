@@ -1,0 +1,76 @@
+# Weekly index refresh: Scryfall oracle_cards -> HF dataset kasper-cbx/mtg-search-index.
+#
+# Required repository secret:
+#   HF_TOKEN  - Hugging Face token (user kasper-cbx) with WRITE access to the dataset
+#               kasper-cbx/mtg-search-index and permission to run HF Jobs (paid account).
+#               Settings -> Secrets and variables -> Actions -> New repository secret.
+#
+# The job is a no-op (a few seconds) when the HF dataset already matches Scryfall.
+# A real refresh launches one t4-small HF Job (~5 min of GPU) and runs the eval smoke
+# on the runner's CPU (installs the `models` extra: torch etc., ~10 min).
+name: refresh-index
+
+on:
+  schedule:
+    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Rebuild even if the HF dataset is up to date"
+        type: boolean
+        default: false
+      skip_eval:
+        description: "Skip the eval smoke test"
+        type: boolean
+        default: false
+
+concurrency:
+  group: refresh-index
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      HF_TOKEN: ${{ secrets.HF_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync
+
+      - name: Check staleness (dry run)
+        id: check
+        run: |
+          set +e
+          uv run python scripts/refresh.py --dry-run
+          code=$?
+          set -e
+          if [ "$code" = "0" ]; then echo "stale=false" >> "$GITHUB_OUTPUT";
+          elif [ "$code" = "10" ]; then echo "stale=true" >> "$GITHUB_OUTPUT";
+          else exit "$code"; fi
+
+      - name: Refresh
+        if: steps.check.outputs.stale == 'true' || inputs.force
+        run: |
+          uv run python scripts/refresh.py \
+            ${{ inputs.force && '--force' || '' }} \
+            ${{ inputs.skip_eval && '--skip-eval' || '' }}
+
+  # Optional: build and push the Docker image after a refresh. docker/build.sh is
+  # maintained separately; enable once a registry (e.g. ghcr.io) is chosen.
+  # image:
+  #   needs: refresh
+  #   runs-on: ubuntu-latest
+  #   permissions: { contents: read, packages: write }
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: astral-sh/setup-uv@v6
+  #     - uses: docker/login-action@v3
+  #       with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+  #     - run: uv sync && bash docker/build.sh
