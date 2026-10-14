@@ -51,3 +51,14 @@ Computed by `mtg_search.ingest.fingerprint`. Each hash is SHA-256 over the rows 
 Old builds stay reproducible: pin `revision="scryfall-..."` in `hf_hub_download` or `snapshot_download`. After a refresh, the dense, sparse and answerai embeddings on `main` still belong to the previous snapshot. They are not shipped; re-encode them by hand if you need them.
 
 To run it in CI, use `.github/workflows/refresh.yml`. It runs weekly (Monday 06:00 UTC) and on manual dispatch, runs the dry run to pick the tier (step output `tier` = `none` / `metadata` / `reencode`) and then the refresh, and needs the repository secret `HF_TOKEN`. That token must have write access to the dataset and must be allowed to run HF Jobs.
+
+## Experiment results sync (`sync_results.py`)
+
+```bash
+uv run python scripts/sync_results.py -m "EXP-00X done"
+```
+
+Mirrors run outputs (`eval/experiments/runs`, `REGISTRY.md`, `eval/agentic/runs` + `results`,
+`bench/precon/runs`) to the private HF dataset `kasper-cbx/mtg-search-experiments`. This includes the
+gitignored per-episode outputs and transcripts. Run it after every experiment (and periodically
+during long runs), next to the git push. It refuses to upload if any file contains the GLM API key.
