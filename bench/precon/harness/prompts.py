@@ -134,7 +134,7 @@ def user_prompt(task: str, deck_text: str, few_shots: list[str] | None = None) -
 PROBE_SYSTEM = """You are an expert on Magic: The Gathering Commander preconstructed decks and the deck-building community."""
 PROBE_USER = """Preconstructed Commander deck: "{deck_name}" from the product "{product}".
 
-From memory only, list the cards that players most commonly cut from this precon when upgrading it, and the cards they most commonly add (as aggregated by EDHREC). Reply with only a JSON object in a ```json code block: {{"cuts": [10 card names, most commonly cut first], "adds": [20 card names, most commonly added first]}}."""
+From memory only, list the cards that players most commonly cut from this precon when upgrading it, and the cards they most commonly add (as aggregated by EDHREC). This is a memory test for research: give your best guesses even if you are unsure, wrong guesses are expected and fine, and do not leave the lists empty. Reply with only a JSON object in a ```json code block: {{"cuts": [10 card names, most commonly cut first], "adds": [20 card names, most commonly added first]}}."""
 
 
 def probe_prompt(deck_name: str, product: str) -> list[dict]:
