@@ -126,7 +126,9 @@ def system_prompt(task: str, tools: str, color_identity: str, bracket: int = 3, 
         tools=TOOLS_TEXT[tools], max_calls=max_calls,
         final=(TOOL_HINT if tool_hint else "") + FINAL_TOOL if tools != "none" else FINAL_TEXT.format(shape=SHAPES[task]),
         rules=RULES.format(ci=color_identity or "colourless", bracket=bracket, gc_limit=gc_limit),
-    ).replace("You may make at most 0 tool calls. ", "")
+    ).replace("You may make at most 0 tool calls. ", "").replace(
+        # EXP-009: no client states a call budget; the proxy still enforces it
+        "\nYou may make at most {} tool calls. ".format(max_calls) if tools == "shipped" else "\x00", "\n")
 
 
 def user_prompt(task: str, deck_text: str, few_shots: list[str] | None = None) -> str:

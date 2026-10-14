@@ -120,7 +120,7 @@ def make_llm(args):
     if args.llm == "claude-code":
         from bench.precon.harness.claude_code import ClaudeCode
 
-        return ClaudeCode(model=args.cc_model)
+        return ClaudeCode(model=args.cc_model, tool_search=args.cc_tool_search)
     from bench.precon.harness.llm import GLM
 
     return GLM(temperature=args.temperature, effort=args.effort)
@@ -456,6 +456,8 @@ def main(argv=None) -> None:
     ap.add_argument("--llm", default="fake", choices=["fake", "glm", "claude-code"],
                     help="claude-code = headless `claude -p` on the Claude Code subscription (no API key)")
     ap.add_argument("--cc-model", default="claude-sonnet-5-5", help="model for --llm claude-code")
+    ap.add_argument("--cc-tool-search", action="store_true",
+                    help="--llm claude-code: enable ToolSearch (deferred MCP tool loading, the Claude Code default)")
     ap.add_argument("--allow-llm", action="store_true", help="required for --llm glm|claude-code (owner approval)")
     ap.add_argument("--max-usd", type=float, default=5.0, help="hard run budget cap")
     ap.add_argument("--temperature", type=float, default=0.0)

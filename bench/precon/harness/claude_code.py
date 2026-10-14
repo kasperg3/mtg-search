@@ -94,9 +94,10 @@ def _usage(result: dict) -> dict:
     return {"prompt": prompt, "cached": cached, "completion": u.get("output_tokens") or 0, "reasoning": 0}
 
 
-def check_isolation(init: dict, with_proxy: bool, server: str = PROXY_SERVER) -> None:
-    """The session must see only the proxy's tools (or none) and no other MCP server."""
-    tools = init.get("tools") or []
+def check_isolation(init: dict, with_proxy: bool, server: str = PROXY_SERVER, allow: tuple[str, ...] = ()) -> None:
+    """The session must see only the proxy's tools (or none), plus ``allow``ed built-ins
+    (``ToolSearch`` in the deferred-loading arm), and no other MCP server."""
+    tools = [t for t in init.get("tools") or [] if t not in allow]
     servers = [s.get("name") for s in init.get("mcp_servers") or []]
     prefix = f"mcp__{server.replace('-', '_')}__"
     bad = [t for t in tools if not (with_proxy and (t.startswith(prefix) or t.startswith(f"mcp__{server}__")))]
@@ -109,18 +110,21 @@ def check_isolation(init: dict, with_proxy: bool, server: str = PROXY_SERVER) ->
 class ClaudeCode:
     """Runs episodes and probes as headless ``claude -p`` sessions."""
 
-    def __init__(self, model: str = DEFAULT_MODEL, timeout: float = 1200, retries: int = 2, backoff: float = 60):
+    def __init__(self, model: str = DEFAULT_MODEL, timeout: float = 1200, retries: int = 2, backoff: float = 60,
+                 tool_search: bool = False):
         if not shutil.which("claude"):
             sys.exit("claude CLI not found")
         self.model, self.timeout, self.retries, self.backoff = model, timeout, retries, backoff
+        self.tool_search = tool_search  # True = Claude Code's deferred MCP tool loading via ToolSearch
         self.version = subprocess.run(["claude", "--version"], capture_output=True, text=True).stdout.strip()
 
     def config(self) -> dict:
         return {"llm": "claude-code", "model": self.model, "cli": self.version, "billing": "subscription",
-                "temperature": "provider default"}
+                "temperature": "provider default", "tool_search": self.tool_search}
 
     def _session(self, system: str, user: str, transcript_path: Path | None, mcp: dict | None) -> tuple[dict, list]:
-        cmd = ["claude", "-p", "--model", self.model, "--system-prompt", system, "--tools", "",
+        cmd = ["claude", "-p", "--model", self.model, "--system-prompt", system,
+               "--tools", "ToolSearch" if (self.tool_search and mcp) else "",
                "--strict-mcp-config", "--no-session-persistence", "--output-format", "stream-json", "--verbose"]
         server = (mcp or {}).get("env", {}).get("CC_SERVER_NAME", PROXY_SERVER)
         if mcp:
@@ -146,7 +150,8 @@ class ClaudeCode:
         result = next((e for e in reversed(events) if e.get("type") == "result"), None)
         if init is None or result is None:
             raise RuntimeError(f"claude -p failed (exit {p.returncode}): {p.stderr[-500:] or p.stdout[-500:]}")
-        check_isolation(init, with_proxy=mcp is not None, server=server)
+        check_isolation(init, with_proxy=mcp is not None, server=server,
+                        allow=("ToolSearch",) if self.tool_search else ())
         if result.get("is_error"):
             raise RuntimeError(f"claude -p error: {result.get('subtype')} {str(result.get('result'))[:300]}")
         return result, events
