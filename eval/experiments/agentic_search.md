@@ -1,6 +1,6 @@
 # EXP-006: Agentic multi-step search: does SparseUp term feedback steer the agent?
 
-**Status: stopped early, partial result.** The main run (1 repeat of all five conditions, 468 episodes planned after resume) stopped at 249 completed episodes when the GLM key ran out of balance (Z.ai HTTP 429 "Insufficient balance"). Following the owner's instruction, it was stopped there rather than topped up. Only **deck-need tasks** were reached: 45–51 of 65 per condition, 45 complete in all five. Attribute and known-item tasks never ran. Spend: $8.21 main + $1.47 pilot. The planned second repeat of A and C was already dropped to save spend, so there are no repeat-variance estimates and comparisons are paired over tasks only.
+**Status: stopped early, partial result.** The main run (1 repeat of all five conditions, 468 episodes planned after resume) stopped at 249 completed episodes when the GLM key ran out of balance (Z.ai HTTP 429 "Insufficient balance"). Following the owner's instruction, it was stopped there rather than topped up. Only **deck-need tasks** were reached: 47–51 of 65 per condition, 45 complete in all five. Attribute and known-item tasks never ran. Spend: $8.21 main + $1.47 pilot. The planned second repeat of A and C was already dropped to save spend, so there are no repeat-variance estimates and comparisons are paired over tasks only.
 Harness and how to run it: [`eval/agentic/README.md`](../agentic/README.md). Pilot data: `eval/agentic/runs/pilot/`, `eval/agentic/results/pilot.json`.
 
 ## Hypothesis (user)
@@ -108,7 +108,7 @@ Options within $25:
 
 ## Results
 
-Deck-need tasks only (45–51 per condition), GLM-5.3, 1 repeat. Labels are the original incomplete ones, so absolute recall is low by construction; compare conditions, not levels. Data: `eval/agentic/runs/main/`, `eval/agentic/results/main.json`, curve `agentic_recall_at_t.png`. The run was interrupted once by a machine OOM and resumed (57 episodes before, 192 after; same code except the leak-guard fix below). It was synced to the private HF dataset `kasper-cbx/mtg-search-experiments`.
+Deck-need tasks only (47–51 per condition), GLM-5.3, 1 repeat. Labels are the original incomplete ones, so absolute recall is low by construction; compare conditions, not levels. Data: `eval/agentic/runs/main/`, `eval/agentic/results/main.json`, curve `agentic_recall_at_t.png`. The run was interrupted once by a machine OOM and resumed (57 episodes before, 192 after; same code except the leak-guard fix below). It was synced to the private HF dataset `kasper-cbx/mtg-search-experiments`.
 
 | cond | retriever / feedback | recall@1 | recall@3 | recall@5 | nDCG@10 | nDCG@20 | P@10 | new cards / search | term uptake | $/episode |
 |---|---|---|---|---|---|---|---|---|---|---|
