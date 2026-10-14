@@ -16,6 +16,8 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
+from .tag_filter import TagFilter
+
 COLOR_WORDS = {"W": "White", "U": "Blue", "B": "Black", "R": "Red", "G": "Green"}
 COLOR_ORDER = "WUBRG"
 MAJOR_FORMATS = ("standard", "pioneer", "modern", "legacy", "vintage", "pauper", "commander")
@@ -30,29 +32,14 @@ LAYOUT_MARKERS = {
 }
 COMPACT_ORACLE_CHARS = 250
 
-# Oracle tags that say nothing about what a card does in a deck.
-_TAG_DENY = re.compile(
-    r"^(meme|type-errata|has-identical-token|single-english-word-name|activated-ability|unique-type-line|"
-    r"intervening-if-clause|noncreature-typal|namesake-.*|virtual-.*|french-vanilla|vanilla|drawback|"
-    r"cheaper-than-mv|more-expensive-than-mv|delayed-trigger|potentially-black-border|out-of-color-.*|"
-    r"fun-ruling|untracked-.*|unnoted-.*|unique-mana-cost|egg|aesthetic-.*|digital-only-.*|"
-    r"self-replacement-effect|reflexive-trigger|deprecated-.*|dnd-character|vanity-card|color-break|"
-    r"mix-and-match|enters-in-company|cast-on-resolution|type-addition-.*|cda-.*|manaless-value|"
-    r"cycle-.*|.*-name|art-.*|reprint.*|flavor.*|.*-errata|nonbo.*|.*-reference|.*-with-set-s?-?mechanic)$"
-)
-TAG_MIN, TAG_MAX = 10, 2500
 
-
-def role_tags(tags: list[str] | None, tag_counts: Mapping[str, int], n: int = 5) -> list[str]:
-    """Up to ``n`` functional oracle tags: drop flavour/trivia tags and tags that are too rare
-    (< TAG_MIN cards) or too generic (> TAG_MAX); most widely used role first."""
-    cand = [
-        t
-        for t in (tags or [])
-        if TAG_MIN <= tag_counts.get(t, 0) <= TAG_MAX and not _TAG_DENY.match(t)
-    ]
-    cand.sort(key=lambda t: (-tag_counts.get(t, 0), t))
-    return cand[:n]
+def role_tags(tags: list[str] | None, tag_counts: Mapping[str, int] | TagFilter, n: int = 5) -> list[str]:
+    """Up to ``n`` functional oracle tags (see :mod:`mtg_search.tag_filter`): trivia/flavour/
+    template tags and too rare / too generic tags dropped; core deck roles and mid-specificity
+    tags first. Pass a :class:`TagFilter` to use the tag hierarchy; a plain ``{slug: count}``
+    mapping falls back to the pattern/list rules only."""
+    tf = tag_counts if isinstance(tag_counts, TagFilter) else TagFilter(tag_counts)
+    return tf.roles(tags, n)
 
 
 def color_words(colors: list[str] | None) -> str:
@@ -172,7 +159,7 @@ def render_card(
     rank: int | None = None,
     fmt: str | None = None,
     detail: str = "compact",
-    tag_counts: Mapping[str, int] | None = None,
+    tag_counts: Mapping[str, int] | TagFilter | None = None,
 ) -> str:
     compact = detail != "full"
     faces = faces_of(card)

@@ -34,6 +34,7 @@ from pydantic import Field
 from . import config, filters
 from .fusion import rrf
 from .render import all_legalities, render_card, role_tags
+from .tag_filter import TagFilter
 
 log = logging.getLogger("mtg_search.server")
 
@@ -65,6 +66,7 @@ class CardService:
         self.tag_counts: dict[str, int] = dict(
             zip(self.tags["slug"].to_list(), self.tags["card_count"].to_list(), strict=True)
         )
+        self.tag_filter = TagFilter.from_frame(self.tags)
         self._rows_cache: dict[int, dict] = {}
 
     # ----------------------------------------------------------------- helpers
@@ -147,7 +149,7 @@ class CardService:
     def _render_hits(self, hits: list[tuple[int, float]], flt: dict, detail: str) -> list[str]:
         fmt = flt.get("format")
         return [
-            render_card(self.row(r), rank=i, fmt=fmt, detail=detail, tag_counts=self.tag_counts)
+            render_card(self.row(r), rank=i, fmt=fmt, detail=detail, tag_counts=self.tag_filter)
             for i, (r, _s) in enumerate(hits, 1)
         ]
 
@@ -224,12 +226,12 @@ class CardService:
             sugg = ", ".join(n for n, _ in alts) or "none"
             return f'No card named "{name}". Closest names: {sugg}'
         c = self.row(row)
-        out = [render_card(c, detail="full", tag_counts=self.tag_counts)]
+        out = [render_card(c, detail="full", tag_counts=self.tag_filter)]
         if alts:
             out.append("   (also close: " + ", ".join(n for n, _ in alts) + ")")
         out.append("legalities:")
         out.append(all_legalities(c.get("legalities")))
-        tags = role_tags(c.get("tags"), self.tag_counts, n=30)
+        tags = role_tags(c.get("tags"), self.tag_filter, n=30)
         if tags:
             out.append("oracle tags: " + ", ".join(tags))
         rul = self.rulings_for(c["oracle_id"])
@@ -254,16 +256,20 @@ class CardService:
                                            & ~pl.col("slug").str.starts_with(p))])
         else:
             m = t
-        m = m.sort("card_count", descending=True)
+        trivia = [not self.tag_filter.is_functional(s) for s in m["slug"].to_list()]
+        m = m.with_columns(pl.Series("_trivia", trivia, dtype=pl.Boolean)) \
+            .sort(["_trivia", "card_count"], descending=[False, True])
         total = m.height
         m = m.head(max(1, min(200, limit)))
-        lines = [f"tags matching '{p or '*'}': {total} (showing {m.height}, most used first)"]
+        lines = [(f"tags matching '{p or '*'}': {total} (showing {m.height}, functional first, "
+                 "then most used; [trivia] = naming/flavour/template tag, not a deck role)")]
         has_desc = "description" in m.columns
         for r in m.iter_rows(named=True):
             d = (r.get("description") or "").strip().replace("\n", " ") if has_desc else ""
             if len(d) > 110:
                 d = d[:107].rstrip() + "…"
-            lines.append(f"- {r['slug']} ({r['card_count']} cards)" + (f": {d}" if d else ""))
+            mark = " [trivia]" if r["_trivia"] else ""
+            lines.append(f"- {r['slug']} ({r['card_count']} cards){mark}" + (f": {d}" if d else ""))
         # exact tag: show its best-known cards
         if p and "tags" in self.cards.columns and p in set(m["slug"].to_list()):
             ex = (self.cards.with_row_index("_row")
@@ -428,7 +434,7 @@ def build_mcp(service: CardService):
 def load_service(backend: Backend | None = None) -> tuple[CardService, Any]:
     data = config.DATA_DIR
     cards = pl.read_parquet(data / "cards.parquet")
-    tags = pl.read_parquet(data / "tags.parquet", columns=["slug", "label", "description", "card_count"]) \
+    tags = pl.read_parquet(data / "tags.parquet", columns=["slug", "label", "description", "card_count", "parent_slugs"]) \
         if (data / "tags.parquet").exists() else None
     if backend is None:
         from .artifacts import check_index
