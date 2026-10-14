@@ -109,3 +109,34 @@ uv run python -m bench.precon.run estimate --dry mcp=<run>,lexical=<run>,none=<r
 ```
 
 `runs/<run_id>.json` is tracked and holds the git sha, dataset revision, config, aggregate metrics, slices and cost. `runs/<run_id>/` is gitignored and holds the per-precon outputs and metrics (`episodes.jsonl`) and the transcripts.
+
+### Baseline results (snapshot 2026-10-14, HF `@d6bb8ba`, all 135 scored precons, git `13681d7`)
+
+Macro mean over precons, 95% bootstrap CI. Random uses 3 seeds. No LLM was called.
+
+| system | CUT nDCG@10 | CUT F1@10 | ADD nDCG@10 | ADD nDCG@20 | ADD R@20 | SWAP cut nDCG@10 | SWAP add nDCG@10 |
+|---|---|---|---|---|---|---|---|
+| random-legal | 0.250 [0.24, 0.26] | 0.169 | 0.002 | 0.002 | 0.001 | 0.243 | 0.003 |
+| text heuristic (mLateOn) | 0.320 [0.29, 0.35] | 0.204 | 0.148 [0.12, 0.18] | 0.116 | 0.059 | 0.320 | 0.147 |
+| popularity oracle (reference only) | 0.681 [0.65, 0.70] | 0.450 | 0.231 [0.21, 0.25] | 0.173 | 0.083 | 0.681 | 0.201 |
+
+- Random cuts already score 0.25 nDCG@10, because many precon cards have a cut label. The scale for cuts therefore starts well above 0.
+- Adds are the hard side. Random is ≈0 against about 50 labelled adds out of ~30k legal cards.
+- The popularity oracle orders by EDHREC rank, so it is the ceiling a popularity-following system could reach. It is never exposed to the agent.
+- All picks were valid for the three baselines (validity 1.0).
+
+Run records: `runs/20261014_{random,heuristic,popularity}_all.json`.
+
+### LLM cost estimate (not run: needs approval)
+
+Token profile from fake-LLM dry runs on the test split (`runs/20261014_dry_{mcp,lexical,none}.json`), projected for GLM-5.3 at $1.40 / $0.26 cached / $4.40 per 1M tokens. The plan is 20 precons × 3 tasks × 3 repeats:
+
+| toolset | typical | worst case |
+|---|---|---|
+| mcp | $26.98 | $45.30 |
+| lexical | $25.85 | $43.58 |
+| none | $2.83 | $2.83 |
+| memorisation probe | $0.45 | — |
+| **total** | **$56.11** | **$92.16** |
+
+`uv run python -m bench.precon.run estimate --dry mcp=20261014_dry_mcp,lexical=20261014_dry_lexical,none=20261014_dry_none --precons 20`
