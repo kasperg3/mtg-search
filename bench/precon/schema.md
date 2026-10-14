@@ -1,4 +1,4 @@
-# EXP-007 precon benchmark: data schema (v1)
+# EXP-007 precon benchmark: data schema (v1, final for snapshot 2026-10-14)
 
 Contract between the data side (`bench/precon/collect_*.py`, `build_dataset.py`) and the
 scorer / harness / baselines (`bench/precon/scorer.py`, `harness/`, `baselines/`).
@@ -22,7 +22,7 @@ It deliberately carries **no product or deck name** (leakage control T2b). Same 
 | column | type | notes |
 |---|---|---|
 | precon_id | str | |
-| commander_oracle_ids | list[str] | 1 (or 2 for partners / background) |
+| commander_oracle_ids | list[str] | 1 (or 2 for partners / background). The commander of the EDHREC page the labels come from; equals MTGJSON's commander except 4 decks where EDHREC's face commander differs (then `precons.commander_source = "edhrec"`) |
 | commander_names | list[str] | oracle names (cards.parquet `name`) |
 | color_identity | list[str] | union of commanders' identity, WUBRG order |
 | cards | list[struct{oracle_id: str, name: str, qty: int, is_land: bool, is_basic: bool, is_commander: bool}] | full 100-card list incl. commander(s); `qty>1` only for basics / any-number cards |
@@ -48,14 +48,19 @@ No product name, deck name, set code, release date, prices, edhrec_rank, tags he
 | is_land | bool | from cards.parquet type line |
 | headline | bool | True for `cut`/`add` (nonland); land kinds kept but excluded from headline (default, Q6) |
 | in_precon | bool | sanity: cuts True, adds False |
-| is_new_in_product | bool | add first printed in the precon's set or its parent main set (thematic-add slice) |
+| is_new_in_product | bool | earliest MTGJSON printing is in the precon's set family (set, parent set, and sets whose parent is either) — thematic-add slice |
+| in_color_identity | bool | card identity within the deck's commander identity (all True in this build) |
+| commander_legal | bool | Scryfall commander legality == legal |
 
 Unlisted cards have gain 0 (scorer convention). Lists are truncated by EDHREC (~50 adds, ~30 cuts).
 
 ### `precons` (METADATA; not a task input; for slicing / reporting / memorisation probe) — `precons.parquet`
 precon_id, deck_name, product (MTGJSON set name), set_code, parent_set_code, release_date (date),
 mtgjson_file, mtgjson_type, edhrec_slug, edhrec_url, potential_decks (int, main commander),
-n_colors, is_universes_beyond, is_secret_lair, commander_names.
+edhrec_group, match_method (`commander+set` | `jaccard`), edhrec_deck_jaccard (EDHREC embedded list vs MTGJSON
+list, 1.0 for all matched), n_colors, is_universes_beyond (commander printing has MTGJSON promoType
+`universesbeyond` or a triangle security stamp), is_secret_lair, commander_names, mtgjson_commander_names,
+commander_source (`mtgjson` | `edhrec`), n_out_of_identity. `source` = WotC decklist URL.
 
 ### `commanders` (GOLD side) — `commanders.parquet`
 precon_id, oracle_id, name, num_decks, is_precon_commander — from EDHREC `precon_commander_counts`.
@@ -68,7 +73,10 @@ release_date + gates, deterministic).
 
 ### `tag_denylist.json`
 Evaluative / precon-identifying oracle tags that must not be rendered in eval mode (plan T3):
-exact list + glob patterns (`cycle-*-face-commander`, `*precon*`).
+`exact` list + glob `patterns` (`cycle-*-face-commander`, `*precon*`, `*staple*`, and
+`cycle-<set>-*` for every precon set code), `matched_tags_in_cards_parquet` (the expanded list,
+186 tags) and the train-split audit flags (lift > 3, support >= 5). Full audit: `tag_audit.parquet`
+(tag, support_cut, support_kept, lift, denied).
 
 ### `manifest.json`
 snapshot_date, cards_parquet manifest date, source URLs, EDHREC buildId, fetch stats, counts,
@@ -84,3 +92,13 @@ cutoff parameter + split rule, gain thresholds, git sha, sha256 of each parquet.
 - **Lands (Q6):** land cuts/adds kept in `labels`, `headline=False`.
 - **UB / Secret Lair (Q9):** included and flagged (`is_universes_beyond`, `is_secret_lair`).
 - **Headline add metric (Q5):** raw gain; `gain_syn` provided as secondary.
+- **Gain thresholds:** plan §6 values as stated. On this snapshot they give ~20 headline cuts and
+  ~21 headline adds with gain >= 2 per scored precon (plan aimed for ~10), so the scorer may re-fix
+  them on train from `rate`.
+- **Collector's Edition decks** (16) are dropped as duplicates of the regular list. EDHREC
+  `odds-and-ends` (SLD) has no MTGJSON list and is left out (inputs must not depend on EDHREC).
+
+## On HF
+`data/<config>.parquet` for the 5 configs (each loads as split `train` in `load_dataset`; the
+benchmark split is the `split` column of `splits`), plus `manifest.json`, `tag_denylist.json`,
+`tag_audit.parquet` at the repo root.
