@@ -1,0 +1,493 @@
+- oracle_id: 9575d7ce-f26d-4b90-87a3-6329e9799572
+  name: Abandoned Air Temple
+  edhrec_rank: 1128
+  card: 'Abandoned Air Temple
+
+    Land
+
+    This land enters tapped unless you control a basic land.
+
+    {T}: Add {W}.
+
+    {3}{W}, {T}: Put a +1/+1 counter on each creature you control.'
+  prompt: Find the specific card that's a white-mana land which comes in slow unless you already have a basic land out, and
+    can spend four mana to hand a +1/+1 counter to every creature you've got.
+  single_shot_rank:
+    bm25: 34
+    mlateon: 3
+    sparseup: 884
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: dfec65a0-6fb6-463d-aa62-e84a427db217
+  name: Arahbo, the First Fang
+  edhrec_rank: 3705
+  card: 'Arahbo, the First Fang {2}{W}
+
+    Legendary Creature — Cat Avatar
+
+    Other Cats you control get +1/+1.
+
+    Whenever Arahbo or another nontoken Cat you control enters, create a 1/1 white Cat creature token.
+
+    2/2'
+  prompt: Find the specific card that's a cheap white legendary 2/2 which gives the rest of its feline tribe a small stat
+    boost and spits out a little 1/1 white kitty whenever it or another non-token feline shows up.
+  single_shot_rank:
+    bm25: 7
+    mlateon: 1
+    sparseup: 6
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: ec3d4466-547c-4e02-b1b5-a156ec4637e9
+  name: Chrome Mox
+  edhrec_rank: 156
+  card: 'Chrome Mox {0}
+
+    Artifact
+
+    Imprint — When this artifact enters, you may exile a nonartifact, nonland card from your hand.
+
+    {T}: Add one mana of any of the exiled card''s colors.
+
+    Keywords: Imprint'
+  prompt: Find the specific card that's a free colorless artifact which removes a non-land, non-artifact card from your hand
+    from the game when it arrives, and can then be tapped to produce one mana of one of that card's colors.
+  single_shot_rank:
+    bm25: 9
+    mlateon: 1
+    sparseup: 6
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 7777fab1-df3f-467f-b9e2-46dd2bd2166e
+  name: Forsaken Monument
+  edhrec_rank: 882
+  card: 'Forsaken Monument {5}
+
+    Legendary Artifact
+
+    Colorless creatures you control get +2/+2.
+
+    Whenever you tap a permanent for {C}, add an additional {C}.
+
+    Whenever you cast a colorless spell, you gain 2 life.'
+  prompt: Find the specific card that's a five-mana legendary artifact which makes your creatures without a color bigger and
+    gives you a bonus colorless mana whenever you tap a permanent for one.
+  single_shot_rank:
+    bm25: 22
+    mlateon: 1
+    sparseup: 1
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: d925e560-faa1-40a9-b25a-47065ee891e6
+  name: Guardian Augmenter
+  edhrec_rank: 2748
+  card: 'Guardian Augmenter {2}{G}
+
+    Creature — Troll Wizard
+
+    Flash
+
+    Commander creatures you control get +2/+2.
+
+    Commanders you control have hexproof.
+
+    2/2
+
+    Keywords: Flash'
+  prompt: Find the specific card that's a cheap green creature you can cast at instant speed, which makes your commander a
+    bit bigger and stops opponents from targeting it with their spells.
+  single_shot_rank:
+    bm25: null
+    mlateon: null
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 12c98c1e-7e02-473d-b494-ad8a0731fe82
+  name: Lagomos, Hand of Hatred
+  edhrec_rank: 3063
+  card: 'Lagomos, Hand of Hatred {1}{B}{R}
+
+    Legendary Creature — Human Shaman
+
+    At the beginning of combat on your turn, create a 2/1 red Elemental creature token with trample and haste. Sacrifice it
+    at the beginning of the next end step.
+
+    {T}: Search your library for a card, put it into your hand, then shuffle. Activate only if five or more creatures died
+    this turn.
+
+    1/3'
+  prompt: Find the specific card that's a three-mana black-red legend who conjures a throwaway 2/1 fiery attacker every combat
+    that can swing immediately, punch through blockers, and vanishes by turn's end, and who can fetch any card from your deck
+    only once at least five creatures have died that turn.
+  single_shot_rank:
+    bm25: 52
+    mlateon: 2
+    sparseup: 1
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 20194297-f2a4-4473-95bc-7c6835e5b6b3
+  name: Lilysplash Mentor
+  edhrec_rank: 4862
+  card: 'Lilysplash Mentor {2}{G}{U}
+
+    Creature — Frog Druid
+
+    Reach
+
+    {1}{G}{U}: Exile another target creature you control, then return it to the battlefield under its owner''s control with
+    a +1/+1 counter on it. Activate only as a sorcery.
+
+    4/4
+
+    Keywords: Reach'
+  prompt: Find the specific card that's a four-mana green-blue 4/4 creature able to block attackers in the air, and that can
+    spend a little more mana to briefly blink one of your other creatures and bring it right back slightly bigger.
+  single_shot_rank:
+    bm25: null
+    mlateon: null
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 6c1d22d4-f28e-4041-a9b6-1575e8929b61
+  name: Nexus of Fate
+  edhrec_rank: 2311
+  card: 'Nexus of Fate {5}{U}{U}
+
+    Instant
+
+    Take an extra turn after this one.
+
+    If Nexus of Fate would be put into a graveyard from anywhere, reveal Nexus of Fate and shuffle it into its owner''s library
+    instead.'
+  prompt: Find the specific card that's a pricey double-blue instant letting you take a second turn in a row and, rather than
+    ever landing in a graveyard, it recycles itself back into your library instead.
+  single_shot_rank:
+    bm25: 14
+    mlateon: 8
+    sparseup: 48
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 4d1b655f-05b8-4b82-9cb9-67660f570a9b
+  name: Nyxborn Hydra
+  edhrec_rank: 3452
+  card: 'Nyxborn Hydra {X}{G}
+
+    Enchantment Creature — Hydra
+
+    Bestow {X}{G}{G} (If you cast this card for its bestow cost, it''s an Aura spell with enchant creature. It becomes a creature
+    again if it''s not attached.)
+
+    Reach, trample
+
+    This permanent enters with X +1/+1 counters on it.
+
+    Enchanted creature gets +1/+1 for each +1/+1 counter on this Aura and has reach and trample.
+
+    0/1
+
+    Keywords: Reach, Trample, Bestow'
+  prompt: Find the specific card that costs one green mana plus any amount you choose, coming down as a creature that grows
+    that large or worn on another creature to pump it up by the same amount, and either way it can block flying attackers
+    and roll extra damage over whatever's in front of it.
+  single_shot_rank:
+    bm25: null
+    mlateon: null
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 0944ec2e-1dd9-459f-8f1d-667242cf52fe
+  name: Rapacious Dragon
+  edhrec_rank: 3551
+  card: 'Rapacious Dragon {4}{R}
+
+    Creature — Dragon
+
+    Flying
+
+    When this creature enters, create two Treasure tokens. (They''re artifacts with "{T}, Sacrifice this token: Add one mana
+    of any color.")
+
+    3/3
+
+    Keywords: Flying, Treasure'
+  prompt: Find the specific card that's a five-mana red 3/3 creature which swoops over ground defenses and, when it shows
+    up, leaves behind two little artifact trinkets you can each cash in for one mana of whatever color you need.
+  single_shot_rank:
+    bm25: 225
+    mlateon: 25
+    sparseup: 623
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 45378874-aa51-4bb6-a161-be336c164778
+  name: Shadow of Mortality
+  edhrec_rank: 4752
+  card: 'Shadow of Mortality {13}{B}{B}
+
+    Creature — Avatar
+
+    If your life total is less than your starting life total, this spell costs {X} less to cast, where X is the difference.
+
+    7/7'
+  prompt: Find the specific card that's a giant black creature with a ridiculous fifteen-mana cost that gets discounted by
+    however much life you've lost so far, coming down as a 7/7.
+  single_shot_rank:
+    bm25: 178
+    mlateon: 4
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: e970f2df-90cb-45b8-8ae5-71b762908925
+  name: Smokebraider
+  edhrec_rank: 4891
+  card: 'Smokebraider {1}{R}
+
+    Creature — Elemental Shaman
+
+    {T}: Add two mana in any combination of colors. Spend this mana only to cast Elemental spells or activate abilities of
+    Elementals.
+
+    1/1'
+  prompt: Find the specific card that's a cheap red two-drop 1/1 that taps for a pair of mana in whatever colors you want,
+    but only lets you use it to cast or use abilities of creatures of its own tribe.
+  single_shot_rank:
+    bm25: 12
+    mlateon: 1
+    sparseup: 768
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 1f3c3365-7dc8-47e1-b304-2a09aa229292
+  name: Szarel, Genesis Shepherd
+  edhrec_rank: 4091
+  card: 'Szarel, Genesis Shepherd {2}{B}{R}{G}
+
+    Legendary Creature — Insect Druid
+
+    Flying
+
+    You may play lands from your graveyard.
+
+    Whenever you sacrifice another nontoken permanent during your turn, put a number of +1/+1 counters equal to Szarel''s
+    power on up to one other target creature.
+
+    2/5
+
+    Keywords: Flying'
+  prompt: Find the specific card that's a four-mana black-red-green legend with a 2/5 body that gets over defenders in the
+    air, lets you replay lands from your discard pile, and grows another creature by an amount matching its own power whenever
+    you sacrifice something else during your turn.
+  single_shot_rank:
+    bm25: 63
+    mlateon: 1
+    sparseup: 300
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 850a8369-94ab-43b6-8cfe-286e3623b19d
+  name: Angrath's Rampage
+  edhrec_rank: 15102
+  card: 'Angrath''s Rampage {B}{R}
+
+    Sorcery
+
+    Choose one —
+
+    • Target player sacrifices an artifact of their choice.
+
+    • Target player sacrifices a creature of their choice.
+
+    • Target player sacrifices a planeswalker of their choice.'
+  prompt: Find the specific card that's a cheap two-mana black-and-red sorcery that forces an opponent to give up one of their
+    own permanents, with you deciding whether it comes from their artifacts, creatures, or planeswalkers.
+  single_shot_rank:
+    bm25: 133
+    mlateon: 47
+    sparseup: 103
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: d605d9d1-c01a-4ef6-89f9-06fae8cd57e6
+  name: Calamitous Tide
+  edhrec_rank: 15957
+  card: 'Calamitous Tide {4}{U}{U}
+
+    Sorcery
+
+    Return up to two target creatures to their owners'' hands. Draw two cards, then discard a card.'
+  prompt: Find the specific card that is a six-mana sorcery with a double-blue cost that sends up to two creatures back to
+    hand, then lets you draw two cards while tossing one from your grip.
+  single_shot_rank:
+    bm25: 23
+    mlateon: 12
+    sparseup: 19
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: b8ca5877-ac9e-4b15-8c23-c70f61b01895
+  name: Dryad Militant
+  edhrec_rank: 19045
+  card: 'Dryad Militant {G/W}
+
+    Creature — Dryad Soldier
+
+    ({G/W} can be paid with either {G} or {W}.)
+
+    If an instant or sorcery card would be put into a graveyard from anywhere, exile it instead.
+
+    2/1'
+  prompt: Find the specific card that's a one-mana 2/1 you can pay for with either green or white mana, and it banishes any
+    non-permanent spell from the game instead of ever letting it reach the graveyard.
+  single_shot_rank:
+    bm25: 193
+    mlateon: 5
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 070aa6c7-4741-47de-b68a-629aa4201ac0
+  name: Eager Glyphmage
+  edhrec_rank: 23420
+  card: 'Eager Glyphmage {3}{W}
+
+    Creature — Cat Cleric
+
+    When this creature enters, create a 1/1 white and black Inkling creature token with flying.
+
+    3/3'
+  prompt: Find the specific card that is a four-mana white 3/3 creature which, the moment it shows up, conjures a tiny 1/1
+    token that's both white and black and can fly.
+  single_shot_rank:
+    bm25: 9
+    mlateon: 2
+    sparseup: 14
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: a965898b-9c68-46cb-82a5-a1e11397f68f
+  name: Ghitu Amplifier
+  edhrec_rank: 25771
+  card: 'Ghitu Amplifier {1}{R}
+
+    Creature — Human Wizard
+
+    Kicker {2}{U} (You may pay an additional {2}{U} as you cast this spell.)
+
+    When this creature enters, if it was kicked, return target creature an opponent controls to its owner''s hand.
+
+    Whenever you cast an instant or sorcery spell, this creature gets +2/+0 until end of turn.
+
+    1/2
+
+    Keywords: Kicker'
+  prompt: Find the specific card that's a cheap red creature that swings harder whenever you cast an instant or sorcery, and
+    if you paid a blue-flavored extra cost when casting it, it bounces one of an opponent's creatures back to their hand when
+    it shows up.
+  single_shot_rank:
+    bm25: 105
+    mlateon: 25
+    sparseup: 202
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 84dc0aae-029b-48dc-b8d0-e93c227e32e5
+  name: Lotus Path Djinn
+  edhrec_rank: 27146
+  card: 'Lotus Path Djinn {3}{U}
+
+    Creature — Djinn Monk
+
+    Flying
+
+    Prowess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)
+
+    2/3
+
+    Keywords: Flying, Prowess'
+  prompt: Find the specific card that's a four-mana blue creature with modest 2/3 stats that soars over ground defenders and
+    gets a small temporary boost each time you cast a spell that isn't a creature.
+  single_shot_rank:
+    bm25: null
+    mlateon: 472
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: f1c05ba3-7225-4d29-96aa-9d9c0b54de53
+  name: Pulse of the Forge
+  edhrec_rank: 22454
+  card: 'Pulse of the Forge {1}{R}{R}
+
+    Instant
+
+    Pulse of the Forge deals 4 damage to target player or planeswalker. Then if that player or that planeswalker''s controller
+    has more life than you, return Pulse of the Forge to its owner''s hand.'
+  prompt: Find the specific card that's a cheap red instant which hits a player or one of their planeswalkers for 4 and jumps
+    back into your hand whenever that controller is ahead of you on life.
+  single_shot_rank:
+    bm25: 9
+    mlateon: 1
+    sparseup: 3
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 77ef82e6-16e3-44fa-9542-252060fa6c96
+  name: Pure Intentions
+  edhrec_rank: 28610
+  card: 'Pure Intentions {W}
+
+    Instant — Arcane
+
+    Whenever a spell or ability an opponent controls causes you to discard cards this turn, return those cards from your graveyard
+    to your hand.
+
+    When a spell or ability an opponent controls causes you to discard this card, return this card from your graveyard to
+    your hand at the beginning of the next end step.'
+  prompt: Find the specific card that costs one white mana and, for the rest of the turn, gives back any cards an opponent
+    forced you to throw away, and even digs itself out of the graveyard later if it got tossed too.
+  single_shot_rank:
+    bm25: null
+    mlateon: 1
+    sparseup: 24
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 613d1a33-9fe5-48db-8277-955a055a787e
+  name: Street Sweeper
+  edhrec_rank: 31416
+  card: 'Street Sweeper {6}
+
+    Artifact Creature — Construct
+
+    Whenever this creature attacks, destroy all Auras attached to target land.
+
+    4/6'
+  prompt: Find the specific card that's a colorless artifact creature costing six mana, a chunky 4/6 that wipes the enchantments
+    off a chosen land whenever it swings in to attack.
+  single_shot_rank:
+    bm25: 390
+    mlateon: 2
+    sparseup: 374
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: bc9587cb-1b06-44ee-9bd4-c7b6c9394d45
+  name: Testament of Faith
+  edhrec_rank: 29410
+  card: 'Testament of Faith {W}
+
+    Enchantment
+
+    {X}: This enchantment becomes an X/X Wall creature with defender in addition to its other types until end of turn.'
+  prompt: Find the specific card that's a one-mana white enchantment you can pour mana into for the turn to animate it as
+    a creature with power and toughness equal to whatever you spent, except it's stuck on defense and can't attack.
+  single_shot_rank:
+    bm25: null
+    mlateon: null
+    sparseup: 966
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 53e540b5-8338-4b21-a61a-c5b7fe652a6e
+  name: Undercity Uprising
+  edhrec_rank: 19394
+  card: 'Undercity Uprising {2}{B}{G}
+
+    Sorcery
+
+    Creatures you control gain deathtouch until end of turn. Then target creature you control fights target creature you don''t
+    control. (Each deals damage equal to its power to the other.)
+
+    Keywords: Fight'
+  prompt: Find the specific card that, as a four-mana black-green sorcery, makes all your creatures lethal to whatever they
+    damage that turn and then forces one of them to square off against an enemy creature.
+  single_shot_rank:
+    bm25: null
+    mlateon: 68
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
+- oracle_id: 918d6cd4-76d5-4e21-b92b-1ecf35eb6cff
+  name: Wall of Faith
+  edhrec_rank: 23548
+  card: 'Wall of Faith {3}{W}
+
+    Creature — Wall
+
+    Defender (This creature can''t attack.)
+
+    {W}: This creature gets +0/+1 until end of turn.
+
+    0/5
+
+    Keywords: Defender'
+  prompt: Find the specific card that's a four-mana white 0/5 creature that can't attack, but can spend a single white mana
+    to gain an extra point of toughness until end of turn.
+  single_shot_rank:
+    bm25: 80
+    mlateon: 10
+    sparseup: null
+  review: 'kept: description matches card; single-shot BM25 rank > 3'
