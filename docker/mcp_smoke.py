@@ -85,6 +85,13 @@ def main() -> None:
     print(f"initialize: {info['serverInfo']} in {time.time() - t0:.1f}s")
     tools = c.request("tools/list")["tools"]
     print("tools:", ", ".join(t["name"] for t in tools))
+    # EXP-009: the shipped surface must carry the tool-use trigger and keep the core tools always loaded
+    ins = info.get("instructions") or ""
+    always = sorted(t["name"] for t in tools if (t.get("_meta") or {}).get("anthropic/alwaysLoad"))
+    print(f"instructions: {len(ins)} chars; alwaysLoad: {always}")
+    if "Before you answer a deck-building request, use the tools" not in ins or always != ["get_card", "search_cards"]:
+        print("SMOKE FAIL: instructions trigger or alwaysLoad meta missing")
+        sys.exit(1)
     lat = []
     for name, args in CALLS:
         best = None

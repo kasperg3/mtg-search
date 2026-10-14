@@ -369,77 +369,31 @@ def _make_tool(name: str, impl: Callable[..., str], params: list[inspect.Paramet
     return tool
 
 
-FILTER_DOC = """
-Filters (all optional, combined with AND; applied *before* ranking, so even very selective
-filters return the best matching cards, never an empty post-filtered list):
-- color_identity: Commander identity within these colours, e.g. "BG" (Golgari deck); "C" = colourless.
-- colors + colors_mode: actual card colours. "includes" (default) = has all given colours;
-  "subset" = within them (good for 60-card decks, e.g. colors="RW", colors_mode="subset");
-  "exact" = exactly them.
-- format: legal (or restricted) in that format: commander, modern, pauper, standard, pioneer,
-  legacy, vintage, brawl, oathbreaker, paupercommander, premodern, ...
-- types: every entry must match a supertype/type/subtype, e.g. ["creature"], ["legendary", "elf"].
-- cmc_min / cmc_max: mana value bounds.
-- max_pips / min_pips: per-colour mana-symbol counts in the cost, e.g. max_pips={"U": 1} = no
-  double-blue; min_pips={"R": 2}.
-- has_x / has_hybrid / has_phyrexian: true = only such costs, false = exclude them.
-- include_funny: include Un-set/playtest cards (default false).
-"""
+# Model-facing text (EXP-009, eval/experiments/mcp_instructions.md): the instructions carry the trigger and a
+# procedural "before you answer, use the tools" sentence; each description stands alone, key terms first, and does
+# not repeat the parameter schema. Measured on the precon benchmark before changing (bench/precon surfaces).
+SEARCH_DOC = """Search every Magic: The Gathering (MTG) card by what it does: semantic search over Oracle rules text, with filters for Commander colour identity, format legality, card type and mana value. Use it to find candidates for a deck need (removal, ramp, card draw, sacrifice outlets, answers to fliers, ...) rather than listing cards from memory. With color_identity (and format="commander") set, every result is in colour and legal, so no separate check is needed.
 
-OUTPUT_DOC = """
-Output: one summary line (query, active filters, "N shown of M matching filters"), then one block
-per card: `n. Name — cost (MV) · colours · type line · P/T · rarity [markers]`, oracle text
-(each face of a multi-face card as `// Face — cost · type`; "[MDFC: land back face]" flags
-spell/land MDFCs), a roles line (functional Scryfall oracle tags, keywords, mana produced) and a
-footer (legality in the requested format or the main formats it is legal in, colour identity
-when it differs). Only rules and print facts are returned; markers are Legendary,
-Commander-eligible / partner kind, Game Changer (WotC's official Commander bracket list),
-Reserved and layout.
-"""
-
-SEARCH_DOC = f"""Semantic search over every Magic: The Gathering card, matched against Oracle rules text.
-
-Phrase each query the way the card itself is worded, not the way a player describes it, e.g.
-"Destroy target creature with flying.", "Whenever another creature you control dies, draw a
-card.", "Counter target spell unless its controller pays {{3}}." Put colour, format, type and
-mana-value constraints in the filter arguments, not in the query text.
+Phrase each query the way the card itself is worded, not the way a player describes it, e.g. "Destroy target creature with flying.", "Whenever another creature you control dies, draw a card." Put colour, format, type and mana-value constraints in the filter arguments, not in the query text.
 - Narrow effect: send 1 precise query.
-- Open-ended deck need: send 2-4 `queries`, each a *different* mechanism that solves it, e.g.
-  "I keep losing to fliers" -> ["Reach", "Destroy target creature with flying.",
-  "Creatures you control gain reach until end of turn."]. Their rankings are fused (RRF).
-Write one clean sentence per query, not a whole invented card (type line plus abilities), and
-don't add the user's own wording as a query. Results are ranked by text relevance only, never
-by how widely played a card is; call get_card for full text and rulings.
+- Open-ended need: send 2-4 `queries`, each a *different* mechanism, e.g. "I keep losing to fliers" -> ["Reach", "Destroy target creature with flying.", "Creatures you control gain reach until end of turn."]. Their rankings are fused.
+Write one clean sentence per query, not a whole invented card, and don't add the user's own wording as a query.
 
-Args: query or queries (1-{MAX_QUERIES} in total); limit = cards to return (default 15, max 50; use
-30-50 when surveying options); detail = "compact" (oracle text cut at ~250 chars per face) or "full".
-{FILTER_DOC}{OUTPUT_DOC}"""
+Results are ranked by text relevance only, never by how widely played a card is. Filters apply before ranking, so even narrow filters return the best matches. Default: 15 cards, compact (oracle text cut at ~250 characters per face, plus roles, legality and Game Changer markers), about 2,000 tokens. Use limit 30-50 only to survey a role; use get_card or detail="full" for complete text."""
 
-SIMILAR_DOC = f"""Find cards that play like a given card (functional substitutes, upgrades, redundancy).
+SIMILAR_DOC = """Find Magic: The Gathering (MTG) cards that do what a given card does: replacements, upgrades and redundancy. Use it when the user wants "more cards like X", a stand-in for a card that is off-colour or not legal in their format, or, in a swap, an in-colour alternative to the card being cut. `card_name` is fuzzy-matched; that card's Oracle text is the query and the card itself is excluded. Takes the same filters as search_cards, e.g. find_similar("Rhystic Study", color_identity="BR", format="commander"). Ranked by rules-text similarity only; same compact output as search_cards."""
 
-`card_name` is fuzzy-matched (e.g. "rhystic study"). The card's own oracle text is used as the
-query, the card itself is excluded. Combine with filters to get e.g. a pauper-legal or
-in-colour replacement: find_similar("Rhystic Study", format="pauper").
-{FILTER_DOC}{OUTPUT_DOC}"""
+GET_DOC = """Look up one Magic: The Gathering (MTG) card by name (fuzzy: "fire ice", "jace mind sculptor" or one face of a double-faced card all work). Returns the current Oracle text of every face, mana cost and value, type line, P/T, colours and colour identity, legality in every format, markers (Game Changer, Reserved, Commander-eligible), functional tags, official rulings and the Scryfall link. Use it before recommending or judging a card you know only from memory, and when exact wording, a ruling or legality decides the answer. About 300-1,500 tokens per card; cards found with filtered search_cards need no second check."""
 
-GET_DOC = """Look up one card by name (fuzzy: "fire ice", "jace mind sculptor", a face name of a
-double-faced card all work). Returns the full oracle text of every face, mana cost and value,
-types, P/T, markers, all format legalities, functional oracle tags,
-official rulings and the Scryfall link."""
+TAGS_DOC = """List Scryfall oracle tags: community labels for what MTG cards do (e.g. "removal", "mana-rock", "free-sacrifice-outlet", "draw-engine"), with card counts and descriptions. Use it rarely: to find the usual name for a deck role before wording a search_cards query, or to see example cards for one tag. `prefix` filters by slug prefix (falling back to substring matches); an exact slug also lists up to 15 example cards (alphabetical). The same tags appear on the `roles:` line of every search result."""
 
-TAGS_DOC = """List Scryfall oracle tags (community labels of what cards *do*, e.g. "removal",
-"mana-rock", "free-sacrifice-outlet", "draw-engine") with card counts and descriptions.
-`prefix` filters by slug prefix (falls back to substring matches), e.g. "sacrifice", "ramp".
-When `prefix` is an exact tag slug, also lists up to 15 example cards with that tag (alphabetical). Tags appear in
-the `roles:` line of search results; use their wording to phrase better search queries."""
+INSTRUCTIONS = """Magic: The Gathering (MTG) card search and lookup over the full Oracle card database (Scryfall data, which can include cards printed after your training data). Use these tools whenever a task involves choosing, suggesting or checking cards: building, upgrading or cutting a Commander/EDH or other deck, "cards that do X", replacements for a card, or a card's exact text, rulings, colour identity or format legality. Use them even when you feel sure from memory: errata, new cards, and colour-identity or legality slips are the usual errors.
+Efficient use: one search_cards call per deck need, with color_identity (and format) set, returns candidates that are already in colour and legal; send 2-4 queries in that call for a broad need. get_card checks one card you named from memory or whose rulings matter. find_similar gives alternatives to a known card, e.g. for a swap. list_tags only helps find role vocabulary. Rankings use rules text only.
+Before you answer a deck-building request, use the tools: search for candidate cards and check exact card text, colour identity and legality of your picks."""
 
-
-INSTRUCTIONS = (
-    "Semantic search over all Magic: The Gathering cards for deck building. "
-    "search_cards for roles/effects (with filters for colours, format, mana value, types), "
-    "find_similar for substitutes of a known card, get_card for exact text/rulings/legality, "
-    "list_tags to discover functional tag vocabulary."
-)
+# Claude Code defers MCP tool schemas behind ToolSearch by default; without alwaysLoad the agent rarely loads
+# them for a task it thinks it can answer from memory (EXP-009: 5% vs 45% of episodes with tool calls).
+ALWAYS_LOAD = {"anthropic/alwaysLoad": True}
 
 
 def build_mcp(service: CardService, surface: dict[str, str] | None = None):
@@ -470,7 +424,8 @@ def build_mcp(service: CardService, surface: dict[str, str] | None = None):
         _P("prefix", str | None, None, "Tag slug prefix, e.g. 'sacrifice' or 'ramp'."),
         _P("limit", Annotated[int, Field(ge=1, le=200)], 60, "Max tags to list.")], surface.get("list_tags", TAGS_DOC))
     for fn in (search, similar, get, tags):
-        mcp.add_tool(fn, structured_output=False)
+        meta = ALWAYS_LOAD if fn in (search, get) else None
+        mcp.add_tool(fn, structured_output=False, meta=meta)
     return mcp
 
 

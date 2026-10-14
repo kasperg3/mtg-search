@@ -353,8 +353,29 @@ def test_tool_output_has_only_allowed_fields(poisoned_svc, cards_df):
         assert not SOFT_METRIC.search(masked), SOFT_METRIC.search(masked).group(0) + " in:\n" + out
 
 
+def test_instructions_trigger_tool_use():
+    """EXP-009: the procedural sentence is what made agents search (29% -> with alwaysLoad 45% of episodes,
+    vs 0-5% without it); keep it unless a new benchmark run says otherwise."""
+    ins = server.INSTRUCTIONS
+    assert "Before you answer a deck-building request, use the tools" in ins
+    for s in ("search_cards", "get_card", "find_similar", "colour identity", "Commander/EDH"):
+        assert s in ins, s
+    assert len(ins) <= 2048  # older Claude Code versions truncate instructions at 2,048 chars
+
+
+def test_core_tools_always_load_and_descriptions_fit():
+    mcp = server.build_mcp(server.CardService(pl.DataFrame({"name": []}), backend=None))
+    tools = {t.name: t for t in asyncio.run(mcp.list_tools())}
+    for name in ("search_cards", "get_card"):  # Claude Code defers MCP tools behind ToolSearch otherwise
+        assert (tools[name].meta or {}).get("anthropic/alwaysLoad") is True, name
+    for name in ("find_similar", "list_tags"):
+        assert not (tools[name].meta or {}).get("anthropic/alwaysLoad"), name
+    for t in tools.values():  # Claude Code truncates descriptions at 2,048 chars before v2.1.296
+        assert len(t.description or "") <= 2048, t.name
+
+
 def test_tool_docs_have_no_soft_metrics():
-    for doc in (server.SEARCH_DOC, server.SIMILAR_DOC, server.GET_DOC, server.TAGS_DOC):
+    for doc in (server.INSTRUCTIONS, server.SEARCH_DOC, server.SIMILAR_DOC, server.GET_DOC, server.TAGS_DOC):
         assert not re.search(r"edhrec|price|\$|€|\btix\b|popular|salt", doc, re.I)
 
 
