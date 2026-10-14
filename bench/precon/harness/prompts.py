@@ -52,6 +52,8 @@ You may make at most {max_calls} tool calls. {final}
 
 {rules}"""
 
+TOOL_HINT = ("Before you answer, use the tools: search for candidate cards and check exact card text, colour identity "
+             "and legality of your picks. ")
 FINAL_TOOL = "When you are done, call `final_answer` exactly once with your answer. Copy card names exactly."
 FINAL_TEXT = "Reply with only a JSON object in a ```json code block, in this shape: {shape}. Copy card names exactly."
 SHAPES = {
@@ -113,11 +115,14 @@ def render_deck(deck, card_rows: dict[str, dict], anonymise_commander: bool = Fa
     return "\n".join(lines)
 
 
-def system_prompt(task: str, tools: str, color_identity: str, bracket: int = 3, gc_limit: int = 3) -> str:
+def system_prompt(task: str, tools: str, color_identity: str, bracket: int = 3, gc_limit: int = 3,
+                  tool_hint: bool = False) -> str:
+    """``tool_hint`` adds one sentence telling the agent to use its tools (added after Sonnet 5.5
+    answered all 42 MCP episodes without a single tool call)."""
     max_calls = BUDGETS[task][0] if tools != "none" else 0
     return SYSTEM.format(
         tools=TOOLS_TEXT[tools], max_calls=max_calls,
-        final=FINAL_TOOL if tools != "none" else FINAL_TEXT.format(shape=SHAPES[task]),
+        final=(TOOL_HINT if tool_hint else "") + FINAL_TOOL if tools != "none" else FINAL_TEXT.format(shape=SHAPES[task]),
         rules=RULES.format(ci=color_identity or "colourless", bracket=bracket, gc_limit=gc_limit),
     ).replace("You may make at most 0 tool calls. ", "")
 

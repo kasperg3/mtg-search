@@ -155,7 +155,8 @@ class AgentSystem:
 
     def config(self) -> dict:
         return {"llm": self.llm.config(), "toolset": self.toolset.config() if self.toolset else None,
-                "max_usd": self.args.max_usd, "anonymise_commander": self.args.anonymise_commander}
+                "max_usd": self.args.max_usd, "anonymise_commander": self.args.anonymise_commander,
+                "tool_hint": self.args.tool_hint}
 
     def run(self, task: str, deck, rep: int) -> dict:
         from bench.precon.harness.agent import run_episode
@@ -172,7 +173,7 @@ class AgentSystem:
             return run_probe(self.llm, meta.get("deck_name", ""), meta.get("product", ""), budget=self.budget,
                              transcript_path=tpath)
         ci = "".join(c for c in "WUBRG" if c in deck.color_identity)
-        system = system_prompt(task, self.args.tools, ci, gc_limit=self.args.gc_limit)
+        system = system_prompt(task, self.args.tools, ci, gc_limit=self.args.gc_limit, tool_hint=self.args.tool_hint)
         user = user_prompt(task, render_deck(deck, self.rows, self.args.anonymise_commander))
         deck_names = [self.rows[c["oracle_id"]]["name"] for c in deck.cards if c["oracle_id"] in self.rows]
         tool_names = [t["function"]["name"] for t in self.toolset.schemas()]
@@ -459,6 +460,7 @@ def main(argv=None) -> None:
     ap.add_argument("--fake-completion", type=int, default=1650, help="fake LLM output tokens per call (EXP-006 GLM mean)")
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--anonymise-commander", action="store_true")
+    ap.add_argument("--tool-hint", action="store_true", help="tell the agent to use its tools before answering")
     run(ap.parse_args(argv))
 
 
