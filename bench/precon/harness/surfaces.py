@@ -2,6 +2,7 @@
 
 Each variant overrides ``build_mcp(service, surface)``: keys ``instructions``, ``search_cards``,
 ``find_similar``, ``get_card``, ``list_tags``. "v1" = the text as shipped in server.py (2026-10-14).
+"v3" = v2 + the EXP-007 tool-hint sentence in the instructions.
 "v2" = the rewrite proposed in docs/mcp_instructions_research.md §3 (trigger in the instructions,
 "even when you feel sure", self-contained descriptions, no duplicated filter/output prose).
 """
@@ -16,3 +17,8 @@ SURFACES: dict[str, dict[str, str]] = {
         'list_tags': 'List Scryfall oracle tags: community labels for what MTG cards do (e.g. "removal", "mana-rock", "free-sacrifice-outlet", "draw-engine"), with card counts and descriptions. Use it rarely: to find the usual name for a deck role before wording a search_cards query, or to see example cards for one tag. `prefix` filters by slug prefix (falling back to substring matches); an exact slug also lists up to 15 example cards (alphabetical). The same tags appear on the `roles:` line of every search result.',
     },
 }
+# v3 = v2 + the one sentence that triggered tool use from the system prompt in EXP-007 (prompts.TOOL_HINT),
+# moved into the server instructions: tests whether the channel (server vs system prompt) or the wording matters.
+SURFACES["v3"] = {**SURFACES["v2"], "instructions": SURFACES["v2"]["instructions"] + (
+    "\nBefore you answer a deck-building request, use the tools: search for candidate cards and check exact card "
+    "text, colour identity and legality of your picks.")}
