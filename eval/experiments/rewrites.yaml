@@ -1,0 +1,1012 @@
+# Query rewrites simulating an LLM calling agent. Written blind to labels/card data,
+# from the output of eval/experiments/dump_queries.py (set, id, query, filters only).
+# oracle: one rules-text-style rewrite; hyde: hypothetical card (type line + oracle text);
+# multi: three diverse rules-text-style rewrites.
+- id: tag-free-sacrifice-outlet-para
+  oracle: "Sacrifice a creature: Add {C}."
+  hyde: "Artifact. Sacrifice a creature: Scry 1."
+  multi: ["Sacrifice a creature: Add {C}.", "Sacrifice another creature: Put a +1/+1 counter on this creature.", "Sacrifice a creature: You gain 1 life."]
+- id: tag-free-sacrifice-outlet-need
+  oracle: "Sacrifice another creature: Draw a card."
+  hyde: "Creature — Vampire. Sacrifice another creature: Put a +1/+1 counter on this creature."
+  multi: ["Sacrifice a creature: Add {B}.", "Sacrifice another creature: Scry 1.", "Sacrifice a creature: Each opponent loses 1 life."]
+- id: tag-your-sacrifice-matters-para
+  oracle: "Whenever you sacrifice a creature, draw a card."
+  hyde: "Enchantment. Whenever you sacrifice a permanent, each opponent loses 1 life and you gain 1 life."
+  multi: ["Whenever you sacrifice a creature, put a +1/+1 counter on this creature.", "Whenever you sacrifice a permanent, create a 1/1 black Rat creature token.", "Whenever you sacrifice another creature, draw a card."]
+- id: tag-your-sacrifice-matters-need
+  oracle: "Whenever you sacrifice a permanent, each opponent loses 1 life."
+  hyde: "Creature — Devil. Whenever you sacrifice another permanent, this creature deals 1 damage to any target."
+  multi: ["Whenever you sacrifice a creature, draw a card.", "Whenever you sacrifice a permanent, create a Treasure token.", "Whenever you sacrifice another creature, put a +1/+1 counter on target creature you control."]
+- id: tag-blood-artist-ability-para
+  oracle: "Whenever a creature dies, target player loses 1 life and you gain 1 life."
+  hyde: "Creature — Vampire. Whenever this creature or another creature dies, target opponent loses 1 life and you gain 1 life."
+  multi: ["Whenever a creature dies, each opponent loses 1 life.", "Whenever another creature dies, target player loses 1 life and you gain 1 life.", "Whenever a creature you control dies, each opponent loses 1 life and you gain 1 life."]
+- id: tag-blood-artist-ability-need
+  oracle: "Whenever a creature dies, each opponent loses 1 life and you gain 1 life."
+  hyde: "Enchantment. Whenever a creature you control dies, each opponent loses 1 life."
+  multi: ["Whenever another creature dies, each opponent loses 1 life.", "Whenever a creature dies, target player loses 1 life and you gain 1 life.", "Whenever a creature you control dies, this deals 1 damage to each opponent."]
+- id: tag-removal-sacrifice-para
+  oracle: "Target player sacrifices a creature."
+  hyde: "Instant. Target opponent sacrifices a creature."
+  multi: ["Target player sacrifices a creature.", "Each opponent sacrifices a creature.", "Target opponent sacrifices an attacking creature."]
+- id: tag-removal-sacrifice-need
+  oracle: "Each opponent sacrifices a creature."
+  hyde: "Sorcery. Target player sacrifices a creature with the greatest power among creatures they control."
+  multi: ["Each opponent sacrifices a creature.", "Target player sacrifices a creature.", "Each player sacrifices a creature."]
+- id: tag-counterspell-soft-para
+  oracle: "Counter target spell unless its controller pays {3}."
+  hyde: "Instant. Counter target spell unless its controller pays {2}."
+  multi: ["Counter target spell unless its controller pays {3}.", "Counter target spell unless its controller pays {X}.", "Counter target noncreature spell unless its controller pays {2}."]
+- id: tag-counterspell-soft-need
+  oracle: "Counter target spell unless its controller pays {2}."
+  hyde: "Instant. Counter target spell unless its controller pays {1} for each card in your hand."
+  multi: ["Counter target spell unless its controller pays {3}.", "Counter target spell unless its controller pays {1}.", "Counter target spell unless its controller pays {X}."]
+- id: tag-counterspell-creature-para
+  oracle: "Counter target creature spell."
+  hyde: "Instant. Counter target creature spell."
+  multi: ["Counter target creature spell.", "Counter target creature spell with mana value 4 or greater.", "Counter target creature spell. Draw a card."]
+- id: tag-counterspell-creature-need
+  oracle: "Counter target creature spell."
+  hyde: "Instant. Counter target creature spell. Scry 2."
+  multi: ["Counter target creature spell.", "Counter target creature spell with power 4 or greater.", "Counter target creature spell unless its controller pays {3}."]
+- id: tag-counterspell-noncreature-para
+  oracle: "Counter target noncreature spell."
+  hyde: "Instant. Counter target noncreature spell."
+  multi: ["Counter target noncreature spell.", "Counter target instant or sorcery spell.", "Counter target noncreature spell unless its controller pays {2}."]
+- id: tag-counterspell-noncreature-need
+  oracle: "Counter target noncreature spell."
+  hyde: "Instant. Counter target instant or sorcery spell. Draw a card."
+  multi: ["Counter target noncreature spell.", "Counter target instant or sorcery spell that targets a creature you control.", "Counter target sorcery spell."]
+- id: tag-counterspell-ability-para
+  oracle: "Counter target activated or triggered ability."
+  hyde: "Instant. Counter target activated or triggered ability."
+  multi: ["Counter target activated or triggered ability.", "Counter target activated ability.", "Counter target spell, activated ability, or triggered ability."]
+- id: tag-counterspell-ability-need
+  oracle: "Counter target activated or triggered ability."
+  hyde: "Instant. Counter target activated or triggered ability. If it's an ability of a planeswalker, exile that planeswalker."
+  multi: ["Counter target activated or triggered ability.", "Counter target triggered ability.", "Counter target activated ability from an artifact, creature, or planeswalker."]
+- id: tag-removal-tuck-para
+  oracle: "Target creature's owner shuffles it into their library."
+  hyde: "Instant. The owner of target nonland permanent shuffles it into their library."
+  multi: ["Target creature's owner shuffles it into their library.", "Put target nonland permanent on the bottom of its owner's library.", "Put target creature on top of its owner's library."]
+- id: tag-removal-tuck-need
+  oracle: "Put target creature on the bottom of its owner's library."
+  hyde: "Instant. The owner of target creature puts it on the bottom of their library."
+  multi: ["Exile target creature.", "Put target nonland permanent on the bottom of its owner's library.", "Target permanent's owner shuffles it into their library."]
+- id: tag-removal-bounce-para
+  oracle: "Return target creature to its owner's hand."
+  hyde: "Instant. Return target nonland permanent to its owner's hand."
+  multi: ["Return target creature to its owner's hand.", "Return target nonland permanent to its owner's hand.", "Return target creature an opponent controls to its owner's hand. Draw a card."]
+- id: tag-removal-bounce-need
+  oracle: "Return target nonland permanent to its owner's hand."
+  hyde: "Instant. Return up to two target creatures to their owners' hands."
+  multi: ["Return target creature to its owner's hand.", "Return target nonland permanent to its owner's hand.", "Return up to two target creatures to their owners' hands."]
+- id: tag-removal-fight-para
+  oracle: "Target creature you control fights target creature you don't control."
+  hyde: "Sorcery. Target creature you control gets +1/+1 until end of turn. Then it fights target creature you don't control."
+  multi: ["Target creature you control fights target creature you don't control.", "When this creature enters, it fights up to one target creature you don't control.", "Target creature you control gets +2/+2 until end of turn, then it fights target creature an opponent controls."]
+- id: tag-removal-fight-need
+  oracle: "Target creature you control fights target creature you don't control."
+  hyde: "Instant. Target creature you control deals damage equal to its power to target creature you don't control."
+  multi: ["Target creature you control fights target creature you don't control.", "Target creature you control deals damage equal to its power to target creature or planeswalker you don't control.", "When this creature enters, it fights target creature an opponent controls."]
+- id: tag-one-sided-fight-para
+  oracle: "Target creature you control deals damage equal to its power to target creature you don't control."
+  hyde: "Instant. Target creature you control deals damage equal to its power to target creature or planeswalker you don't control."
+  multi: ["Target creature you control deals damage equal to its power to target creature you don't control.", "Target creature you control deals damage equal to its power to target creature or planeswalker an opponent controls.", "Put a +1/+1 counter on target creature you control. Then that creature deals damage equal to its power to target creature you don't control."]
+- id: tag-one-sided-fight-need
+  oracle: "Target creature you control deals damage equal to its power to target creature you don't control."
+  hyde: "Sorcery. Target creature you control gets +2/+0 until end of turn. It deals damage equal to its power to target creature you don't control."
+  multi: ["Target creature you control deals damage equal to its power to target creature you don't control.", "Choose target creature you control and target creature you don't control. The first deals damage equal to its power to the second.", "Target creature you control deals damage equal to its power to target creature with flying."]
+- id: tag-doom-blade-para
+  oracle: "Destroy target nonblack creature."
+  hyde: "Instant. Destroy target nonblack creature."
+  multi: ["Destroy target nonblack creature.", "Destroy target nonblack creature. It can't be regenerated.", "Destroy target nonartifact, nonblack creature."]
+- id: tag-doom-blade-need
+  oracle: "Destroy target nonblack creature."
+  hyde: "Instant. Destroy target nonblack creature. You lose 2 life."
+  multi: ["Destroy target nonblack creature.", "Destroy target nonartifact, nonblack creature.", "Destroy target nonblack creature with mana value 3 or less."]
+- id: tag-pacifism-para
+  oracle: "Enchanted creature can't attack or block."
+  hyde: "Enchantment — Aura. Enchant creature. Enchanted creature can't attack or block."
+  multi: ["Enchant creature. Enchanted creature can't attack or block.", "Enchanted creature can't attack or block, and its activated abilities can't be activated.", "Enchanted creature doesn't untap during its controller's untap step."]
+- id: tag-pacifism-need
+  oracle: "Enchanted creature can't attack or block and its activated abilities can't be activated."
+  hyde: "Enchantment — Aura. Enchant creature. Enchanted creature can't attack or block, and its activated abilities can't be activated."
+  multi: ["Enchant creature. Enchanted creature can't attack or block.", "Enchanted creature loses all abilities and is a 0/1.", "Exile target creature an opponent controls until this enchantment leaves the battlefield."]
+- id: tag-removal-nonland-para
+  oracle: "Exile target nonland permanent."
+  hyde: "Instant. Destroy target nonland permanent."
+  multi: ["Exile target nonland permanent.", "Destroy target nonland permanent.", "Return target nonland permanent to its owner's hand."]
+- id: tag-removal-nonland-need
+  oracle: "Destroy target nonland permanent."
+  hyde: "Sorcery. Exile target artifact, creature, enchantment, or planeswalker."
+  multi: ["Exile target nonland permanent.", "Destroy target artifact, creature, enchantment, or planeswalker.", "Exile target nonland permanent an opponent controls until this leaves the battlefield."]
+- id: tag-removal-land-para
+  oracle: "Destroy target land."
+  hyde: "Sorcery. Destroy target land."
+  multi: ["Destroy target land.", "Destroy target nonbasic land.", "Destroy target artifact or land."]
+- id: tag-removal-land-need
+  oracle: "Destroy target nonbasic land."
+  hyde: "Sorcery. Destroy target nonbasic land. Its controller may search their library for a basic land card."
+  multi: ["Destroy target nonbasic land.", "Destroy target land.", "Exile target land an opponent controls."]
+- id: tag-mass-land-denial-para
+  oracle: "Destroy all lands."
+  hyde: "Sorcery. Destroy all lands."
+  multi: ["Destroy all lands.", "Each player sacrifices all lands they control.", "Destroy all lands and all creatures."]
+- id: tag-mass-land-denial-need
+  oracle: "Destroy all lands."
+  hyde: "Sorcery. Destroy all artifacts, creatures, and lands."
+  multi: ["Destroy all lands.", "Each player sacrifices a land for each land they control.", "Lands don't untap during their controllers' untap steps."]
+- id: tag-sweeper-one-sided-para
+  oracle: "Destroy all creatures you don't control."
+  hyde: "Sorcery. Destroy all creatures your opponents control."
+  multi: ["Destroy all creatures you don't control.", "Exile all creatures your opponents control.", "Creatures your opponents control get -2/-2 until end of turn."]
+- id: tag-sweeper-one-sided-need
+  oracle: "Destroy all creatures your opponents control."
+  hyde: "Sorcery. Destroy each creature you don't control."
+  multi: ["Destroy all creatures you don't control.", "This deals 3 damage to each creature your opponents control.", "Return all creatures your opponents control to their owners' hands."]
+- id: tag-hate-graveyard-para
+  oracle: "Exile target player's graveyard."
+  hyde: "Artifact. {T}, Sacrifice this artifact: Exile target player's graveyard."
+  multi: ["Exile target player's graveyard.", "Exile target card from a graveyard.", "If a card would be put into an opponent's graveyard from anywhere, exile it instead."]
+- id: tag-hate-graveyard-need
+  oracle: "Exile all cards from target player's graveyard."
+  hyde: "Artifact. {1}, {T}: Exile target card from a graveyard."
+  multi: ["Exile target player's graveyard.", "Exile all graveyards.", "Players can't cast spells from graveyards. If a card would be put into a graveyard, exile it instead."]
+- id: tag-sweeper-graveyard-para
+  oracle: "Exile all graveyards."
+  hyde: "Instant. Exile all cards from all graveyards."
+  multi: ["Exile all graveyards.", "Exile each opponent's graveyard.", "Exile all cards from all graveyards. Draw a card."]
+- id: tag-sweeper-graveyard-need
+  oracle: "Exile all cards from all graveyards."
+  hyde: "Artifact. {T}, Sacrifice this artifact: Exile all graveyards."
+  multi: ["Exile all graveyards.", "Exile each opponent's graveyard.", "Each player shuffles their graveyard into their library."]
+- id: tag-mass-reanimation-para
+  oracle: "Return all creature cards from your graveyard to the battlefield."
+  hyde: "Sorcery. Return all creature cards from your graveyard to the battlefield."
+  multi: ["Return all creature cards from your graveyard to the battlefield.", "Each player returns all creature cards from their graveyard to the battlefield.", "Return all creature cards from all graveyards to the battlefield under your control."]
+- id: tag-mass-reanimation-need
+  oracle: "Return all creature cards from your graveyard to the battlefield."
+  hyde: "Sorcery. Return all permanent cards from your graveyard to the battlefield."
+  multi: ["Return all creature cards from your graveyard to the battlefield.", "Return all permanent cards from your graveyard to the battlefield.", "Return all creature cards that were put into your graveyard from anywhere this turn to the battlefield."]
+- id: tag-reanimate-from-opponent-para
+  oracle: "Put target creature card from an opponent's graveyard onto the battlefield under your control."
+  hyde: "Sorcery. Put target creature card from an opponent's graveyard onto the battlefield under your control."
+  multi: ["Put target creature card from a graveyard onto the battlefield under your control.", "Return target creature card from an opponent's graveyard to the battlefield under your control.", "Exile target creature card from an opponent's graveyard. You may cast it this turn."]
+- id: tag-reanimate-from-opponent-need
+  oracle: "Put target creature card from an opponent's graveyard onto the battlefield under your control."
+  hyde: "Creature — Zombie. When this creature enters, put target creature card from an opponent's graveyard onto the battlefield under your control."
+  multi: ["Put target creature card from a graveyard onto the battlefield under your control.", "Exile target card from an opponent's graveyard. You may cast that card for as long as it remains exiled.", "Return target creature card from an opponent's graveyard to the battlefield under your control."]
+- id: tag-regrowth-instant-para
+  oracle: "Return target instant or sorcery card from your graveyard to your hand."
+  hyde: "Sorcery. Return target instant card from your graveyard to your hand."
+  multi: ["Return target instant or sorcery card from your graveyard to your hand.", "Return target instant card from your graveyard to your hand.", "When this creature enters, return target instant or sorcery card from your graveyard to your hand."]
+- id: tag-regrowth-instant-need
+  oracle: "Return target instant or sorcery card from your graveyard to your hand."
+  hyde: "Creature — Human Wizard. When this creature enters, return target instant or sorcery card from your graveyard to your hand."
+  multi: ["Return target instant or sorcery card from your graveyard to your hand.", "Target instant or sorcery card in your graveyard gains flashback until end of turn.", "You may cast target instant or sorcery card from your graveyard this turn."]
+- id: tag-regrowth-creature-para
+  oracle: "Return target creature card from your graveyard to your hand."
+  hyde: "Sorcery. Return target creature card from your graveyard to your hand."
+  multi: ["Return target creature card from your graveyard to your hand.", "Return up to two target creature cards from your graveyard to your hand.", "When this creature enters, return target creature card from your graveyard to your hand."]
+- id: tag-regrowth-creature-need
+  oracle: "Return target creature card from your graveyard to your hand."
+  hyde: "Sorcery. Return up to two target creature cards from your graveyard to your hand."
+  multi: ["Return target creature card from your graveyard to your hand.", "Return up to two target creature cards from your graveyard to your hand.", "Whenever a creature you control dies, return it to its owner's hand at the beginning of the next end step."]
+- id: tag-castable-from-graveyard-para
+  oracle: "Flashback {2}{R}"
+  hyde: "Sorcery. Draw two cards. Flashback {3}{U}"
+  multi: ["Flashback (You may cast this card from your graveyard for its flashback cost. Then exile it.)", "You may cast this card from your graveyard.", "Escape—{2}{B}, Exile three other cards from your graveyard."]
+- id: tag-castable-from-graveyard-need
+  oracle: "You may cast this card from your graveyard."
+  hyde: "Creature — Zombie. You may cast this card from your graveyard."
+  multi: ["You may cast this card from your graveyard.", "Flashback {3}{G}", "Unearth {1}{B}"]
+- id: tag-mill-opponent-para
+  oracle: "Target player mills ten cards."
+  hyde: "Sorcery. Target player mills X cards."
+  multi: ["Target player mills ten cards.", "Each opponent mills three cards.", "Whenever you cast a spell, target player mills two cards."]
+- id: tag-mill-opponent-need
+  oracle: "Target player mills X cards."
+  hyde: "Enchantment. At the beginning of your upkeep, each opponent mills four cards."
+  multi: ["Target player mills X cards.", "Each opponent mills cards equal to the number of cards in your hand.", "Whenever a land enters under your control, target player mills two cards."]
+- id: tag-wheel-para
+  oracle: "Each player discards their hand, then draws seven cards."
+  hyde: "Sorcery. Each player shuffles their hand and graveyard into their library, then draws seven cards."
+  multi: ["Each player discards their hand, then draws seven cards.", "Each player shuffles their hand and graveyard into their library, then draws seven cards.", "Each player discards their hand, then draws that many cards."]
+- id: tag-wheel-need
+  oracle: "Each player discards their hand, then draws seven cards."
+  hyde: "Sorcery. Each player discards their hand, then draws seven cards."
+  multi: ["Each player discards their hand, then draws seven cards.", "Draw cards until you have seven cards in hand.", "Each player shuffles their hand into their library, then draws that many cards."]
+- id: tag-loot-para
+  oracle: "Draw a card, then discard a card."
+  hyde: "Creature — Merfolk Wizard. {T}: Draw a card, then discard a card."
+  multi: ["Draw a card, then discard a card.", "{T}: Draw a card, then discard a card.", "Draw two cards, then discard a card."]
+- id: tag-loot-need
+  oracle: "Draw two cards, then discard two cards."
+  hyde: "Sorcery. Draw three cards, then discard two cards."
+  multi: ["Draw a card, then discard a card.", "Draw two cards, then discard two cards.", "Draw three cards, then discard two cards unless you discard a creature card."]
+- id: tag-rummage-para
+  oracle: "Discard a card, then draw a card."
+  hyde: "Creature — Goblin. {T}: Discard a card. If you do, draw a card."
+  multi: ["Discard a card, then draw a card.", "Discard a card: Draw a card.", "Discard up to two cards, then draw that many cards."]
+- id: tag-rummage-need
+  oracle: "Discard a card, then draw a card."
+  hyde: "Artifact. {1}, {T}, Discard a card: Draw a card."
+  multi: ["Discard a card, then draw a card.", "As an additional cost to cast this spell, discard a card. Draw two cards.", "Discard any number of cards, then draw that many cards."]
+- id: tag-thoughtseize-para
+  oracle: "Target player reveals their hand. You choose a nonland card from it. That player discards that card."
+  hyde: "Sorcery. Target opponent reveals their hand. You choose a nonland card from it. That player discards that card."
+  multi: ["Target player reveals their hand. You choose a nonland card from it. That player discards that card.", "Target opponent reveals their hand. You choose a noncreature, nonland card from it.", "Look at target opponent's hand and exile a nonland card from it."]
+- id: tag-thoughtseize-need
+  oracle: "Target opponent reveals their hand. You choose a nonland card from it. That player discards that card."
+  hyde: "Sorcery. Target player reveals their hand. You choose an instant or sorcery card from it. That player discards that card."
+  multi: ["Target player reveals their hand. You choose a nonland card from it. That player discards that card.", "Target opponent reveals their hand. You choose an instant or sorcery card from it. That player discards that card.", "Target player reveals their hand. You choose a noncreature, nonland card from it."]
+- id: tag-repeatable-impulsive-draw-para
+  oracle: "At the beginning of your upkeep, exile the top card of your library. You may play that card this turn."
+  hyde: "Enchantment. At the beginning of your upkeep, exile the top card of your library. You may play it this turn."
+  multi: ["At the beginning of your upkeep, exile the top card of your library. You may play that card this turn.", "Whenever you attack, exile the top card of your library. Until end of turn, you may play that card.", "{T}: Exile the top card of your library. You may play it this turn."]
+- id: tag-repeatable-impulsive-draw-need
+  oracle: "At the beginning of your upkeep, exile the top card of your library. You may play it this turn."
+  hyde: "Creature — Human Shaman. Whenever this creature attacks, exile the top card of your library. You may play that card this turn."
+  multi: ["At the beginning of your upkeep, exile the top card of your library. You may play that card this turn.", "At the beginning of your end step, exile the top card of your library. You may play it until the end of your next turn.", "Whenever you cast a noncreature spell, exile the top card of your library. You may play it this turn."]
+- id: tag-draw-hate-para
+  oracle: "Whenever an opponent draws a card, this deals 1 damage to that player."
+  hyde: "Enchantment. Whenever an opponent draws a card, that player loses 1 life."
+  multi: ["Whenever an opponent draws a card, this deals 1 damage to that player.", "Each opponent can't draw more than one card each turn.", "Whenever an opponent draws a card except the first one they draw in each of their draw steps, they lose 2 life."]
+- id: tag-draw-hate-need
+  oracle: "Whenever an opponent draws a card except the first one they draw in each of their draw steps, that player loses 2 life."
+  hyde: "Artifact. Each player can't draw more than one card each turn."
+  multi: ["Whenever an opponent draws a card, that player loses 1 life.", "Each opponent can't draw more than one card each turn.", "Whenever an opponent draws a card except the first one they draw in each of their draw steps, this deals 2 damage to that player."]
+- id: tag-tutor-card-para
+  oracle: "Search your library for a card, put that card into your hand, then shuffle."
+  hyde: "Sorcery. Search your library for a card, put it into your hand, then shuffle. You lose 2 life."
+  multi: ["Search your library for a card, put that card into your hand, then shuffle.", "Search your library for a card, then shuffle and put that card on top.", "Search your library for a card and exile it face down. Put it into your hand at the beginning of your next upkeep."]
+- id: tag-tutor-card-need
+  oracle: "Search your library for a card, put it into your hand, then shuffle."
+  hyde: "Instant. Search your library for a card, then shuffle and put that card on top."
+  multi: ["Search your library for a card, put that card into your hand, then shuffle.", "Search your library for an artifact or enchantment card, reveal it, put it into your hand, then shuffle.", "Search your library for an instant or sorcery card, reveal it, put it into your hand, then shuffle."]
+- id: tag-tutor-creature-para
+  oracle: "Search your library for a creature card, reveal it, put it into your hand, then shuffle."
+  hyde: "Sorcery. Search your library for a creature card, reveal it, put it into your hand, then shuffle."
+  multi: ["Search your library for a creature card, reveal it, put it into your hand, then shuffle.", "Search your library for a creature card and put it onto the battlefield, then shuffle.", "Search your library for a creature card, then shuffle and put that card on top."]
+- id: tag-tutor-creature-need
+  oracle: "Search your library for a creature card, reveal it, put it into your hand, then shuffle."
+  hyde: "Creature — Elf. {T}, Sacrifice this creature: Search your library for a creature card, put it onto the battlefield, then shuffle."
+  multi: ["Search your library for a creature card, reveal it, put it into your hand, then shuffle.", "Sacrifice a creature: Search your library for a creature card with mana value equal to 1 plus the sacrificed creature's mana value, put it onto the battlefield, then shuffle.", "Search your library for a creature card with mana value X or less and put it onto the battlefield."]
+- id: tag-wish-para
+  oracle: "You may reveal a card you own from outside the game and put it into your hand."
+  hyde: "Sorcery. You may choose an instant or sorcery card you own from outside the game, reveal that card, and put it into your hand."
+  multi: ["You may reveal a card you own from outside the game and put it into your hand.", "Choose a creature card you own from outside the game, reveal it, and put it into your hand.", "Put a card you own from outside the game into your hand."]
+- id: tag-wish-need
+  oracle: "You may choose a card you own from outside the game, reveal it, and put it into your hand."
+  hyde: "Sorcery. You may reveal an artifact or enchantment card you own from outside the game and put it into your hand."
+  multi: ["You may reveal a card you own from outside the game and put it into your hand.", "Choose an instant or sorcery card you own from outside the game, reveal it, and put it into your hand.", "Reveal a creature card you own from outside the game and put it into your hand."]
+- id: tag-mana-rock-para
+  oracle: "{T}: Add {C}{C}."
+  hyde: "Artifact. {T}: Add one mana of any color."
+  multi: ["Artifact. {T}: Add {C}.", "Artifact. {T}: Add one mana of any color.", "Artifact. {T}: Add {C}{C}."]
+- id: tag-mana-rock-need
+  oracle: "Artifact. {T}: Add one mana of any color."
+  hyde: "Artifact. {T}: Add {C}{C}."
+  multi: ["Artifact. {T}: Add {C}.", "Artifact. {T}: Add one mana of any color.", "Artifact. {T}: Add one mana of any color in your commander's color identity."]
+- id: tag-mana-dork-para
+  oracle: "Creature — Elf Druid. {T}: Add {G}."
+  hyde: "Creature — Elf Druid 1/1. {T}: Add {G}."
+  multi: ["{T}: Add {G}.", "{T}: Add one mana of any color.", "Creature — Elf. {T}: Add {G} for each Elf you control."]
+- id: tag-mana-dork-need
+  oracle: "{T}: Add one mana of any color."
+  hyde: "Creature — Elf Druid 1/1. {T}: Add {G}."
+  multi: ["{T}: Add {G}.", "{T}: Add one mana of any color.", "{T}: Add {G}{G}."]
+- id: tag-ritual-para
+  oracle: "Add {B}{B}{B}."
+  hyde: "Instant. Add {R}{R}{R}."
+  multi: ["Add {B}{B}{B}.", "Add {R}{R}{R}.", "Add X mana of any one color, where X is the number of cards in your hand."]
+- id: tag-ritual-need
+  oracle: "Add {R}{R}{R}."
+  hyde: "Instant. Add {B}{B}{B}."
+  multi: ["Add {R}{R}{R}.", "Add {B}{B}{B}.", "Add {C}{C} for each spell cast this turn."]
+- id: tag-extra-land-para
+  oracle: "You may play an additional land on each of your turns."
+  hyde: "Sorcery. You may play two additional lands this turn. Draw a card."
+  multi: ["You may play an additional land on each of your turns.", "You may play two additional lands this turn.", "You may play an additional land this turn."]
+- id: tag-extra-land-need
+  oracle: "You may play an additional land on each of your turns."
+  hyde: "Creature — Elf. You may play an additional land on each of your turns."
+  multi: ["You may play an additional land on each of your turns.", "Whenever a land enters under your control, you may put a land card from your hand onto the battlefield.", "Landfall — Whenever a land enters the battlefield under your control, draw a card."]
+- id: tag-cost-reducer-para
+  oracle: "Spells you cast cost {1} less to cast."
+  hyde: "Artifact. Spells you cast cost {1} less to cast."
+  multi: ["Spells you cast cost {1} less to cast.", "Creature spells you cast cost {1} less to cast.", "Instant and sorcery spells you cast cost {1} less to cast."]
+- id: tag-cost-reducer-need
+  oracle: "Spells you cast cost {2} less to cast."
+  hyde: "Artifact. Spells you cast with mana value 5 or greater cost {2} less to cast."
+  multi: ["Spells you cast cost {1} less to cast.", "Creature spells you cast cost {2} less to cast.", "This spell costs {1} less to cast for each creature you control."]
+- id: tag-repeatable-treasures-para
+  oracle: "Whenever you cast a spell, create a Treasure token."
+  hyde: "Creature — Pirate. Whenever this creature attacks, create a Treasure token."
+  multi: ["At the beginning of your upkeep, create a Treasure token.", "Whenever a creature you control dies, create a Treasure token.", "Whenever this creature deals combat damage to a player, create a Treasure token."]
+- id: tag-repeatable-treasures-need
+  oracle: "At the beginning of your end step, create a Treasure token."
+  hyde: "Creature — Goblin Pirate. Whenever you cast a noncreature spell, create a Treasure token."
+  multi: ["At the beginning of your upkeep, create a Treasure token.", "Whenever you sacrifice a Treasure, draw a card.", "Whenever an opponent casts a spell, you create a Treasure token."]
+- id: tag-landfall-para
+  oracle: "Landfall — Whenever a land enters the battlefield under your control, you gain 2 life."
+  hyde: "Creature — Elemental. Landfall — Whenever a land you control enters, put a +1/+1 counter on this creature."
+  multi: ["Landfall — Whenever a land enters the battlefield under your control, this creature gets +2/+2 until end of turn.", "Whenever a land you control enters, create a 1/1 green Plant creature token.", "Whenever a land enters under your control, draw a card."]
+- id: tag-landfall-need
+  oracle: "Whenever a land enters the battlefield under your control, create a 0/1 green Plant creature token."
+  hyde: "Enchantment. Landfall — Whenever a land you control enters, this deals 1 damage to each opponent."
+  multi: ["Landfall — Whenever a land enters the battlefield under your control, you gain 2 life.", "Whenever a land you control enters, put a +1/+1 counter on target creature you control.", "Whenever a land enters under your control, create a 4/4 Elemental creature token."]
+- id: tag-gives-pp-counters-to-all-para
+  oracle: "Put a +1/+1 counter on each creature you control."
+  hyde: "Sorcery. Put two +1/+1 counters on each creature you control."
+  multi: ["Put a +1/+1 counter on each creature you control.", "At the beginning of your end step, put a +1/+1 counter on each creature you control.", "Whenever this creature attacks, put a +1/+1 counter on each creature you control."]
+- id: tag-gives-pp-counters-to-all-need
+  oracle: "Put a +1/+1 counter on each creature you control."
+  hyde: "Creature — Elf Warrior. When this creature enters, put a +1/+1 counter on each other creature you control."
+  multi: ["Put a +1/+1 counter on each creature you control.", "At the beginning of combat on your turn, put a +1/+1 counter on each creature you control.", "Each creature you control enters with an additional +1/+1 counter on it."]
+- id: tag-counter-doubler-para
+  oracle: "If one or more counters would be put on a permanent you control, twice that many of each of those kinds of counters are put on it instead."
+  hyde: "Enchantment. If one or more +1/+1 counters would be put on a creature you control, twice that many +1/+1 counters are put on it instead."
+  multi: ["If one or more +1/+1 counters would be put on a creature you control, twice that many are put on it instead.", "If one or more counters would be put on a permanent you control, that many plus one are put on it instead.", "Double the number of each kind of counter on target permanent."]
+- id: tag-counter-doubler-need
+  oracle: "If one or more counters would be put on a permanent or player, twice that many are put on it instead."
+  hyde: "Creature — Hydra. If one or more counters would be put on a creature or planeswalker you control, twice that many are put on it instead."
+  multi: ["If one or more +1/+1 counters would be put on a creature you control, twice that many are put on it instead.", "If you would put one or more loyalty counters on a planeswalker you control, put that many plus one instead.", "Double the number of each kind of counter on each permanent you control."]
+- id: tag-overrun-para
+  oracle: "Creatures you control get +3/+3 and gain trample until end of turn."
+  hyde: "Sorcery. Creatures you control get +3/+3 and gain trample until end of turn."
+  multi: ["Creatures you control get +3/+3 and gain trample until end of turn.", "Creatures you control get +X/+X until end of turn, where X is the number of creatures you control.", "Creatures you control get +2/+1 and gain menace until end of turn."]
+- id: tag-overrun-need
+  oracle: "Creatures you control get +X/+X until end of turn, where X is the number of creatures you control."
+  hyde: "Sorcery. Creatures you control get +2/+2 and gain trample until end of turn."
+  multi: ["Creatures you control get +3/+3 and gain trample until end of turn.", "Creatures you control get +1/+1 for each creature you control until end of turn.", "Untap all creatures you control. They get +1/+1 and gain vigilance until end of turn."]
+- id: tag-clone-para
+  oracle: "You may have this creature enter as a copy of any creature on the battlefield."
+  hyde: "Creature — Shapeshifter 0/0. You may have this creature enter the battlefield as a copy of any creature on the battlefield."
+  multi: ["You may have this creature enter as a copy of any creature on the battlefield.", "Create a token that's a copy of target creature.", "You may have this enter as a copy of any artifact or creature on the battlefield."]
+- id: tag-clone-need
+  oracle: "You may have this creature enter as a copy of any creature on the battlefield."
+  hyde: "Creature — Shapeshifter. At the beginning of your upkeep, you may have this creature become a copy of target creature, except it has this ability."
+  multi: ["You may have this creature enter as a copy of any creature on the battlefield.", "This creature becomes a copy of target creature until end of turn.", "Create a token that's a copy of target creature you control."]
+- id: tag-copy-spell-para
+  oracle: "Copy target instant or sorcery spell. You may choose new targets for the copy."
+  hyde: "Instant. Copy target instant or sorcery spell. You may choose new targets for the copy."
+  multi: ["Copy target instant or sorcery spell. You may choose new targets for the copy.", "Copy target spell you control.", "When you cast your next instant or sorcery spell this turn, copy that spell."]
+- id: tag-copy-spell-need
+  oracle: "Whenever you cast an instant or sorcery spell, copy that spell. You may choose new targets for the copy."
+  hyde: "Creature — Human Wizard. Whenever you cast an instant or sorcery spell, you may pay {2}. If you do, copy that spell."
+  multi: ["Copy target instant or sorcery spell. You may choose new targets for the copy.", "Whenever you cast an instant or sorcery spell, copy it.", "When you cast your next instant or sorcery spell this turn, copy that spell twice."]
+- id: tag-flicker-para
+  oracle: "Exile target creature you control, then return it to the battlefield under its owner's control."
+  hyde: "Instant. Exile target creature you control, then return that card to the battlefield under your control."
+  multi: ["Exile target creature you control, then return it to the battlefield under its owner's control.", "Exile another target creature you control. Return it to the battlefield at the beginning of the next end step.", "Exile any number of target creatures you control, then return them to the battlefield."]
+- id: tag-flicker-need
+  oracle: "At the beginning of your end step, exile up to one target creature you control, then return it to the battlefield under its owner's control."
+  hyde: "Creature — Spirit. {1}{W}: Exile another target creature you control, then return it to the battlefield under its owner's control."
+  multi: ["Exile target creature you control, then return it to the battlefield under its owner's control.", "At the beginning of your end step, exile another target creature you control, then return it to the battlefield.", "If a permanent entering the battlefield causes a triggered ability of a permanent you control to trigger, that ability triggers an additional time."]
+- id: tag-lifegain-matters-para
+  oracle: "Whenever you gain life, put a +1/+1 counter on this creature."
+  hyde: "Enchantment. Whenever you gain life, each opponent loses 1 life."
+  multi: ["Whenever you gain life, put a +1/+1 counter on this creature.", "Whenever you gain life, each opponent loses that much life.", "Whenever you gain life, draw a card."]
+- id: tag-lifegain-matters-need
+  oracle: "Whenever you gain life, each opponent loses 1 life."
+  hyde: "Creature — Vampire Cleric. Whenever you gain life, put a +1/+1 counter on target creature you control."
+  multi: ["Whenever you gain life, put a +1/+1 counter on this creature.", "Whenever you gain life, create a 1/1 white Bat creature token with flying.", "At the beginning of your end step, if you gained life this turn, draw a card."]
+- id: tag-soul-warden-ability-para
+  oracle: "Whenever another creature enters the battlefield, you gain 1 life."
+  hyde: "Creature — Human Cleric 1/1. Whenever another creature enters, you gain 1 life."
+  multi: ["Whenever another creature enters the battlefield, you gain 1 life.", "Whenever a creature enters the battlefield under your control, you gain 1 life.", "Whenever another creature you control enters, you gain 1 life."]
+- id: tag-soul-warden-ability-need
+  oracle: "Whenever another creature enters the battlefield, you gain 1 life."
+  hyde: "Creature — Human Cleric 1/1. Whenever another creature enters the battlefield, you gain 1 life."
+  multi: ["Whenever another creature enters the battlefield, you gain 1 life.", "Whenever a creature enters the battlefield under your control, you gain 1 life.", "Whenever you cast a spell, you gain 1 life."]
+- id: tag-hate-lifegain-para
+  oracle: "Your opponents can't gain life."
+  hyde: "Enchantment. Players can't gain life."
+  multi: ["Your opponents can't gain life.", "Players can't gain life.", "If an opponent would gain life, that player loses that much life instead."]
+- id: tag-hate-lifegain-need
+  oracle: "Your opponents can't gain life."
+  hyde: "Creature — Human Shaman. Your opponents can't gain life."
+  multi: ["Your opponents can't gain life.", "Players can't gain life. Damage can't be prevented.", "If an opponent would gain life, that player loses that much life instead."]
+- id: tag-drain-life-para
+  oracle: "Target player loses 3 life and you gain 3 life."
+  hyde: "Sorcery. Each opponent loses 2 life and you gain 2 life."
+  multi: ["Target player loses 3 life and you gain 3 life.", "Each opponent loses 1 life and you gain life equal to the life lost this way.", "This deals X damage to any target. You gain X life."]
+- id: tag-drain-life-need
+  oracle: "Each opponent loses X life and you gain life equal to the life lost this way."
+  hyde: "Sorcery. Target player loses X life and you gain X life."
+  multi: ["Target player loses X life and you gain X life.", "Each opponent loses 3 life and you gain 3 life.", "This deals X damage to any target. You gain X life."]
+- id: tag-fog-para
+  oracle: "Prevent all combat damage that would be dealt this turn."
+  hyde: "Instant. Prevent all combat damage that would be dealt this turn."
+  multi: ["Prevent all combat damage that would be dealt this turn.", "Prevent all combat damage that would be dealt to you this turn.", "Tap all creatures your opponents control."]
+- id: tag-fog-need
+  oracle: "Prevent all combat damage that would be dealt this turn."
+  hyde: "Instant. Prevent all combat damage that would be dealt this turn. Draw a card."
+  multi: ["Prevent all combat damage that would be dealt this turn.", "Prevent all combat damage that would be dealt by creatures your opponents control this turn.", "Untap all creatures you control. Prevent all combat damage that would be dealt this turn."]
+- id: tag-protects-all-para
+  oracle: "Creatures you control gain indestructible until end of turn."
+  hyde: "Instant. Creatures you control gain hexproof and indestructible until end of turn."
+  multi: ["Creatures you control gain indestructible until end of turn.", "Creatures you control gain hexproof until end of turn.", "Permanents you control gain protection from the color of your choice until end of turn."]
+- id: tag-protects-all-need
+  oracle: "Creatures you control gain indestructible until end of turn."
+  hyde: "Instant. Permanents you control gain indestructible until end of turn."
+  multi: ["Creatures you control gain indestructible until end of turn.", "Regenerate each creature you control.", "Creatures you control gain hexproof and indestructible until end of turn."]
+- id: tag-gives-indestructible-para
+  oracle: "Creatures you control have indestructible."
+  hyde: "Enchantment. Creatures you control have indestructible."
+  multi: ["Creatures you control have indestructible.", "Target creature gains indestructible until end of turn.", "Equipped creature has indestructible."]
+- id: tag-gives-indestructible-need
+  oracle: "Target creature you control gains indestructible until end of turn."
+  hyde: "Instant. Target creature you control gains hexproof and indestructible until end of turn."
+  multi: ["Target creature you control gains indestructible until end of turn.", "Equipped creature has indestructible.", "Enchanted creature has indestructible."]
+- id: tag-gives-unblockable-para
+  oracle: "Target creature can't be blocked this turn."
+  hyde: "Instant. Target creature can't be blocked this turn. Draw a card."
+  multi: ["Target creature can't be blocked this turn.", "Equipped creature can't be blocked.", "Enchanted creature can't be blocked."]
+- id: tag-gives-unblockable-need
+  oracle: "Equipped creature can't be blocked."
+  hyde: "Artifact — Equipment. Equipped creature gets +1/+0 and can't be blocked. Equip {2}"
+  multi: ["Target creature can't be blocked this turn.", "Equipped creature can't be blocked.", "Enchanted creature can't be blocked."]
+- id: tag-threaten-para
+  oracle: "Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn."
+  hyde: "Sorcery. Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn."
+  multi: ["Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn.", "Gain control of target creature an opponent controls until end of turn. Untap it. It gets +2/+0 and gains haste.", "Gain control of target artifact or creature until end of turn. Untap it. It gains haste."]
+- id: tag-threaten-need
+  oracle: "Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn. Sacrifice it at the beginning of the next end step."
+  hyde: "Sorcery. Gain control of target creature until end of turn. Untap it. It gains haste until end of turn. You may sacrifice it."
+  multi: ["Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn.", "Sacrifice a creature: Add {R}.", "Gain control of target creature until end of turn. Untap it. It gains haste. At the beginning of the next end step, sacrifice it."]
+- id: tag-theft-creature-para
+  oracle: "Gain control of target creature."
+  hyde: "Enchantment — Aura. Enchant creature. You control enchanted creature."
+  multi: ["Gain control of target creature.", "You control enchanted creature.", "Exchange control of target creature you control and target creature an opponent controls."]
+- id: tag-theft-creature-need
+  oracle: "You control enchanted creature."
+  hyde: "Sorcery. Gain control of target creature."
+  multi: ["Gain control of target creature.", "Enchant creature. You control enchanted creature.", "Gain control of target creature for as long as you control this creature."]
+- id: tag-force-attacker-para
+  oracle: "Goad target creature."
+  hyde: "Sorcery. Goad each creature target player controls."
+  multi: ["Goad target creature.", "Target creature attacks each combat if able and attacks a player other than you if able.", "Creatures your opponents control attack each combat if able."]
+- id: tag-force-attacker-need
+  oracle: "Goad each creature your opponents control."
+  hyde: "Enchantment. At the beginning of combat on each opponent's turn, goad target creature that player controls."
+  multi: ["Goad target creature.", "Goad all creatures your opponents control.", "Creatures your opponents control attack each combat if able and can't attack you."]
+- id: tag-tax-attack-para
+  oracle: "Creatures can't attack you unless their controller pays {2} for each creature they control that's attacking you."
+  hyde: "Enchantment. Creatures can't attack you unless their controller pays {2} for each of those creatures."
+  multi: ["Creatures can't attack you unless their controller pays {2} for each creature they control that's attacking you.", "Creatures can't attack you or planeswalkers you control unless their controller pays {1} for each of those creatures.", "Whenever a creature attacks you, its controller loses 1 life unless they pay {1}."]
+- id: tag-tax-attack-need
+  oracle: "Creatures can't attack you unless their controller pays {2} for each creature they control that's attacking you."
+  hyde: "Enchantment. Creatures can't attack you unless their controller pays {X} for each creature, where X is the number of cards in your hand."
+  multi: ["Creatures can't attack you unless their controller pays {2} for each creature they control that's attacking you.", "Creatures can't attack you unless their controller pays {1} for each of those creatures.", "Whenever a creature attacks you, its controller sacrifices a permanent unless they pay {2}."]
+- id: tag-rhystic-para
+  oracle: "Whenever an opponent casts a spell, you may draw a card unless that player pays {1}."
+  hyde: "Enchantment. Whenever an opponent casts a spell, you may draw a card unless that player pays {1}."
+  multi: ["Whenever an opponent casts a spell, you may draw a card unless that player pays {1}.", "Each opponent loses 3 life unless they pay {2}.", "Whenever a creature attacks you, create a Treasure token unless its controller pays {1}."]
+- id: tag-rhystic-need
+  oracle: "Whenever an opponent casts a spell, you draw a card unless that player pays {1}."
+  hyde: "Enchantment. Whenever an opponent casts a spell, that player loses 2 life unless they pay {2}."
+  multi: ["Whenever an opponent casts a spell, you may draw a card unless that player pays {1}.", "Counter target spell unless its controller pays {3}.", "Each opponent sacrifices a creature unless they pay {3}."]
+- id: tag-extra-turn-para
+  oracle: "Take an extra turn after this one."
+  hyde: "Sorcery. Take an extra turn after this one."
+  multi: ["Take an extra turn after this one.", "Target player takes an extra turn after this one.", "Take an extra turn after this one. Exile this spell."]
+- id: tag-extra-turn-need
+  oracle: "Take an extra turn after this one."
+  hyde: "Sorcery. Take an extra turn after this one. Return this card to its owner's hand."
+  multi: ["Take an extra turn after this one.", "Take two extra turns after this one.", "Whenever you cast an instant or sorcery spell, take an extra turn after this one."]
+- id: tag-extra-combat-phase-para
+  oracle: "After this main phase, there is an additional combat phase followed by an additional main phase."
+  hyde: "Sorcery. Untap all creatures that attacked this turn. After this main phase, there is an additional combat phase followed by an additional main phase."
+  multi: ["After this main phase, there is an additional combat phase followed by an additional main phase.", "Untap all creatures you control. After this phase, there is an additional combat phase.", "Whenever this creature attacks for the first time each turn, untap all attacking creatures. After this phase, there is an additional combat phase."]
+- id: tag-extra-combat-phase-need
+  oracle: "Untap all creatures you control. After this phase, there is an additional combat phase."
+  hyde: "Creature — Human Warrior. Whenever this creature attacks for the first time each turn, untap all creatures you control. After this phase, there is an additional combat phase."
+  multi: ["After this main phase, there is an additional combat phase followed by an additional main phase.", "Untap all creatures that attacked this turn. After this main phase, there is an additional combat phase.", "Whenever one or more creatures you control deal combat damage to a player, there is an additional combat phase after this one."]
+- id: tag-alternate-win-condition-para
+  oracle: "You win the game."
+  hyde: "Enchantment. At the beginning of your upkeep, if you have 50 or more life, you win the game."
+  multi: ["At the beginning of your upkeep, if you control 20 or more creatures, you win the game.", "If you have 40 or more life, you win the game.", "Target player loses the game."]
+- id: tag-alternate-win-condition-need
+  oracle: "At the beginning of your upkeep, if you control twenty or more creatures, you win the game."
+  hyde: "Enchantment. At the beginning of your upkeep, if there are 200 or more cards in your graveyard, you win the game."
+  multi: ["At the beginning of your upkeep, if you have 50 or more life, you win the game.", "If you would draw a card while your library has no cards in it, you win the game instead.", "When this enters, if you control ten or more artifacts, you win the game."]
+- id: tag-polymorph-para
+  oracle: "Destroy target creature. Its controller reveals cards from the top of their library until they reveal a creature card, then puts it onto the battlefield."
+  hyde: "Instant. Exile target creature. Its controller reveals cards from the top of their library until a creature card is revealed and puts it onto the battlefield."
+  multi: ["Destroy target creature. Its controller reveals cards from the top of their library until they reveal a creature card and puts it onto the battlefield.", "Exile target permanent. Its controller reveals cards from the top of their library until they reveal a card that shares a type with it, then puts that card onto the battlefield.", "Target creature's controller sacrifices it, then creates an X/X token where X is its mana value."]
+- id: tag-polymorph-need
+  oracle: "Exile target creature. Its controller reveals cards from the top of their library until they reveal a creature card, puts it onto the battlefield, then shuffles."
+  hyde: "Sorcery. Shuffle target nonland permanent into its owner's library, then that player reveals cards from the top until a permanent card is revealed and puts it onto the battlefield."
+  multi: ["Destroy target creature. Its controller reveals cards from the top of their library until they reveal a creature card and puts it onto the battlefield.", "Exile target nonland permanent. Its controller reveals the top card of their library; if it's a permanent card, they put it onto the battlefield.", "Target creature becomes a 1/1 Frog with no abilities."]
+- id: hw-soft-counter-para
+  oracle: "Counter target spell unless its controller pays {3}."
+  hyde: "Instant. Counter target spell unless its controller pays {2}."
+  multi: ["Counter target spell unless its controller pays {3}.", "Counter target spell unless its controller pays {X}.", "Counter target noncreature spell unless its controller pays {1}."]
+- id: hw-soft-counter-need
+  oracle: "Counter target spell unless its controller pays {2}."
+  hyde: "Instant. Counter target spell unless its controller pays {1}. Scry 1."
+  multi: ["Counter target spell unless its controller pays {1}.", "Counter target spell unless its controller pays {3}.", "Counter target spell with mana value 2 or less."]
+- id: hw-another-dies-draw-para
+  oracle: "Whenever another creature you control dies, draw a card."
+  hyde: "Enchantment. Whenever a nontoken creature you control dies, draw a card."
+  multi: ["Whenever another creature you control dies, draw a card.", "Whenever a creature you control dies, you may pay {1}. If you do, draw a card.", "Sacrifice a creature: Draw a card."]
+- id: hw-another-dies-draw-need
+  oracle: "Whenever a creature you control dies, draw a card."
+  hyde: "Creature — Human Cleric. Whenever another creature you control dies, draw a card. This ability triggers only once each turn."
+  multi: ["Whenever another creature you control dies, draw a card.", "Whenever a creature you control dies, scry 1 and draw a card.", "Sacrifice another creature: Draw a card."]
+- id: hw-flicker-own-para
+  oracle: "Exile target creature you control, then return that card to the battlefield under your control."
+  hyde: "Instant. Exile target creature you control, then return it to the battlefield under its owner's control."
+  multi: ["Exile target creature you control, then return that card to the battlefield under your control.", "Exile another target creature you control, then return it to the battlefield.", "Exile up to two target creatures you control, then return those cards to the battlefield."]
+- id: hw-flicker-own-need
+  oracle: "Exile target creature you control, then return it to the battlefield under its owner's control."
+  hyde: "Instant. Exile target creature you control, then return that card to the battlefield under its owner's control. Draw a card."
+  multi: ["Exile target creature you control, then return that card to the battlefield under your control.", "Target creature you control gains hexproof until end of turn. Exile it, then return it to the battlefield.", "Flash. When this creature enters, exile another target creature you control, then return it to the battlefield."]
+- id: hw-flicker-end-step-para
+  oracle: "Exile target creature. Return it to the battlefield under its owner's control at the beginning of the next end step."
+  hyde: "Instant. Exile target creature. At the beginning of the next end step, return that card to the battlefield under its owner's control."
+  multi: ["Exile target creature. Return it to the battlefield under its owner's control at the beginning of the next end step.", "Exile target nonland permanent. Return that card to the battlefield at the beginning of the next end step.", "Exile any number of target creatures you control. Return them at the beginning of the next end step."]
+- id: hw-flicker-end-step-need
+  oracle: "Exile target creature. At the beginning of the next end step, return that card to the battlefield under its owner's control."
+  hyde: "Instant. Exile any number of target creatures you control. At the beginning of the next end step, return those cards to the battlefield under their owner's control."
+  multi: ["Exile target creature. Return it to the battlefield under its owner's control at the beginning of the next end step.", "Exile all creatures you control. At the beginning of the next end step, return those cards to the battlefield.", "Exile target creature an opponent controls. Return it to the battlefield at the beginning of the next end step."]
+- id: hw-dies-return-end-step-para
+  oracle: "When this creature dies, return it to the battlefield under its owner's control at the beginning of the next end step."
+  hyde: "Creature — Spirit. When this creature dies, return it to the battlefield tapped under its owner's control at the beginning of the next end step."
+  multi: ["When this creature dies, return it to the battlefield at the beginning of the next end step.", "Whenever a creature you control dies, return it to the battlefield under its owner's control at the beginning of the next end step.", "When this creature dies, return it to its owner's hand."]
+- id: hw-dies-return-end-step-need
+  oracle: "When this creature dies, return it to the battlefield at the beginning of the next end step."
+  hyde: "Creature — Zombie. When this creature dies, return it to the battlefield under its owner's control at the beginning of the next end step."
+  multi: ["When this creature dies, return it to the battlefield under its owner's control at the beginning of the next end step.", "Persist (When this creature dies, if it had no -1/-1 counters on it, return it to the battlefield with a -1/-1 counter on it.)", "Undying (When this creature dies, if it had no +1/+1 counters on it, return it to the battlefield with a +1/+1 counter on it.)"]
+- id: hw-one-blocker-max-para
+  oracle: "This creature can't be blocked by more than one creature."
+  hyde: "Creature — Beast. Trample. This creature can't be blocked by more than one creature."
+  multi: ["This creature can't be blocked by more than one creature.", "Creatures you control can't be blocked by more than one creature.", "Equipped creature can't be blocked by more than one creature."]
+- id: hw-one-blocker-max-need
+  oracle: "Creatures you control can't be blocked by more than one creature."
+  hyde: "Enchantment. Each creature you control can't be blocked by more than one creature."
+  multi: ["This creature can't be blocked by more than one creature.", "Creatures you control can't be blocked by more than one creature.", "Each creature can't be blocked by more than one creature."]
+- id: hw-three-or-more-blockers-para
+  oracle: "This creature can't be blocked except by three or more creatures."
+  hyde: "Creature — Giant. This creature can't be blocked except by three or more creatures."
+  multi: ["This creature can't be blocked except by three or more creatures.", "Menace (This creature can't be blocked except by two or more creatures.)", "This creature can't be blocked except by four or more creatures."]
+- id: hw-three-or-more-blockers-need
+  oracle: "This creature can't be blocked except by three or more creatures."
+  hyde: "Creature — Dinosaur 8/8. Trample. This creature can't be blocked except by three or more creatures."
+  multi: ["This creature can't be blocked except by three or more creatures.", "Trample. This creature can't be blocked by creatures with power 2 or less.", "Menace. This creature can't be blocked except by two or more creatures."]
+- id: hw-each-opponent-loses-para
+  oracle: "Each opponent loses 2 life."
+  hyde: "Sorcery. Each opponent loses 3 life and you gain life equal to the life lost this way."
+  multi: ["Each opponent loses 1 life.", "Each opponent loses X life and you gain life equal to the life lost this way.", "Whenever a creature you control dies, each opponent loses 1 life."]
+- id: hw-each-opponent-loses-need
+  oracle: "Each opponent loses 1 life and you gain life equal to the life lost this way."
+  hyde: "Creature — Vampire. At the beginning of your upkeep, each opponent loses 1 life. You gain life equal to the life lost this way."
+  multi: ["Each opponent loses 2 life.", "Each opponent loses X life and you gain life equal to the life lost this way.", "At the beginning of your end step, each opponent loses 1 life."]
+- id: hw-target-player-loses-para
+  oracle: "Target player loses 2 life."
+  hyde: "Instant. Target player loses 3 life."
+  multi: ["Target player loses 2 life.", "Target opponent loses 3 life and you gain 3 life.", "Target player loses X life."]
+- id: hw-target-player-loses-need
+  oracle: "Target player loses 3 life."
+  hyde: "Instant. Target opponent loses X life."
+  multi: ["Target player loses 3 life.", "This deals 3 damage to target player or planeswalker.", "Target opponent loses X life and you gain X life."]
+- id: hw-wrath-except-para
+  oracle: "Destroy all creatures except for creatures of the creature type of your choice."
+  hyde: "Sorcery. Choose a creature type. Destroy all creatures that aren't of the chosen type."
+  multi: ["Choose a creature type. Destroy all creatures that aren't of the chosen type.", "Destroy all creatures except for one creature of your choice that each player controls.", "Destroy all nonartifact creatures."]
+- id: hw-wrath-except-need
+  oracle: "Choose a creature type. Destroy all creatures that aren't of the chosen type."
+  hyde: "Sorcery. Choose a creature type. Destroy all creatures that aren't of the chosen type."
+  multi: ["Choose a creature type. Destroy all creatures that aren't of the chosen type.", "Destroy all non-Zombie creatures.", "Destroy all creatures except for creatures you control of the chosen type."]
+- id: hw-cant-be-countered-para
+  oracle: "This spell can't be countered."
+  hyde: "Creature — Beast. This spell can't be countered. Trample"
+  multi: ["This spell can't be countered.", "Spells you control can't be countered.", "Creature spells you control can't be countered."]
+- id: hw-cant-be-countered-need
+  oracle: "This spell can't be countered."
+  hyde: "Creature — Dinosaur. This spell can't be countered. Hexproof"
+  multi: ["This spell can't be countered.", "Spells you control can't be countered.", "Creature spells you cast can't be countered."]
+- id: hw-your-spells-uncounterable-para
+  oracle: "Spells you control can't be countered."
+  hyde: "Enchantment. Spells you control can't be countered."
+  multi: ["Spells you control can't be countered.", "Creature spells you control can't be countered.", "Spells you cast this turn can't be countered."]
+- id: hw-your-spells-uncounterable-need
+  oracle: "Creature spells you control can't be countered."
+  hyde: "Creature — Elf. Creature spells you control can't be countered."
+  multi: ["Creature spells you control can't be countered.", "Spells you control can't be countered.", "Green creature spells you cast can't be countered."]
+- id: hw-double-pp-counters-para
+  oracle: "Double the number of +1/+1 counters on target creature."
+  hyde: "Instant. Put a +1/+1 counter on target creature, then double the number of +1/+1 counters on it."
+  multi: ["Double the number of +1/+1 counters on target creature.", "Double the number of +1/+1 counters on each creature you control.", "Target creature gets +X/+X until end of turn, where X is its power."]
+- id: hw-double-pp-counters-need
+  oracle: "Double the number of +1/+1 counters on target creature you control."
+  hyde: "Sorcery. Double the number of +1/+1 counters on target creature."
+  multi: ["Double the number of +1/+1 counters on target creature.", "Put X +1/+1 counters on target creature.", "Double target creature's power and toughness until end of turn."]
+- id: hw-cant-gain-life-para
+  oracle: "Your opponents can't gain life."
+  hyde: "Enchantment. Players can't gain life."
+  multi: ["Your opponents can't gain life.", "Players can't gain life.", "Target player can't gain life this turn."]
+- id: hw-cant-gain-life-need
+  oracle: "Players can't gain life."
+  hyde: "Creature — Goblin. Your opponents can't gain life."
+  multi: ["Your opponents can't gain life.", "Players can't gain life this turn. Damage can't be prevented this turn.", "If an opponent would gain life, that player loses that much life instead."]
+- id: hw-cant-block-this-turn-para
+  oracle: "Target creature can't block this turn."
+  hyde: "Sorcery. Target creature can't block this turn. Draw a card."
+  multi: ["Target creature can't block this turn.", "Up to two target creatures can't block this turn.", "When this creature enters, target creature can't block this turn."]
+- id: hw-cant-block-this-turn-need
+  oracle: "Target creature can't block this turn."
+  hyde: "Instant. Target creature can't block this turn. This deals 2 damage to that creature's controller."
+  multi: ["Target creature can't block this turn.", "Creatures your opponents control can't block this turn.", "Creatures with power 2 or less can't block this turn."]
+- id: hw-second-spell-para
+  oracle: "Whenever you cast your second spell each turn, draw a card."
+  hyde: "Creature — Human Wizard. Whenever you cast your second spell each turn, put a +1/+1 counter on this creature."
+  multi: ["Whenever you cast your second spell each turn, draw a card.", "Whenever you cast your second spell each turn, create a 1/1 creature token.", "Whenever you cast your second spell each turn, this deals 2 damage to each opponent."]
+- id: hw-second-spell-need
+  oracle: "Whenever you cast your second spell each turn, draw a card."
+  hyde: "Creature — Human Monk. Whenever you cast your second spell each turn, this creature gets +2/+2 until end of turn."
+  multi: ["Whenever you cast your second spell each turn, draw a card.", "Whenever you cast your second spell each turn, put a +1/+1 counter on this creature.", "Whenever you cast your second spell each turn, create a Treasure token."]
+- id: hw-haste-sacrifice-end-para
+  oracle: "Haste. At the beginning of the end step, sacrifice this creature."
+  hyde: "Creature — Elemental 5/1. Trample, haste. At the beginning of the end step, sacrifice this creature."
+  multi: ["Haste. At the beginning of the end step, sacrifice this creature.", "Create a token that's a copy of target creature. It gains haste. Sacrifice it at the beginning of the next end step.", "Put a creature card from your hand onto the battlefield. It gains haste. Sacrifice it at the beginning of the next end step."]
+- id: hw-haste-sacrifice-end-need
+  oracle: "Put a creature card from your hand onto the battlefield. That creature gains haste. Sacrifice it at the beginning of the next end step."
+  hyde: "Enchantment. {2}{R}: You may put a creature card from your hand onto the battlefield. It gains haste. Sacrifice it at the beginning of the next end step."
+  multi: ["Put a creature card from your hand onto the battlefield. It gains haste. Sacrifice it at the beginning of the next end step.", "Return target creature card from your graveyard to the battlefield. It gains haste. Exile it at the beginning of the next end step.", "Haste. At the beginning of the end step, sacrifice this creature."]
+- id: hw-untap-all-lands-para
+  oracle: "Untap all lands you control."
+  hyde: "Instant. Untap all lands you control."
+  multi: ["Untap all lands you control.", "Untap up to five lands.", "Untap all permanents you control."]
+- id: hw-untap-all-lands-need
+  oracle: "Untap all lands you control."
+  hyde: "Sorcery. Untap all lands you control. Draw a card."
+  multi: ["Untap all lands you control.", "Whenever you cast a spell with mana value 5 or greater, untap all lands you control.", "Add {C} for each land you control."]
+- id: hw-bite-para
+  oracle: "Target creature you control deals damage equal to its power to target creature you don't control."
+  hyde: "Instant. Target creature you control deals damage equal to its power to target creature you don't control."
+  multi: ["Target creature you control deals damage equal to its power to target creature you don't control.", "Target creature you control deals damage equal to its power to target creature or planeswalker you don't control.", "Target creature you control gets +1/+1 until end of turn. Then it deals damage equal to its power to up to one target creature you don't control."]
+- id: hw-bite-need
+  oracle: "Target creature you control deals damage equal to its power to target creature you don't control."
+  hyde: "Sorcery. Target creature you control deals damage equal to its power to target creature an opponent controls."
+  multi: ["Target creature you control deals damage equal to its power to target creature you don't control.", "Target creature you control deals damage equal to its power to target creature or planeswalker an opponent controls.", "Choose target creature you control and target creature you don't control. Put a +1/+1 counter on the first, then it deals damage equal to its power to the second."]
+- id: hw-reanimate-own-para
+  oracle: "Return target creature card from your graveyard to the battlefield."
+  hyde: "Sorcery. Return target creature card from your graveyard to the battlefield."
+  multi: ["Return target creature card from your graveyard to the battlefield.", "Put target creature card from your graveyard onto the battlefield.", "Return target creature card from your graveyard to the battlefield. It gains haste."]
+- id: hw-reanimate-own-need
+  oracle: "Return target creature card from your graveyard to the battlefield."
+  hyde: "Sorcery. Return target creature card from your graveyard to the battlefield. You lose life equal to its mana value."
+  multi: ["Return target creature card from your graveyard to the battlefield.", "Enchant creature card in a graveyard. When this Aura enters, return enchanted creature card to the battlefield under your control.", "Put target creature card from a graveyard onto the battlefield under your control."]
+- id: hw-reanimate-any-gy-para
+  oracle: "Put target creature card from a graveyard onto the battlefield under your control."
+  hyde: "Sorcery. Put target creature card from a graveyard onto the battlefield under your control."
+  multi: ["Put target creature card from a graveyard onto the battlefield under your control.", "Return target creature card from any graveyard to the battlefield under your control.", "Enchant creature card in a graveyard. Return enchanted creature card to the battlefield under your control."]
+- id: hw-reanimate-any-gy-need
+  oracle: "Put target creature card from a graveyard onto the battlefield under your control."
+  hyde: "Sorcery. Put target creature card with the greatest mana value from a graveyard onto the battlefield under your control."
+  multi: ["Put target creature card from a graveyard onto the battlefield under your control.", "Return target creature card from a graveyard to the battlefield under your control.", "Put all creature cards from all graveyards onto the battlefield under your control."]
+- id: hw-opp-land-enters-para
+  oracle: "Whenever a land enters the battlefield under an opponent's control, this deals 1 damage to that player."
+  hyde: "Enchantment. Whenever a land enters under an opponent's control, that player loses 1 life."
+  multi: ["Whenever a land enters the battlefield under an opponent's control, this deals 1 damage to that player.", "Whenever an opponent plays a land, that player loses 2 life.", "Lands your opponents control enter tapped."]
+- id: hw-opp-land-enters-need
+  oracle: "Whenever a land enters the battlefield under an opponent's control, that player loses 2 life."
+  hyde: "Creature — Goblin. Whenever a land enters under an opponent's control, this creature deals 1 damage to that player."
+  multi: ["Whenever a land enters the battlefield under an opponent's control, this deals 1 damage to that player.", "Whenever an opponent plays a land, you may draw a card.", "Whenever a land an opponent controls enters, create a Treasure token."]
+- id: hw-opponent-draws-trigger-para
+  oracle: "Whenever an opponent draws a card, this deals 1 damage to that player."
+  hyde: "Enchantment. Whenever an opponent draws a card, that player loses 1 life."
+  multi: ["Whenever an opponent draws a card, this deals 1 damage to that player.", "Whenever an opponent draws a card, that player loses 1 life.", "Whenever a player draws a card, this deals 1 damage to that player."]
+- id: hw-opponent-draws-trigger-need
+  oracle: "Whenever a player draws a card, that player loses 1 life."
+  hyde: "Artifact. Whenever an opponent draws a card, this deals 2 damage to that player."
+  multi: ["Whenever an opponent draws a card, this deals 1 damage to that player.", "Whenever an opponent draws a card, that player loses 1 life.", "Each opponent can't draw more than one card each turn."]
+- id: hw-play-lands-from-gy-para
+  oracle: "You may play lands from your graveyard."
+  hyde: "Creature — Elemental. You may play lands from your graveyard."
+  multi: ["You may play lands from your graveyard.", "Return target land card from your graveyard to the battlefield.", "Return target land card from your graveyard to your hand."]
+- id: hw-play-lands-from-gy-need
+  oracle: "You may play lands from your graveyard."
+  hyde: "Enchantment. You may play lands from your graveyard. You may play an additional land on each of your turns."
+  multi: ["You may play lands from your graveyard.", "Whenever a land is put into your graveyard from the battlefield, return it to the battlefield at the beginning of the next end step.", "Return target land card from your graveyard to the battlefield."]
+- id: hw-play-from-top-para
+  oracle: "You may play lands and cast spells from the top of your library."
+  hyde: "Enchantment. Play with the top card of your library revealed. You may play lands and cast spells from the top of your library."
+  multi: ["You may play lands and cast spells from the top of your library.", "You may look at the top card of your library any time. You may cast creature spells from the top of your library.", "You may play lands from the top of your library."]
+- id: hw-play-from-top-need
+  oracle: "You may look at the top card of your library any time. You may play lands and cast spells from the top of your library."
+  hyde: "Creature — Elf. You may look at the top card of your library any time. You may cast spells from the top of your library."
+  multi: ["You may play lands and cast spells from the top of your library.", "You may cast artifact spells from the top of your library.", "You may look at the top card of your library any time. You may play lands from the top of your library."]
+- id: hw-basic-to-bf-tapped-para
+  oracle: "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+  hyde: "Sorcery. Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+  multi: ["Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", "Search your library for up to two basic land cards, put one onto the battlefield tapped and the other into your hand.", "When this creature enters, search your library for a basic land card, put it onto the battlefield tapped, then shuffle."]
+- id: hw-basic-to-bf-tapped-need
+  oracle: "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+  hyde: "Sorcery. Search your library for up to two basic land cards, put one onto the battlefield tapped and the other into your hand, then shuffle."
+  multi: ["Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", "{T}: Add one mana of any color.", "Search your library for up to two basic land cards and put them onto the battlefield tapped."]
+- id: hw-3-damage-any-target-para
+  oracle: "This deals 3 damage to any target."
+  hyde: "Instant. This spell deals 3 damage to any target."
+  multi: ["This deals 3 damage to any target.", "Lightning Bolt deals 3 damage to any target.", "This deals 3 damage to target creature or player."]
+- id: hw-3-damage-any-target-need
+  oracle: "This deals 3 damage to any target."
+  hyde: "Instant. This spell deals 3 damage to any target."
+  multi: ["This deals 3 damage to any target.", "This deals 2 damage to any target.", "This deals 4 damage to target creature or planeswalker."]
+- id: hw-each-player-sac-creature-para
+  oracle: "Each player sacrifices a creature."
+  hyde: "Sorcery. Each player sacrifices a creature."
+  multi: ["Each player sacrifices a creature.", "Each opponent sacrifices a creature.", "Each player sacrifices two creatures."]
+- id: hw-each-player-sac-creature-need
+  oracle: "Each player sacrifices a creature."
+  hyde: "Creature — Zombie. When this creature enters, each player sacrifices a creature."
+  multi: ["Each player sacrifices a creature.", "Each opponent sacrifices a creature.", "Target player sacrifices a creature."]
+- id: hw-reveal-hand-choose-nonland-para
+  oracle: "Target player reveals their hand. You choose a nonland card from it. That player discards that card."
+  hyde: "Sorcery. Target opponent reveals their hand. You choose a nonland card from it. That player discards that card."
+  multi: ["Target player reveals their hand. You choose a nonland card from it. That player discards that card.", "Target opponent reveals their hand. You choose a card from it. That player discards that card.", "Target player reveals their hand. You choose a noncreature, nonland card from it. That player discards that card."]
+- id: hw-reveal-hand-choose-nonland-need
+  oracle: "Target opponent reveals their hand. You choose a nonland card from it. That player discards that card."
+  hyde: "Sorcery. Target player reveals their hand. You choose a nonland card from it. That player discards that card. You lose 2 life."
+  multi: ["Target player reveals their hand. You choose a nonland card from it. That player discards that card.", "Look at target opponent's hand. You choose a nonland card from it. Exile that card.", "Target player reveals their hand. You choose an instant or sorcery card from it. That player discards that card."]
+- id: hw-fog-all-combat-para
+  oracle: "Prevent all combat damage that would be dealt this turn."
+  hyde: "Instant. Prevent all combat damage that would be dealt this turn."
+  multi: ["Prevent all combat damage that would be dealt this turn.", "Prevent all combat damage that would be dealt to you this turn.", "Tap all creatures target player controls."]
+- id: hw-fog-all-combat-need
+  oracle: "Prevent all combat damage that would be dealt this turn."
+  hyde: "Instant. Prevent all combat damage that would be dealt this turn. You gain 2 life."
+  multi: ["Prevent all combat damage that would be dealt this turn.", "Prevent all damage that would be dealt to you this turn.", "Tap all creatures your opponents control. They don't untap during their controller's next untap step."]
+- id: hw-opp-enter-tapped-para
+  oracle: "Creatures and lands your opponents control enter the battlefield tapped."
+  hyde: "Enchantment. Permanents your opponents control enter tapped."
+  multi: ["Creatures your opponents control enter the battlefield tapped.", "Lands your opponents control enter tapped.", "Artifacts, creatures, and lands your opponents control enter tapped."]
+- id: hw-opp-enter-tapped-need
+  oracle: "Creatures and nonbasic lands your opponents control enter the battlefield tapped."
+  hyde: "Creature — Human Soldier. Creatures and lands your opponents control enter tapped."
+  multi: ["Creatures your opponents control enter the battlefield tapped.", "Lands your opponents control enter the battlefield tapped.", "Creatures entering the battlefield don't cause abilities to trigger and enter tapped."]
+- id: hw-threaten-para
+  oracle: "Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn."
+  hyde: "Sorcery. Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn."
+  multi: ["Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn.", "Gain control of target creature an opponent controls until end of turn. Untap it. It gains haste.", "Gain control of target artifact or creature until end of turn. Untap it. It gains haste until end of turn."]
+- id: hw-threaten-need
+  oracle: "Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn."
+  hyde: "Sorcery. Gain control of target creature until end of turn. Untap that creature. It gets +2/+0 and gains haste until end of turn."
+  multi: ["Gain control of target creature until end of turn. Untap that creature. It gains haste until end of turn.", "Gain control of target creature with the greatest power until end of turn. Untap it. It gains haste.", "Exchange control of target creature you control and target creature an opponent controls until end of turn."]
+- id: hw-play-until-next-turn-para
+  oracle: "Exile the top two cards of your library. Until the end of your next turn, you may play those cards."
+  hyde: "Sorcery. Exile the top two cards of your library. Until the end of your next turn, you may play those cards."
+  multi: ["Exile the top two cards of your library. Until the end of your next turn, you may play those cards.", "Exile the top card of your library. You may play that card until the end of your next turn.", "At the beginning of your end step, exile the top card of your library. Until the end of your next turn, you may play that card."]
+- id: hw-play-until-next-turn-need
+  oracle: "Exile the top card of your library. Until the end of your next turn, you may play that card."
+  hyde: "Instant. Exile the top three cards of your library. Until the end of your next turn, you may play those cards."
+  multi: ["Exile the top two cards of your library. Until the end of your next turn, you may play those cards.", "Whenever this creature deals combat damage to a player, exile the top card of your library. Until the end of your next turn, you may play it.", "When this creature enters, exile the top card of your library. Until the end of your next turn, you may play that card."]
+- id: hw-lifegain-pp-counter-para
+  oracle: "Whenever you gain life, put a +1/+1 counter on this creature."
+  hyde: "Creature — Vampire Cleric. Lifelink. Whenever you gain life, put a +1/+1 counter on this creature."
+  multi: ["Whenever you gain life, put a +1/+1 counter on this creature.", "Whenever you gain life, put a +1/+1 counter on target creature you control.", "Whenever you gain life, put a +1/+1 counter on each creature you control."]
+- id: hw-lifegain-pp-counter-need
+  oracle: "Whenever you gain life, put a +1/+1 counter on target creature you control."
+  hyde: "Enchantment. Whenever you gain life, put a +1/+1 counter on target creature or create a 1/1 white Cleric creature token."
+  multi: ["Whenever you gain life, put a +1/+1 counter on this creature.", "Whenever you gain life, put a +1/+1 counter on each creature you control.", "Whenever you gain life, create a 1/1 white Soldier creature token."]
+- id: hw-die-exile-instead-para
+  oracle: "If a card or token would be put into a graveyard from anywhere, exile it instead."
+  hyde: "Enchantment. If a card would be put into a graveyard from anywhere, exile it instead."
+  multi: ["If a card would be put into a graveyard from anywhere, exile it instead.", "If a creature would die, exile it instead.", "If a card would be put into an opponent's graveyard from anywhere, exile it instead."]
+- id: hw-die-exile-instead-need
+  oracle: "If a card would be put into a graveyard from anywhere, exile it instead."
+  hyde: "Artifact. If a card or token would be put into a graveyard from anywhere, exile it instead. Players can't cast spells from graveyards."
+  multi: ["If a card would be put into a graveyard from anywhere, exile it instead.", "Players can't cast spells from graveyards or libraries.", "Cards in graveyards lose all abilities. Players can't cast spells from graveyards."]
+- id: hw-regrow-instant-sorcery-para
+  oracle: "Return target instant or sorcery card from your graveyard to your hand."
+  hyde: "Sorcery. Return target instant or sorcery card from your graveyard to your hand."
+  multi: ["Return target instant or sorcery card from your graveyard to your hand.", "When this creature enters, return target instant or sorcery card from your graveyard to your hand.", "Return up to two target instant and/or sorcery cards from your graveyard to your hand."]
+- id: hw-regrow-instant-sorcery-need
+  oracle: "Return target instant or sorcery card from your graveyard to your hand."
+  hyde: "Creature — Human Wizard. When this creature enters, you may cast target instant or sorcery card from your graveyard this turn."
+  multi: ["Return target instant or sorcery card from your graveyard to your hand.", "You may cast target instant or sorcery card from your graveyard this turn. If that spell would be put into your graveyard, exile it instead.", "Target instant or sorcery card in your graveyard gains flashback until end of turn."]
+- id: hw-tax-spells-cost-more-para
+  oracle: "Spells your opponents cast cost {1} more to cast."
+  hyde: "Creature — Human Wizard. Noncreature spells cost {1} more to cast."
+  multi: ["Spells your opponents cast cost {1} more to cast.", "Noncreature spells cost {1} more to cast.", "Instant and sorcery spells cost {2} more to cast."]
+- id: hw-tax-spells-cost-more-need
+  oracle: "Noncreature spells cost {1} more to cast."
+  hyde: "Creature — Human Cleric 2/1. Noncreature spells your opponents cast cost {1} more to cast."
+  multi: ["Noncreature spells cost {1} more to cast.", "Each player can't cast more than one spell each turn.", "Spells your opponents cast cost {1} more to cast for each other spell that player has cast this turn."]
+- id: hw-opp-creature-dies-para
+  oracle: "Whenever a creature an opponent controls dies, draw a card."
+  hyde: "Creature — Vampire. Whenever a creature an opponent controls dies, put a +1/+1 counter on this creature."
+  multi: ["Whenever a creature an opponent controls dies, draw a card.", "Whenever a creature an opponent controls dies, put a +1/+1 counter on this creature.", "Whenever a creature you don't control dies, you gain 1 life and create a Treasure token."]
+- id: hw-opp-creature-dies-need
+  oracle: "Whenever a creature an opponent controls dies, you draw a card and lose 1 life."
+  hyde: "Enchantment. Whenever a creature an opponent controls dies, create a Treasure token."
+  multi: ["Whenever a creature an opponent controls dies, draw a card.", "Whenever a creature you don't control dies, put a +1/+1 counter on target creature you control.", "Whenever a creature dealt damage by this creature this turn dies, you gain 2 life."]
+- id: hw-opp-upkeep-para
+  oracle: "At the beginning of each opponent's upkeep, that player loses 1 life."
+  hyde: "Enchantment. At the beginning of each opponent's upkeep, you draw a card."
+  multi: ["At the beginning of each opponent's upkeep, that player loses 1 life.", "At the beginning of each other player's upkeep, create a 1/1 creature token.", "At the beginning of each opponent's end step, draw a card."]
+- id: hw-opp-upkeep-need
+  oracle: "At the beginning of each opponent's upkeep, you may draw a card."
+  hyde: "Creature — Spirit. At the beginning of each opponent's upkeep, create a 1/1 white Spirit creature token with flying."
+  multi: ["At the beginning of each opponent's upkeep, that player loses 1 life and you gain 1 life.", "At the beginning of each other player's upkeep, you may untap target permanent you control.", "Whenever an opponent casts a spell, draw a card."]
+- id: hw-each-opponent-mills-para
+  oracle: "Each opponent mills three cards."
+  hyde: "Sorcery. Each opponent mills five cards."
+  multi: ["Each opponent mills three cards.", "At the beginning of your upkeep, each opponent mills two cards.", "Each player mills X cards."]
+- id: hw-each-opponent-mills-need
+  oracle: "Each opponent mills X cards."
+  hyde: "Enchantment. At the beginning of your upkeep, each opponent mills three cards."
+  multi: ["Each opponent mills three cards.", "Whenever you cast a spell, each opponent mills two cards.", "Each opponent mills cards equal to the number of lands you control."]
+- id: hw-land-from-hand-para
+  oracle: "You may put a land card from your hand onto the battlefield."
+  hyde: "Sorcery. You may put up to two land cards from your hand onto the battlefield."
+  multi: ["You may put a land card from your hand onto the battlefield.", "{T}: You may put a land card from your hand onto the battlefield.", "Whenever this creature attacks, you may put a land card from your hand onto the battlefield tapped."]
+- id: hw-land-from-hand-need
+  oracle: "You may put a land card from your hand onto the battlefield."
+  hyde: "Creature — Elf Druid. {T}: You may put a land card from your hand onto the battlefield."
+  multi: ["You may put a land card from your hand onto the battlefield.", "You may put any number of land cards from your hand onto the battlefield.", "You may play an additional land on each of your turns."]
+- id: hw-donate-para
+  oracle: "Target player gains control of target permanent you control."
+  hyde: "Sorcery. Target player gains control of target permanent you control."
+  multi: ["Target player gains control of target permanent you control.", "Exchange control of target permanent you control and target permanent an opponent controls.", "Target opponent gains control of this creature."]
+- id: hw-donate-need
+  oracle: "Target opponent gains control of target permanent you control."
+  hyde: "Sorcery. Target player gains control of target permanent you control."
+  multi: ["Target player gains control of target permanent you control.", "Exchange control of two target permanents that share a card type.", "At the beginning of your upkeep, target opponent gains control of this permanent."]
+- id: hw-oblivion-ring-para
+  oracle: "When this enchantment enters, exile target nonland permanent an opponent controls until this enchantment leaves the battlefield."
+  hyde: "Enchantment. When this enchantment enters, exile another target nonland permanent until this enchantment leaves the battlefield."
+  multi: ["When this enchantment enters, exile target nonland permanent an opponent controls until this enchantment leaves the battlefield.", "When this enters, exile target creature an opponent controls until this leaves the battlefield.", "When this enchantment enters, exile another target nonland permanent. When this enchantment leaves the battlefield, return the exiled card to the battlefield."]
+- id: hw-oblivion-ring-need
+  oracle: "Exile target nonland permanent an opponent controls until this enchantment leaves the battlefield."
+  hyde: "Enchantment. When this enchantment enters, exile target nonland permanent an opponent controls until this enchantment leaves the battlefield."
+  multi: ["Exile target nonland permanent an opponent controls until this enchantment leaves the battlefield.", "Exile target nonland permanent.", "Destroy target artifact, creature, or enchantment."]
+- id: hw-earthquake-para
+  oracle: "This deals X damage to each creature without flying and each player."
+  hyde: "Sorcery. This spell deals X damage to each creature without flying and each player."
+  multi: ["This deals X damage to each creature without flying and each player.", "This deals 2 damage to each creature and each player.", "This deals 1 damage to each creature and each opponent."]
+- id: hw-earthquake-need
+  oracle: "This deals X damage to each creature without flying and each player."
+  hyde: "Sorcery. This spell deals X damage to each creature without flying and each opponent."
+  multi: ["This deals X damage to each creature without flying and each player.", "This deals X damage to each creature and each opponent.", "This deals 3 damage to each creature without flying and each player."]
+- id: hw-mass-bounce-para
+  oracle: "Return all nonland permanents to their owners' hands."
+  hyde: "Sorcery. Return all creatures to their owners' hands."
+  multi: ["Return all nonland permanents to their owners' hands.", "Return all creatures to their owners' hands.", "Return all permanents to their owners' hands."]
+- id: hw-mass-bounce-need
+  oracle: "Return all nonland permanents to their owners' hands."
+  hyde: "Sorcery. Return all creatures and artifacts to their owners' hands."
+  multi: ["Return all nonland permanents to their owners' hands.", "Return all creatures your opponents control to their owners' hands.", "Return all creatures to their owners' hands."]
+- id: hw-copy-instant-sorcery-para
+  oracle: "Copy target instant or sorcery spell. You may choose new targets for the copy."
+  hyde: "Instant. Copy target instant or sorcery spell. You may choose new targets for the copy."
+  multi: ["Copy target instant or sorcery spell. You may choose new targets for the copy.", "Change the target of target spell with a single target.", "Copy target instant or sorcery spell you control twice."]
+- id: hw-copy-instant-sorcery-need
+  oracle: "Whenever you cast an instant or sorcery spell, copy that spell. You may choose new targets for the copy."
+  hyde: "Instant. Copy target instant or sorcery spell you control. You may choose new targets for the copy."
+  multi: ["Copy target instant or sorcery spell. You may choose new targets for the copy.", "When you cast your next instant or sorcery spell this turn, copy that spell.", "Whenever you cast an instant or sorcery spell, you may pay {2}. If you do, copy that spell."]
+- id: need-fliers-mono-green
+  oracle: "Destroy target creature with flying."
+  hyde: "Creature — Spider 2/4. Reach"
+  multi: ["Reach", "Destroy target creature with flying.", "This deals damage equal to its power to each creature with flying."]
+- id: need-refill-red-aggro
+  oracle: "Discard a card, then draw two cards."
+  hyde: "Sorcery. Exile the top two cards of your library. Until the end of your next turn, you may play those cards."
+  multi: ["Exile the top two cards of your library. Until the end of your next turn, you may play those cards.", "Discard your hand, then draw that many cards.", "Whenever this creature deals combat damage to a player, draw a card."]
+- id: need-punish-spells
+  oracle: "Whenever an opponent casts a spell, this deals 1 damage to that player."
+  hyde: "Enchantment. Whenever an opponent casts a noncreature spell, this deals 2 damage to that player."
+  multi: ["Whenever an opponent casts a spell, this deals 1 damage to that player.", "Whenever a player casts their second spell each turn, that player loses 2 life.", "Spells your opponents cast cost {1} more to cast."]
+- id: need-protect-commander
+  oracle: "Target creature you control gains hexproof and indestructible until end of turn."
+  hyde: "Instant. Target creature you control gains protection from the color of your choice until end of turn."
+  multi: ["Target creature you control gains hexproof and indestructible until end of turn.", "Counter target spell that targets a creature you control.", "Target creature you control gains protection from the color of your choice until end of turn."]
+- id: need-aristocrats-value
+  oracle: "Whenever a creature you control dies, each opponent loses 1 life and you gain 1 life."
+  hyde: "Creature — Vampire. Whenever another creature you control dies, draw a card."
+  multi: ["Whenever a creature you control dies, each opponent loses 1 life and you gain 1 life.", "Whenever another creature you control dies, draw a card.", "Whenever a creature you control dies, create a Treasure token."]
+- id: need-reanimator-enablers
+  oracle: "Mill four cards. You may put a creature card from among them into your hand."
+  hyde: "Sorcery. Discard a card, then draw two cards. You may put a creature card from your hand into your graveyard."
+  multi: ["Draw two cards, then discard two cards.", "Mill four cards.", "Search your library for a card and put that card into your graveyard."]
+- id: need-pauper-black-removal
+  oracle: "Destroy target creature."
+  hyde: "Instant. Target creature gets -3/-3 until end of turn."
+  multi: ["Destroy target nonblack creature.", "Target creature gets -2/-2 until end of turn.", "Target player sacrifices a creature."]
+- id: need-white-wraths
+  oracle: "Destroy all creatures."
+  hyde: "Sorcery. Destroy all creatures. They can't be regenerated."
+  multi: ["Destroy all creatures.", "Exile all nonland permanents.", "Destroy all creatures with power 3 or greater."]
+- id: need-green-cheap-ramp
+  oracle: "{T}: Add {G}."
+  hyde: "Sorcery. Search your library for a basic land card, put it onto the battlefield tapped, then shuffle."
+  multi: ["{T}: Add {G}.", "Search your library for a basic land card, put it onto the battlefield tapped, then shuffle.", "You may play an additional land on each of your turns."]
+- id: need-blue-vs-reanimator
+  oracle: "Exile target player's graveyard."
+  hyde: "Instant. Exile all cards from target player's graveyard. Draw a card."
+  multi: ["Exile target player's graveyard.", "Counter target activated or triggered ability.", "Exile target card from a graveyard. Draw a card."]
+- id: need-green-artifact-enchantment-answers
+  oracle: "Destroy target artifact or enchantment."
+  hyde: "Instant. Destroy target artifact or enchantment."
+  multi: ["Destroy target artifact or enchantment.", "Destroy all artifacts and enchantments.", "When this creature enters, destroy up to one target artifact or enchantment."]
+- id: need-ub-card-advantage
+  oracle: "Draw two cards."
+  hyde: "Sorcery. Draw three cards. You lose 3 life."
+  multi: ["Draw two cards.", "Look at the top three cards of your library. Put one into your hand and the rest into your graveyard.", "Whenever a creature you control dies, draw a card."]
+- id: need-tokens-anthem
+  oracle: "Creatures you control get +1/+1."
+  hyde: "Enchantment. Creatures you control get +1/+1."
+  multi: ["Creatures you control get +1/+1.", "Put a +1/+1 counter on each creature you control.", "Creatures you control get +2/+2 and gain trample until end of turn."]
+- id: need-white-token-makers
+  oracle: "Create three 1/1 white Soldier creature tokens."
+  hyde: "Sorcery. Create two 1/1 white Spirit creature tokens with flying."
+  multi: ["Create three 1/1 white Soldier creature tokens.", "Create two 1/1 white Spirit creature tokens with flying.", "At the beginning of your upkeep, create a 1/1 white Soldier creature token."]
+- id: need-spells-creatures
+  oracle: "Whenever you cast an instant or sorcery spell, put a +1/+1 counter on this creature."
+  hyde: "Creature — Human Wizard. Prowess. Whenever you cast an instant or sorcery spell, this creature deals 1 damage to each opponent."
+  multi: ["Prowess (Whenever you cast a noncreature spell, this creature gets +1/+1 until end of turn.)", "Whenever you cast an instant or sorcery spell, put a +1/+1 counter on this creature.", "This creature gets +1/+1 for each instant and sorcery card in your graveyard."]
+- id: need-lands-recursion
+  oracle: "Return target land card from your graveyard to the battlefield."
+  hyde: "Creature — Elemental. You may play lands from your graveyard."
+  multi: ["Return target land card from your graveyard to the battlefield.", "You may play lands from your graveyard.", "Return up to two target land cards from your graveyard to your hand."]
+- id: need-stop-activated-combo
+  oracle: "Activated abilities of artifacts and creatures can't be activated."
+  hyde: "Artifact. Activated abilities of artifacts, creatures, and planeswalkers your opponents control can't be activated."
+  multi: ["Activated abilities of artifacts and creatures can't be activated unless they're mana abilities.", "Counter target activated ability.", "Activated abilities of permanents your opponents control can't be activated."]
+- id: need-anti-tokens
+  oracle: "This deals 1 damage to each creature."
+  hyde: "Sorcery. All creatures get -1/-1 until end of turn."
+  multi: ["All creatures get -2/-2 until end of turn.", "This deals 1 damage to each creature your opponents control.", "Destroy all creatures with mana value 2 or less."]
+- id: need-white-survive-aggro
+  oracle: "Prevent all combat damage that would be dealt to you this turn."
+  hyde: "Creature — Human Soldier 1/4. Lifelink. Vigilance"
+  multi: ["Destroy target attacking creature.", "You gain 4 life.", "Creatures can't attack you unless their controller pays {2} for each creature."]
+- id: need-team-haste
+  oracle: "Creatures you control have haste."
+  hyde: "Enchantment. Creatures you control have haste."
+  multi: ["Creatures you control have haste.", "Creatures you control gain haste until end of turn.", "Each creature you control enters with haste."]
+- id: need-black-drain-finisher
+  oracle: "Each opponent loses X life and you gain life equal to the life lost this way."
+  hyde: "Creature — Vampire. Whenever a creature dies, each opponent loses 1 life and you gain 1 life."
+  multi: ["Each opponent loses X life and you gain life equal to the life lost this way.", "Each opponent loses life equal to your devotion to black.", "At the beginning of your upkeep, each opponent loses 2 life and you gain 2 life."]
+- id: need-colorless-draw
+  oracle: "Artifact. {2}, {T}: Draw a card."
+  hyde: "Artifact. {T}, Sacrifice this artifact: Draw two cards."
+  multi: ["Artifact. {3}, {T}: Draw a card.", "Artifact. At the beginning of your upkeep, draw a card.", "Draw two cards."]
+- id: need-hexproof-answers
+  oracle: "Target player sacrifices a creature."
+  hyde: "Instant. Each opponent sacrifices a creature with the greatest power among creatures they control."
+  multi: ["Each opponent sacrifices a creature.", "Destroy all creatures.", "All creatures get -4/-4 until end of turn."]
+- id: need-survive-wipe
+  oracle: "Creatures you control gain indestructible until end of turn."
+  hyde: "Instant. Creatures you control gain indestructible until end of turn."
+  multi: ["Creatures you control gain indestructible until end of turn.", "Creatures you control gain hexproof and indestructible until end of turn.", "Exile all creatures you control. Return them to the battlefield at the beginning of the next end step."]
+- id: need-modern-blue-tempo
+  oracle: "Counter target spell unless its controller pays {3}."
+  hyde: "Instant. Return target nonland permanent to its owner's hand."
+  multi: ["Counter target noncreature spell.", "Return target creature to its owner's hand.", "Counter target spell unless its controller pays {2}."]
+- id: need-punish-attackers
+  oracle: "Whenever a creature attacks you, its controller loses 1 life."
+  hyde: "Enchantment. Whenever a creature an opponent controls attacks you, this deals 2 damage to that creature's controller."
+  multi: ["Whenever a creature attacks you or a planeswalker you control, its controller loses 1 life.", "Creatures can't attack you unless their controller pays {2} for each creature.", "Whenever an opponent attacks you, create a 1/1 creature token."]
+- id: need-equipment-support
+  oracle: "Search your library for an Equipment card, reveal it, put it into your hand, then shuffle."
+  hyde: "Creature — Dwarf. When this creature enters, search your library for an Equipment card, reveal it, put it into your hand. Equip abilities you activate cost {1} less."
+  multi: ["Search your library for an Equipment card, reveal it, put it into your hand, then shuffle.", "Equip abilities you activate cost {1} less to activate.", "Whenever an Equipment enters under your control, you may attach it to target creature you control."]
+- id: need-orzhov-lifegain-payoffs
+  oracle: "Whenever you gain life, each opponent loses 1 life."
+  hyde: "Creature — Vampire Cleric. Whenever you gain life, put a +1/+1 counter on this creature."
+  multi: ["Whenever you gain life, each opponent loses 1 life.", "Whenever you gain life, put a +1/+1 counter on target creature you control.", "At the beginning of your end step, if you gained life this turn, draw a card."]
+- id: need-cheap-sac-fodder
+  oracle: "Create two 1/1 creature tokens."
+  hyde: "Creature — Goblin. When this creature enters, create two 1/1 red Goblin creature tokens."
+  multi: ["Create three 1/1 creature tokens.", "When this creature enters, create two 1/1 creature tokens.", "When this creature dies, create two 1/1 creature tokens."]
+- id: need-red-enchantment-answers
+  oracle: "Destroy target enchantment."
+  hyde: "Instant. Destroy target artifact or enchantment. This deals 2 damage to that permanent's controller."
+  multi: ["Destroy target enchantment.", "Destroy target artifact or enchantment.", "Choose one — Destroy target artifact; or destroy target enchantment."]
