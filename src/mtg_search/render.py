@@ -5,9 +5,12 @@ One block per card (~60-120 tokens in compact mode)::
     3. Counterspell — {U}{U} (MV 2) · Blue · Instant · uncommon
        Counter target spell.
        roles: counterspell, interrupt
-       legal: pauper ✓ · ~$1.20
+       legal: pauper ✓
 
-Columns that are missing from an older ``cards.parquet`` are simply not rendered.
+Only deterministic rules/print facts are rendered, from the explicit :data:`ALLOWED_FIELDS`
+allow-list: every other column (popularity ranks, prices, salt, set/print metadata, ...) is
+dropped before rendering, so it can never reach the agent. Columns that are missing from an
+older ``cards.parquet`` are simply not rendered.
 """
 
 from __future__ import annotations
@@ -31,6 +34,24 @@ LAYOUT_MARKERS = {
     "prototype": "prototype",
 }
 COMPACT_ORACLE_CHARS = 250
+
+# The only card fields that may appear in tool output. Deliberately excludes every soft,
+# market- or crowd-derived metric (edhrec_rank, prices, salt, ...). ``game_changer`` is
+# WotC's official Commander-bracket designation, not a popularity metric. ``tags`` are
+# functional oracle tags, filtered by :class:`TagFilter`. ``doc_text`` / ``face_names``
+# only back the face parser and carry the same oracle facts.
+ALLOWED_FIELDS: frozenset[str] = frozenset({
+    "name", "face_names", "faces", "doc_text",
+    "mana_cost", "cmc", "colors", "color_identity", "type_line", "rarity",
+    "power", "toughness", "loyalty", "defense",
+    "keywords", "produced_mana", "legalities", "tags",
+    "reserved", "layout", "is_legendary", "can_be_commander", "partner_kind", "game_changer",
+})
+
+
+def allowed_view(card: Mapping[str, Any]) -> dict[str, Any]:
+    """``card`` restricted to :data:`ALLOWED_FIELDS`."""
+    return {k: v for k, v in card.items() if k in ALLOWED_FIELDS}
 
 
 def role_tags(tags: list[str] | None, tag_counts: Mapping[str, int] | TagFilter, n: int = 5) -> list[str]:
@@ -119,17 +140,6 @@ def legality_text(legalities: Mapping[str, Any] | None, fmt: str | None) -> str:
     return "legal: " + (", ".join(ok) if ok else "none of " + "/".join(MAJOR_FORMATS))
 
 
-def price_text(prices: Mapping[str, Any] | None) -> str | None:
-    p = dict(prices or {})
-    if p.get("usd") is not None:
-        return f"~${p['usd']:.2f}"
-    if p.get("eur") is not None:
-        return f"~€{p['eur']:.2f}"
-    if p.get("tix") is not None:
-        return f"~{p['tix']:.2f} tix"
-    return None
-
-
 def markers(card: Mapping[str, Any], faces: list[dict[str, Any]]) -> list[str]:
     m = []
     if card.get("is_legendary"):
@@ -161,6 +171,7 @@ def render_card(
     detail: str = "compact",
     tag_counts: Mapping[str, int] | TagFilter | None = None,
 ) -> str:
+    card = allowed_view(card)
     compact = detail != "full"
     faces = faces_of(card)
     multi = len(faces) > 1
@@ -206,9 +217,6 @@ def render_card(
         lines.append(ind + " · ".join(info))
 
     foot = [legality_text(card.get("legalities"), fmt)]
-    pr = price_text(card.get("prices"))
-    if pr:
-        foot.append(pr)
     ci, co = card.get("color_identity"), card.get("colors")
     if ci is not None and set(ci or []) != set(co or []):
         foot.append(f"identity: {_letters(ci)}")

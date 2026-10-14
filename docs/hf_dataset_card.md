@@ -136,7 +136,7 @@ Sizes are for the current `main` (decimal MB).
 | `supertypes` / `types` / `subtypes` | list[string] | Parsed from `type_line`, across all faces. |
 | `keywords` | list[string] | Scryfall keyword abilities and actions. |
 | `legalities` | struct of 23 strings | Per format: `legal` / `not_legal` / `restricted` / `banned`. The formats are alchemy, brawl, commander, competitivebrawl, duel, future, gladiator, historic, legacy, modern, oathbreaker, oldschool, pauper, paupercommander, penny, pioneer, predh, premodern, standard, standardbrawl, timeless, tlr and vintage. |
-| `edhrec_rank` | int64 (nullable) | EDHREC popularity rank (null for 2,306 cards). Kept for offline analysis only: the MCP server drops this column on load and never shows it or ranks by it. |
+| `edhrec_rank` | int64 (nullable) | EDHREC popularity rank (null for 2,306 cards). Kept for offline analysis only: the MCP server never loads it, shows it or ranks by it. |
 | `game_changer` | bool | Card is on the Commander "Game Changers" list. |
 | `is_funny` | bool | Un-set / playtest card that is **not tournament legal** (see [filtering](#filtering-rules)). |
 | `layout` | string | Scryfall layout (normal, transform, modal_dfc, split, adventure, saga, …). |
@@ -146,7 +146,7 @@ Sizes are for the current `main` (decimal MB).
 | `tags` | list[string] | Slugs of the Tagger oracle tags applied **directly** to this card (no ancestor closure). |
 | `rarity` | string | Rarity of the representative printing. |
 | `produced_mana` | list[string] | Mana the card can produce, card-level (e.g. `["C"]` for Sol Ring). |
-| `prices` | struct{usd, usd_foil, eur, tix: float64} | Prices of the representative printing; nullable. A budget hint only. |
+| `prices` | struct{usd, usd_foil, eur, tix: float64} | Prices of the representative printing; nullable. Kept for offline analysis only: the MCP server never loads them, shows them or ranks by them. |
 | `is_permanent` | bool | Any face is an artifact, creature, enchantment, land, planeswalker or battle. |
 | `is_legendary` | bool | `Legendary` supertype. |
 | `can_be_commander` | bool | Legendary creature on the front face, or text saying it "can be your commander". |
@@ -360,14 +360,14 @@ docker/build.sh --revision scryfall-<stamp>       # a pinned snapshot
 claude mcp add mtg-search -- docker run -i --rm mtg-search
 ```
 
-The server's tools are `search_cards`, `get_card`, `find_similar` and `list_tags`. `search_cards` and `find_similar` take filters for colour identity, colours (with `includes` / `subset` / `exact` modes), format, types, cmc and mana pips. Results are ordered by text relevance only. No popularity signal, such as EDHREC rank, is shown or used for ordering.
+The server's tools are `search_cards`, `get_card`, `find_similar` and `list_tags`. `search_cards` and `find_similar` take filters for colour identity, colours (with `includes` / `subset` / `exact` modes), format, types, cmc and mana pips. Results are ordered by text relevance only. Tool output carries only deterministic rules and print facts. Popularity, price and other crowd- or market-derived metrics (`edhrec_rank`, `prices`) are never loaded, shown or used for ordering. `game_changer` is shown because it is WotC's official Commander bracket designation.
 
 ---
 
 ## Limitations
 
 - **Tags are incomplete and noisy.** Tagger is community-maintained: 204 cards have no tags at all, newer or obscure cards are often under-tagged, and some tags are loose. `tags` holds direct taggings only; take the closure over `child_slugs` yourself.
-- **One printing per card.** `rarity`, `prices`, `set`, `released_at` and `image_uri` come from the single representative printing that Scryfall's `oracle_cards` file picks. They are not the cheapest or the first printing. Prices are a budget hint only, and `usd` is null for 2,792 cards.
+- **One printing per card.** `rarity`, `prices`, `set`, `released_at` and `image_uri` come from the single representative printing that Scryfall's `oracle_cards` file picks. They are not the cheapest or the first printing. Prices are for offline analysis only, and `usd` is null for 2,792 cards.
 - **English only.** All text is English Oracle text; non-English printings are not represented.
 - **Un-cards are present.** They are flagged with `is_funny`, not removed. Filter them out unless you want them.
 - **Oracle text only.** There is no flavor text, art, artist or printing-specific text. Reminder text is whatever Scryfall's Oracle text includes.

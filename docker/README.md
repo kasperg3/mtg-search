@@ -11,6 +11,15 @@ on `127.0.0.1:8080`. NextPlaid serves the late-interaction index (`lightonai/mLa
 34.6k cards) that was baked in at build time. stdout carries only MCP JSON-RPC, and all
 logs go to stderr.
 
+Tool output carries only deterministic rules and print facts: name, cost, mana value,
+colours, colour identity, type line, rarity, oracle text per face, P/T / loyalty / defense,
+keywords, produced mana, legality, filtered functional oracle tags, and the Legendary,
+Commander-eligible / partner, Game Changer (WotC's official bracket list), Reserved and layout
+markers. `get_card` adds the official rulings and the Scryfall link. Results are ordered by text
+relevance only. Popularity, price and other crowd- or market-derived metrics (EDHREC rank,
+prices, salt) are never loaded, shown or used for ordering. The server reads only an
+allow-list of `cards.parquet` columns (`SERVER_COLUMNS` in `src/mtg_search/server.py`).
+
 ## Register with Claude Code
 
 Build the image first, then:

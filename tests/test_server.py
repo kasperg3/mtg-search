@@ -196,35 +196,115 @@ def test_mcp_call_tool_roundtrip(svc):
     assert "Counterspell" not in names_in(text)  # {U}{U} has two blue pips
 
 
-# ----------------------------------------------------------- no popularity signals in output
+# ------------------------------------------- only rules/print facts reach the agent
+
+SOFT_METRIC = re.compile(r"edhrec|price|\$|€|tix|rank|popular|salt", re.I)
+# sentinel values planted in every column outside the server allow-list
+SENTINEL_NUM = 987654.25
+SENTINEL_STR = "zzleakzz"
 
 
-def test_no_popularity_in_rendered_output(svc, cards_df):
-    assert "edhrec_rank" in cards_df.columns and "edhrec_rank" not in svc.cards.columns
-    ranks = {str(r) for r in cards_df["edhrec_rank"].drop_nulls().to_list()}
+def _poisoned(cards_df: pl.DataFrame) -> pl.DataFrame:
+    """cards_df plus sentinel-valued soft-metric / print-metadata columns."""
+    from mtg_search.render import ALLOWED_FIELDS
+
+    n = cards_df.height
+    df = cards_df.with_columns(
+        pl.lit(987654, dtype=pl.Int64).alias("edhrec_rank"),
+        pl.lit(987654, dtype=pl.Int64).alias("penny_rank"),
+        pl.lit(SENTINEL_NUM).alias("edhrec_saltiness"),
+        pl.lit(987654, dtype=pl.Int64).alias("inclusion_count"),
+        pl.Series("prices", [{"usd": SENTINEL_NUM, "usd_foil": SENTINEL_NUM, "eur": SENTINEL_NUM,
+                              "tix": SENTINEL_NUM}] * n),
+    )
+    for c in df.columns:  # string columns outside the allow-list that the server may not render
+        if c not in ALLOWED_FIELDS and c not in ("oracle_id", "scryfall_uri") and df[c].dtype == pl.String:
+            df = df.with_columns(pl.lit(SENTINEL_STR).alias(c))
+    return df
+
+
+def _card_text(cards_df: pl.DataFrame, tags: pl.DataFrame) -> list[str]:
+    """Card- and tag-supplied text (names, oracle text, tag descriptions) that may legitimately
+    contain words like "salt" or "$"; masked before the soft-metric regex is applied."""
+    out: list[str] = []
+    for r in cards_df.iter_rows(named=True):
+        out += [r["name"], *(r.get("face_names") or []), r.get("type_line") or "", r.get("doc_text") or ""]
+        for f in r.get("faces") or []:
+            out += [f.get("name") or "", f.get("type_line") or "", f.get("oracle_text") or ""]
+            out += (f.get("oracle_text") or "").split("\n")
+    if "description" in tags.columns:
+        out += [d for d in tags["description"].to_list() if d]
+    return sorted({t for t in out if t}, key=len, reverse=True)
+
+
+def _all_tool_outputs(svc, names: list[str]) -> list[str]:
     outs = [
         svc.search_cards("counter target spell", limit=50, detail="full"),
         svc.search_cards(queries=["draw a card", "deal damage"], limit=50),
-        svc.find_similar("Counterspell", limit=50),
+        svc.search_cards("creature", format="commander", limit=50),
         svc.list_tags(),
-        *(svc.list_tags(s) for s in svc.tags["slug"].to_list()[:20]),
-        *(svc.get_card(n) for n in cards_df["name"].to_list()),
+        *(svc.list_tags(t) for t in svc.tags["slug"].to_list()[:25]),
     ]
-    for row in cards_df.iter_rows(named=True):  # render_card ignores the column even if passed
+    for n in names:
+        outs.append(svc.get_card(n))
+        outs.append(svc.find_similar(n, limit=10, detail="full"))
+    return outs
+
+
+@pytest.fixture()
+def poisoned_svc(cards_df, raw_tags, raw_rulings, tmp_path):
+    from mtg_search.ingest import build_rulings, build_tags
+
+    df = _poisoned(cards_df)
+    keep = set(df["oracle_id"])
+    rp = tmp_path / "rulings.parquet"
+    build_rulings(raw_rulings, keep).write_parquet(rp)
+    return server.CardService(df, FakeBackend(df), tags=build_tags(raw_tags, keep), rulings_path=rp)
+
+
+def test_server_keeps_only_allowed_columns(poisoned_svc):
+    assert set(poisoned_svc.cards.columns) <= server.SERVER_COLUMNS
+    for c in ("edhrec_rank", "penny_rank", "edhrec_saltiness", "inclusion_count", "prices",
+              "set", "released_at", "image_uri", "set_type"):
+        assert c not in poisoned_svc.cards.columns
+
+
+def test_load_service_reads_only_allowed_columns(cards_df, monkeypatch, tmp_path):
+    from mtg_search import config
+
+    _poisoned(cards_df).write_parquet(tmp_path / "cards.parquet")
+    monkeypatch.setattr(config, "DATA_DIR", tmp_path)
+    read: list = []
+    orig = pl.read_parquet
+
+    def spy(path, *a, columns=None, **kw):
+        read.append((str(path), columns))
+        return orig(path, *a, columns=columns, **kw)
+
+    monkeypatch.setattr(server.pl, "read_parquet", spy)
+    svc, _ = server.load_service(backend=FakeBackend(cards_df))
+    cols = next(c for p, c in read if p.endswith("cards.parquet"))
+    assert cols is not None and set(cols) <= server.SERVER_COLUMNS
+    assert set(svc.cards.columns) <= server.SERVER_COLUMNS
+
+
+def test_tool_output_has_only_allowed_fields(poisoned_svc, cards_df):
+    names = cards_df.filter(~pl.col("is_funny"))["name"].to_list()
+    outs = _all_tool_outputs(poisoned_svc, names)
+    for row in _poisoned(cards_df).iter_rows(named=True):  # render_card filters even if passed raw
         outs.append(render_card(row, rank=1, detail="full"))
+    mask = _card_text(cards_df, poisoned_svc.tags)
     for out in outs:
-        assert "edhrec" not in out.lower()
-        assert not re.search(r"#\d", out)
-    # the per-card footer (last line) never carries an edhrec value
-    for row in cards_df.filter(pl.col("edhrec_rank").is_not_null()).iter_rows(named=True):
-        foot = render_card(row).splitlines()[-1]
-        assert str(row["edhrec_rank"]) not in re.sub(r"~[$€][\d.]+|[\d.]+ tix", "", foot)
-    assert ranks  # fixture actually has ranks to leak
+        assert "987654" not in out and SENTINEL_STR not in out
+        masked = out
+        for t in mask:
+            masked = masked.replace(t, " ")
+        assert not SOFT_METRIC.search(masked), SOFT_METRIC.search(masked).group(0) + " in:\n" + out
 
 
-def test_tool_docs_do_not_mention_edhrec():
+def test_tool_docs_have_no_soft_metrics():
     for doc in (server.SEARCH_DOC, server.SIMILAR_DOC, server.GET_DOC, server.TAGS_DOC):
-        assert "edhrec" not in doc.lower()
+        assert not re.search(r"edhrec|price|\$|€|\btix\b|popular|salt", doc, re.I)
 
 
 def _name_svc(names, ranks, perm):

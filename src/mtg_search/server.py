@@ -33,7 +33,7 @@ from pydantic import Field
 
 from . import config, filters
 from .fusion import rrf
-from .render import all_legalities, render_card, role_tags
+from .render import ALLOWED_FIELDS, all_legalities, render_card, role_tags
 from .tag_filter import TagFilter
 
 log = logging.getLogger("mtg_search.server")
@@ -54,9 +54,22 @@ def _norm_name(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
-# Popularity signals are never shown or used for ordering: results stay merit/text-based.
-# The columns remain in cards.parquet for offline analysis but are dropped on load.
-POPULARITY_COLUMNS = ("edhrec_rank", "penny_rank")
+# The only cards.parquet columns the server reads: the rendered allow-list plus columns used
+# purely for identity, filtering and the Scryfall link. Soft / market / crowd-derived metrics
+# (edhrec_rank, prices, ...) stay in the parquet for offline analysis but are never loaded,
+# shown or used for ordering.
+INTERNAL_COLUMNS: frozenset[str] = frozenset({
+    "oracle_id", "is_funny", "scryfall_uri",
+    "supertypes", "types", "subtypes",
+    "pips_W", "pips_U", "pips_B", "pips_R", "pips_G", "pips_C",
+    "has_x", "has_hybrid", "has_phyrexian",
+})
+SERVER_COLUMNS: frozenset[str] = ALLOWED_FIELDS | INTERNAL_COLUMNS
+
+
+def server_columns(available: Any) -> list[str]:
+    """``available`` column names restricted to :data:`SERVER_COLUMNS`, in their stored order."""
+    return [c for c in available if c in SERVER_COLUMNS]
 
 
 class CardService:
@@ -64,7 +77,7 @@ class CardService:
 
     def __init__(self, cards: pl.DataFrame, backend: Backend, *, tags: pl.DataFrame | None = None,
                  rulings_path: Path | None = None):
-        self.cards = cards.drop([c for c in POPULARITY_COLUMNS if c in cards.columns])
+        self.cards = cards.select(server_columns(cards.columns))
         self.backend = backend
         self.tags = tags if tags is not None else pl.DataFrame({"slug": [], "card_count": []})
         self.rulings_path = rulings_path
@@ -288,7 +301,7 @@ class CardService:
                 d = d[:107].rstrip() + "…"
             mark = " [trivia]" if r["_trivia"] else ""
             lines.append(f"- {r['slug']} ({r['card_count']} cards){mark}" + (f": {d}" if d else ""))
-        # exact tag: show some example cards (alphabetical, no popularity ordering)
+        # exact tag: show some example cards (alphabetical; deterministic, no metric ordering)
         if p and "tags" in self.cards.columns and p in set(m["slug"].to_list()):
             ex = (self.cards.with_row_index("_row")
                   .filter(pl.col("tags").list.contains(p) & ~pl.col("is_funny"))
@@ -371,11 +384,13 @@ filters return the best matching cards, never an empty post-filtered list):
 
 OUTPUT_DOC = """
 Output: one summary line (query, active filters, "N shown of M matching filters"), then one block
-per card: `rank. Name — cost (MV) · colours · type line · P/T · rarity [markers]`, oracle text
+per card: `n. Name — cost (MV) · colours · type line · P/T · rarity [markers]`, oracle text
 (each face of a multi-face card as `// Face — cost · type`; "[MDFC: land back face]" flags
 spell/land MDFCs), a roles line (functional Scryfall oracle tags, keywords, mana produced) and a
-footer (legality in the requested format or the main formats it is legal in, approximate
-price as a budget hint, colour identity when it differs). No popularity signal is shown or used.
+footer (legality in the requested format or the main formats it is legal in, colour identity
+when it differs). Only rules and print facts are returned; markers are Legendary,
+Commander-eligible / partner kind, Game Changer (WotC's official Commander bracket list),
+Reserved and layout.
 """
 
 SEARCH_DOC = f"""Semantic search over every Magic: The Gathering card (oracle text, types, costs).
@@ -387,8 +402,8 @@ its controller pays", "sacrifice a creature: add mana") or describe the effect p
 (colours, format, mana value, card types) in the filter parameters, not in the query text.
 For a vague deck need, pass several phrasings/angles in `queries` (e.g. ["destroy target
 artifact", "exile target artifact or enchantment", "artifacts your opponents control"]); their
-rankings are fused (reciprocal rank fusion). Results are ranked by text relevance only (not by
-power or popularity); call get_card for full text and rulings.
+result lists are fused. Results are ordered by text relevance to the query only; call get_card
+for full text and rulings.
 
 Args: query or queries (at least one); limit = cards to return (default 15, max 50 — use 30-50
 when surveying options); detail = "compact" (oracle text cut at ~250 chars per face) or "full".
@@ -403,7 +418,7 @@ in-colour replacement: find_similar("Rhystic Study", format="pauper").
 
 GET_DOC = """Look up one card by name (fuzzy: "fire ice", "jace mind sculptor", a face name of a
 double-faced card all work). Returns the full oracle text of every face, mana cost and value,
-types, P/T, markers, all format legalities, functional oracle tags, price,
+types, P/T, markers, all format legalities, functional oracle tags,
 official rulings and the Scryfall link."""
 
 TAGS_DOC = """List Scryfall oracle tags (community labels of what cards *do*, e.g. "removal",
@@ -452,7 +467,8 @@ def build_mcp(service: CardService):
 
 def load_service(backend: Backend | None = None) -> tuple[CardService, Any]:
     data = config.DATA_DIR
-    cards = pl.read_parquet(data / "cards.parquet")
+    cards = pl.read_parquet(data / "cards.parquet",
+                            columns=server_columns(pl.read_parquet_schema(data / "cards.parquet")))
     tags = pl.read_parquet(data / "tags.parquet", columns=["slug", "label", "description", "card_count", "parent_slugs"]) \
         if (data / "tags.parquet").exists() else None
     if backend is None:
