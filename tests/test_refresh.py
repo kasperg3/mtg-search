@@ -85,13 +85,11 @@ def test_manifest_updated_at_fallback_to_bulk():
     assert refresh.manifest_updated_at({}) is None
 
 
-@pytest.mark.parametrize(("hub", "code"), [(NEW, 0), (OLD, 10), (None, 10)])
-def test_dry_run_exit_codes(manifests, monkeypatch, hub, code):
-    manifests["local"] = {"scryfall_updated_at": NEW}
-    manifests["hub"] = hub and {"scryfall_updated_at": hub}
+def test_dry_run_up_to_date_does_not_ingest(manifests, monkeypatch):
+    manifests["local"] = manifests["hub"] = {"scryfall_updated_at": NEW}
     monkeypatch.setattr(refresh, "fetch_scryfall_updated_at", lambda client=None: NEW)
-    monkeypatch.setattr(refresh, "sh", lambda *a, **k: pytest.fail("dry-run must not run commands"))
-    assert refresh.main(["--dry-run"]) == code
+    monkeypatch.setattr(refresh, "sh", lambda *a, **k: pytest.fail("dry-run must not run commands when current"))
+    assert refresh.main(["--dry-run"]) == 0
 
 
 def test_up_to_date_does_nothing(manifests, monkeypatch):
@@ -99,6 +97,127 @@ def test_up_to_date_does_nothing(manifests, monkeypatch):
     monkeypatch.setattr(refresh, "fetch_scryfall_updated_at", lambda client=None: NEW)
     monkeypatch.setattr(refresh, "sh", lambda *a, **k: pytest.fail("must not run commands"))
     assert refresh.main([]) == 0
+
+
+# --------------------------------------------------------------------------- tiers
+
+
+def _fp(raw_cards, raw_tags, raw_rulings):
+    from mtg_search import ingest
+
+    cards = ingest.build_cards(raw_cards, ingest.tags_by_oracle_id(raw_tags))
+    keep = set(cards["oracle_id"])
+    return ingest.fingerprint(cards, ingest.build_tags(raw_tags, keep), ingest.build_rulings(raw_rulings, keep))
+
+
+def _edit(raw_cards, name, fn):
+    return [fn(dict(c)) if c["name"] == name else c for c in raw_cards]
+
+
+def _price_only(c):
+    c["prices"] = {"usd": "1234.56", "usd_foil": None, "eur": "1.00", "tix": "0.01"}
+    c["edhrec_rank"] = 99999
+    c["image_uris"] = {"normal": "https://example.invalid/new.jpg"}
+    return c
+
+
+def _banned(c):
+    c["legalities"] = {**c["legalities"], "commander": "banned"}
+    return c
+
+
+def _errata(c):
+    c["oracle_text"] = c["oracle_text"] + " You gain 1 life."
+    return c
+
+
+SCENARIOS = [
+    ("price-only", "Sol Ring", _price_only, refresh.TIER_NONE, 0),
+    ("legality", "Sol Ring", _banned, refresh.TIER_METADATA, 10),
+    ("oracle text", "Lightning Bolt", _errata, refresh.TIER_REENCODE, 11),
+]
+
+
+@pytest.fixture
+def tier_setup(manifests, monkeypatch, raw_cards, raw_tags, raw_rulings):
+    """Hub manifest = fingerprint of the fixtures at OLD; Scryfall reports NEW."""
+    base = _fp(raw_cards, raw_tags, raw_rulings)
+    manifests["hub"] = {"scryfall_updated_at": OLD, **base}
+    manifests["local"] = {"scryfall_updated_at": OLD}
+    monkeypatch.setattr(refresh, "fetch_scryfall_updated_at", lambda client=None: NEW)
+    calls: list[str] = []
+    for name in ("upload_data", "launch_encode_job", "wait_for_job", "verify_embeddings", "ensure_tag",
+                 "download_late_embeddings", "eval_smoke", "build_image"):
+        monkeypatch.setattr(refresh, name, lambda *a, _n=name, **k: calls.append(_n) or "job")
+
+    def use(cards):
+        fp = _fp(cards, raw_tags, raw_rulings)
+        monkeypatch.setattr(refresh, "ingest_local", lambda force: ({"scryfall_updated_at": NEW, **fp}, fp))
+
+    return SimpleNamespace(calls=calls, use=use)
+
+
+@pytest.mark.parametrize(("label", "card", "fn", "tier", "code"), SCENARIOS, ids=[s[0] for s in SCENARIOS])
+def test_classify(raw_cards, raw_tags, raw_rulings, label, card, fn, tier, code):
+    base = _fp(raw_cards, raw_tags, raw_rulings)
+    got, reasons = refresh.classify(_fp(_edit(raw_cards, card, fn), raw_tags, raw_rulings), base)
+    assert got == tier and reasons
+    assert refresh.TIER_EXIT[tier] == code
+
+
+def test_classify_card_added_or_missing_fingerprint(raw_cards, raw_tags, raw_rulings):
+    base = _fp(raw_cards[1:], raw_tags, raw_rulings)
+    fp = _fp(raw_cards, raw_tags, raw_rulings)
+    assert refresh.classify(fp, base)[0] == refresh.TIER_REENCODE
+    assert refresh.classify(fp, {"scryfall_updated_at": OLD})[0] == refresh.TIER_REENCODE  # pre-fingerprint hub
+    assert refresh.classify(fp, None)[0] == refresh.TIER_REENCODE
+
+
+@pytest.mark.parametrize(("label", "card", "fn", "tier", "code"), SCENARIOS, ids=[s[0] for s in SCENARIOS])
+def test_dry_run_exit_codes(tier_setup, raw_cards, label, card, fn, tier, code):
+    tier_setup.use(_edit(raw_cards, card, fn))
+    assert refresh.main(["--dry-run"]) == code
+    assert tier_setup.calls == []  # dry-run never publishes
+
+
+def test_price_only_change_is_noop(tier_setup, raw_cards):
+    tier_setup.use(_edit(raw_cards, "Sol Ring", _price_only))
+    assert refresh.main([]) == 0
+    assert tier_setup.calls == []  # no upload, no tag, no encode
+
+
+def test_legality_change_is_metadata_only(tier_setup, raw_cards):
+    tier_setup.use(_edit(raw_cards, "Sol Ring", _banned))
+    assert refresh.main(["--build-image"]) == 0
+    assert "upload_data" in tier_setup.calls and "build_image" in tier_setup.calls
+    assert "verify_embeddings" in tier_setup.calls  # published embeddings still aligned
+    assert "launch_encode_job" not in tier_setup.calls and "eval_smoke" not in tier_setup.calls
+    assert tier_setup.calls.count("ensure_tag") == 2  # old main + new snapshot
+
+
+def test_oracle_text_change_reencodes(tier_setup, raw_cards):
+    tier_setup.use(_edit(raw_cards, "Lightning Bolt", _errata))
+    assert refresh.main([]) == 0
+    assert tier_setup.calls == ["ensure_tag", "upload_data", "launch_encode_job", "wait_for_job",
+                                "verify_embeddings", "download_late_embeddings", "eval_smoke", "ensure_tag"]
+
+
+def test_force_turns_noop_into_reencode(tier_setup, raw_cards):
+    tier_setup.use(raw_cards)
+    assert refresh.main(["--force", "--skip-eval"]) == 0
+    assert "launch_encode_job" in tier_setup.calls
+
+
+def test_ingest_local_backfills_fingerprint(tmp_path, monkeypatch):
+    mpath = tmp_path / "manifest.json"
+    mpath.write_text(json.dumps({"scryfall_updated_at": NEW, "card_count": 34_000}))
+    fp = {"text_hash": "t", "gameplay_hash": "g", "aux_hash": "a", "oracle_ids_sha256": "o", "fingerprint_version": 1}
+    monkeypatch.setattr(refresh.config, "MANIFEST_JSON", mpath)
+    monkeypatch.setattr(refresh, "read_local_manifest", lambda *a, **k: json.loads(mpath.read_text()))
+    monkeypatch.setattr(refresh, "sh", lambda *a, **k: None)
+    monkeypatch.setattr(refresh, "local_fingerprint", lambda: fp)
+    manifest, got = refresh.ingest_local(force=False)
+    assert got == fp and json.loads(mpath.read_text())["text_hash"] == "t" and manifest["aux_hash"] == "a"
 
 
 def test_tag_name():

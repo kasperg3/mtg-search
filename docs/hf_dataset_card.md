@@ -38,7 +38,7 @@ This repo holds the prebuilt corpus and index artifacts for the **mtg-search** M
 
 - **One document per Scryfall `oracle_id`**: each unique card appears once, whatever its printings.
 - **34,646 cards**, 4,577 oracle tags and 78,973 rulings.
-- **Snapshot:** Scryfall `oracle_cards` `updated_at` = **2026-10-14T09:01:55.948+00:00**. The tables were built at 2026-10-14T12:28:30Z.
+- **Snapshot:** Scryfall `oracle_cards` `updated_at` = **2026-10-14T09:01:55.948+00:00**. The tables were built at 2026-10-14T13:33:57Z.
 - **Shipped retriever:** `lightonai/mLateOn` late interaction (ColBERT-style MaxSim), served by [NextPlaid](https://github.com/lightonai/next-plaid) inside one Docker image. The dense and sparse embeddings here were used in the evaluation; they are not shipped.
 
 > **Private repo.** This dataset contains card names and rules text derived from Scryfall
@@ -89,10 +89,10 @@ Sizes are for the current `main` (decimal MB).
 
 | Path | Size | Description |
 |---|---|---|
-| `data/cards.parquet` | 8.8 MB | One row per oracle card: text, costs, types, legalities, tags, deck-building fields. Viewer config `cards`. |
+| `data/cards.parquet` | 8.6 MB | One row per oracle card: text, costs, types, legalities, tags, deck-building fields. Viewer config `cards`. |
 | `data/tags.parquet` | 3.6 MB | One row per Scryfall Tagger oracle tag, with its direct taggings. Viewer config `tags`. |
 | `data/rulings.parquet` | 2.3 MB | One row per ruling. Viewer config `rulings`. |
-| `data/manifest.json` | 0.7 KB | Snapshot metadata: Scryfall `updated_at` and URIs per bulk file, row counts, build time. |
+| `data/manifest.json` | 1.1 KB | Snapshot metadata: Scryfall `updated_at` and URIs per bulk file, row counts, build time, and the [content fingerprint](#content-fingerprint) that decides what a refresh must rebuild. |
 | `embeddings/late/lightonai__mLateOn/tokens.npy` | 557.9 MB | float16 `(2,179,176, 128)`: per-token doc embeddings, concatenated in card order. |
 | `embeddings/late/lightonai__mLateOn/offsets.npy` | 277 KB | int64 `(34,647,)`: doc *i* is `tokens[offsets[i]:offsets[i+1]]`. |
 | `embeddings/late/lightonai__mLateOn/meta.json` | 0.7 KB | Model, revision, prompts, alignment hash, build info. |
@@ -136,7 +136,7 @@ Sizes are for the current `main` (decimal MB).
 | `supertypes` / `types` / `subtypes` | list[string] | Parsed from `type_line`, across all faces. |
 | `keywords` | list[string] | Scryfall keyword abilities and actions. |
 | `legalities` | struct of 23 strings | Per format: `legal` / `not_legal` / `restricted` / `banned`. The formats are alchemy, brawl, commander, competitivebrawl, duel, future, gladiator, historic, legacy, modern, oathbreaker, oldschool, pauper, paupercommander, penny, pioneer, predh, premodern, standard, standardbrawl, timeless, tlr and vintage. |
-| `edhrec_rank` | int64 (nullable) | EDHREC popularity rank (null for 2,306 cards). Kept for offline analysis only: the MCP server never loads it, shows it or ranks by it. |
+| `edhrec_rank` | int64 (nullable) | EDHREC popularity rank (null for 2,306 cards). Kept for offline analysis only: the MCP server never loads it, shows it or ranks by it. It changes often and is not part of the content fingerprint, so a rank change alone never triggers a refresh. |
 | `game_changer` | bool | Card is on the Commander "Game Changers" list. |
 | `is_funny` | bool | Un-set / playtest card that is **not tournament legal** (see [filtering](#filtering-rules)). |
 | `layout` | string | Scryfall layout (normal, transform, modal_dfc, split, adventure, saga, …). |
@@ -146,7 +146,6 @@ Sizes are for the current `main` (decimal MB).
 | `tags` | list[string] | Slugs of the Tagger oracle tags applied **directly** to this card (no ancestor closure). |
 | `rarity` | string | Rarity of the representative printing. |
 | `produced_mana` | list[string] | Mana the card can produce, card-level (e.g. `["C"]` for Sol Ring). |
-| `prices` | struct{usd, usd_foil, eur, tix: float64} | Prices of the representative printing; nullable. Kept for offline analysis only: the MCP server never loads them, shows them or ranks by them. |
 | `is_permanent` | bool | Any face is an artifact, creature, enchantment, land, planeswalker or battle. |
 | `is_legendary` | bool | `Legendary` supertype. |
 | `can_be_commander` | bool | Legendary creature on the front face, or text saying it "can be your commander". |
@@ -154,6 +153,8 @@ Sizes are for the current `main` (decimal MB).
 | `power` / `toughness` / `loyalty` / `defense` | string (nullable) | Front-face stats. These are strings because values like `*`, `1+*` and `X` occur. |
 | `faces` | list[struct] | Per face: `name`, `mana_cost`, `type_line`, `oracle_text`, `power`, `toughness`, `loyalty`, `defense`, `is_permanent`. |
 | `reserved` | bool | On the Reserved List. |
+
+Prices are not stored (removed in manifest `schema_version` 2): they change daily, the server does not use them, and they would make every snapshot look new.
 
 ### `data/tags.parquet` (4,577 rows)
 
@@ -177,6 +178,20 @@ Sizes are for the current `main` (decimal MB).
 | `comment` | string | Ruling text. |
 
 Only rulings for cards that appear in `cards.parquet` are kept. They are sorted by `(oracle_id, published_at)`.
+
+### Content fingerprint
+
+`data/manifest.json` carries deterministic hashes of the tables (`fingerprint_version` 1, computed by `mtg_search.ingest.fingerprint`). Each hash is SHA-256 over the selected columns of every row as canonical JSON (sorted keys), one line per row, in `cards.parquet` order. Every `cards.parquet` column belongs to exactly one group.
+
+| Field | Covers | A change means |
+|---|---|---|
+| `text_hash` | `oracle_id`, `doc_text` | The embeddings must be re-encoded. |
+| `oracle_ids_sha256` | `oracle_id` order (same digest as the embedding `meta.json` files) | Cards were added, removed or reordered: re-encode. |
+| `gameplay_hash` | `oracle_id`, `name`, `face_names`, `faces`, `mana_cost`, `face_costs`, `pips_W` … `pips_C`, `generic`, `has_x`, `has_hybrid`, `has_phyrexian`, `cmc`, `colors`, `color_identity`, `type_line`, `supertypes`, `types`, `subtypes`, `keywords`, `legalities`, `game_changer`, `reserved`, `layout`, `produced_mana`, `is_funny`, `is_permanent`, `is_legendary`, `can_be_commander`, `partner_kind`, `power`, `toughness`, `loyalty`, `defense`, `tags` | Rules facts changed (e.g. a ban or new tags): publish new tables, reuse the embeddings. |
+| `aux_hash` | all of `tags.parquet` and `rulings.parquet` (row order ignored) | Publish new tables, reuse the embeddings. |
+| (not hashed) | `edhrec_rank`, `image_uri`, `scryfall_uri`, and the representative printing's `set`, `set_type`, `released_at`, `rarity` | Nothing: these are volatile and never trigger a refresh on their own. |
+
+Current values: `text_hash` `d046da6d…`, `gameplay_hash` `43058ab9…`, `aux_hash` `edbdd173…`, `oracle_ids_sha256` `1bff7b49…`.
 
 ### How `doc_text` is built
 
@@ -312,12 +327,26 @@ Labels come from community tags and regexes, so absolute scores are lower bounds
 
 [`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/refresh.py) keeps this repo in sync with Scryfall. A GitHub Action (`.github/workflows/refresh.yml`) runs it **weekly, Mondays at 06:00 UTC**, and it can also be dispatched by hand.
 
-1. Compare Scryfall's `oracle_cards` `updated_at` with `data/manifest.json` on `main`. If they match, stop.
-2. Tag the snapshot currently on `main` as `scryfall-<YYYYMMDDHHMMSS>` if it has no tag yet.
-3. Re-ingest, check that the card count is within 33k–36k, and upload `data/*.parquet` plus `manifest.json`.
-4. Re-encode **mLateOn only**, on an HF Job (t4-small), and check that `oracle_ids_sha256` matches the new `cards.parquet`.
-5. Run the eval smoke test, which fails if late-mLateOn nDCG@10 drops more than 3 points below the recorded baseline.
-6. Tag the new snapshot `scryfall-<YYYYMMDDHHMMSS>`.
+Price fluctuations never trigger a corpus update; legality changes always do.
+
+1. Compare Scryfall's `oracle_cards` `updated_at` with `data/manifest.json` on `main`. If they match, stop. (Scryfall's `updated_at` changes almost daily, mostly because of prices, so it only decides whether to look.)
+2. Otherwise download the bulk files, re-ingest locally, check that the card count is within 33k–36k, and compare the [content fingerprint](#content-fingerprint) with the published manifest. The result picks one of three tiers:
+
+| Tier | When | What happens |
+|---|---|---|
+| **No-op** | All hashes equal: only volatile fields changed (prices, EDHREC rank, printing metadata). | Nothing is uploaded or tagged. |
+| **Metadata-only** | `gameplay_hash` or `aux_hash` changed, but `text_hash` and `oracle_ids_sha256` did not (bans and other legality changes, tags, rulings, …). | Upload `data/*.parquet` plus `manifest.json`, check that the published embeddings still match `oracle_ids_sha256`, tag. No re-encoding. |
+| **Re-encode** | `text_hash` or `oracle_ids_sha256` changed (oracle text or errata, cards added or removed). | The full pipeline below. |
+
+Full pipeline:
+
+1. Tag the snapshot currently on `main` as `scryfall-<YYYYMMDDHHMMSS>` if it has no tag yet.
+2. Upload `data/*.parquet` plus `manifest.json`.
+3. Re-encode **mLateOn only**, on an HF Job (t4-small), and check that `oracle_ids_sha256` matches the new `cards.parquet`.
+4. Run the eval smoke test, which fails if late-mLateOn nDCG@10 drops more than 3 points below the recorded baseline.
+5. Tag the new snapshot `scryfall-<YYYYMMDDHHMMSS>`.
+
+Both publishing tiers are followed by a Docker image rebuild: the image bakes `cards.parquet` and builds its NextPlaid index from the published embeddings.
 
 Notes:
 
@@ -360,14 +389,14 @@ docker/build.sh --revision scryfall-<stamp>       # a pinned snapshot
 claude mcp add mtg-search -- docker run -i --rm mtg-search
 ```
 
-The server's tools are `search_cards`, `get_card`, `find_similar` and `list_tags`. `search_cards` and `find_similar` take filters for colour identity, colours (with `includes` / `subset` / `exact` modes), format, types, cmc and mana pips. Results are ordered by text relevance only. Tool output carries only deterministic rules and print facts. Popularity, price and other crowd- or market-derived metrics (`edhrec_rank`, `prices`) are never loaded, shown or used for ordering. `game_changer` is shown because it is WotC's official Commander bracket designation.
+The server's tools are `search_cards`, `get_card`, `find_similar` and `list_tags`. `search_cards` and `find_similar` take filters for colour identity, colours (with `includes` / `subset` / `exact` modes), format, types, cmc and mana pips. Results are ordered by text relevance only. Tool output carries only deterministic rules and print facts. Popularity, price and other crowd- or market-derived metrics are never loaded, shown or used for ordering (`edhrec_rank` is in the table for offline analysis only; prices are not stored). `game_changer` is shown because it is WotC's official Commander bracket designation.
 
 ---
 
 ## Limitations
 
 - **Tags are incomplete and noisy.** Tagger is community-maintained: 204 cards have no tags at all, newer or obscure cards are often under-tagged, and some tags are loose. `tags` holds direct taggings only; take the closure over `child_slugs` yourself.
-- **One printing per card.** `rarity`, `prices`, `set`, `released_at` and `image_uri` come from the single representative printing that Scryfall's `oracle_cards` file picks. They are not the cheapest or the first printing. Prices are for offline analysis only, and `usd` is null for 2,792 cards.
+- **One printing per card.** `rarity`, `set`, `released_at` and `image_uri` come from the single representative printing that Scryfall's `oracle_cards` file picks. They are not the first printing. There are no prices.
 - **English only.** All text is English Oracle text; non-English printings are not represented.
 - **Un-cards are present.** They are flagged with `is_funny`, not removed. Filter them out unless you want them.
 - **Oracle text only.** There is no flavor text, art, artist or printing-specific text. Reminder text is whatever Scryfall's Oracle text includes.

@@ -15,7 +15,7 @@ TAGS_PARQUET = DATA_DIR / "tags.parquet"
 RULINGS_PARQUET = DATA_DIR / "rulings.parquet"
 MANIFEST_JSON = DATA_DIR / "manifest.json"
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2  # 2: cards.parquet without prices; manifest fingerprint
 
 USER_AGENT = "mtg-search/0.1"
 SCRYFALL_API = "https://api.scryfall.com"

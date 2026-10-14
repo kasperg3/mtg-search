@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import gzip
+import hashlib
 import json
 import re
 import shutil
@@ -226,7 +227,6 @@ def _type_line(card: dict[str, Any]) -> str:
 # --------------------------------------------------------------------------- deck-building fields
 
 PERMANENT_TYPES = frozenset({"Artifact", "Creature", "Enchantment", "Land", "Planeswalker", "Battle"})
-PRICE_KEYS = ("usd", "usd_foil", "eur", "tix")
 _PARTNER_VARIANT_RE = re.compile(r"^Partner\s*[\u2014-]\s*([^(\n]+?)\s*(?:\(|$)", re.MULTILINE)
 
 
@@ -310,30 +310,21 @@ def can_be_commander(card: dict[str, Any]) -> bool:
     return "can be your commander" in _all_text(card)
 
 
-def _price(val: Any) -> float | None:
-    try:
-        return None if val is None else float(val)
-    except (TypeError, ValueError):
-        return None
-
-
 def deck_columns(card: dict[str, Any], type_line: str, supertypes: list[str]) -> dict[str, Any]:
     """Fields a deck-building agent needs.
 
-    ``rarity`` and ``prices`` come from the single representative printing that the
-    ``oracle_cards`` bulk file picks for each card: rarity is informational (pauper
-    legality already accounts for any common printing) and prices are a budget hint
-    only, not the cheapest printing. ``produced_mana`` is Scryfall's card-level list
-    (it is never given per face), e.g. ``["C"]`` for Sol Ring.
+    ``rarity`` comes from the single representative printing that the ``oracle_cards``
+    bulk file picks for each card; it is informational (pauper legality already
+    accounts for any common printing). Prices are deliberately not stored: they change
+    daily and the server never uses them. ``produced_mana`` is Scryfall's card-level
+    list (it is never given per face), e.g. ``["C"]`` for Sol Ring.
     """
     fd = face_details(card)
     front = fd[0]
-    prices = card.get("prices") or {}
     produced = sorted(set(card.get("produced_mana") or []), key=lambda c: (PIP_COLORS.find(c) % 99, c))
     return {
         "rarity": card.get("rarity"),
         "produced_mana": produced,
-        "prices": {k: _price(prices.get(k)) for k in PRICE_KEYS},
         "is_permanent": any(f["is_permanent"] for f in fd),
         "is_legendary": "Legendary" in supertypes,
         "can_be_commander": can_be_commander(card),
@@ -396,7 +387,6 @@ CARD_SCHEMA_OVERRIDES = {
     "generic": pl.Int32,
     "rarity": pl.String,
     "produced_mana": pl.List(pl.String),
-    "prices": pl.Struct({k: pl.Float64 for k in PRICE_KEYS}),
     "partner_kind": pl.String,
     "power": pl.String,
     "toughness": pl.String,
@@ -504,6 +494,116 @@ def build_rulings(rulings: Iterable[dict[str, Any]], keep_ids: set[str]) -> pl.D
     )
 
 
+# --------------------------------------------------------------------------- fingerprint
+#
+# Deterministic content hashes written to manifest.json. scripts/refresh.py compares them
+# with the published manifest to decide what a new Scryfall snapshot requires:
+#   text_hash changed            -> re-encode (embeddings are row-aligned to doc_text)
+#   gameplay/aux_hash changed    -> publish new tables only (no re-encode)
+#   neither                      -> nothing to publish (only volatile fields changed)
+# Every cards.parquet column is in exactly one of the three groups below (enforced by
+# tests/test_ingest.py), so a new column has to be classified explicitly.
+
+FINGERPRINT_VERSION = 1
+
+# Re-encoding is needed iff this changes: the embedded text and the row order.
+TEXT_HASH_COLUMNS: tuple[str, ...] = ("oracle_id", "doc_text")
+
+# Rules facts a deck builder relies on (legalities/bans, tags, costs, types, stats, ...).
+GAMEPLAY_HASH_COLUMNS: tuple[str, ...] = (
+    "oracle_id",
+    "name",
+    "face_names",
+    "faces",
+    "mana_cost",
+    "face_costs",
+    *(f"pips_{c}" for c in PIP_COLORS),
+    "generic",
+    "has_x",
+    "has_hybrid",
+    "has_phyrexian",
+    "cmc",
+    "colors",
+    "color_identity",
+    "type_line",
+    "supertypes",
+    "types",
+    "subtypes",
+    "keywords",
+    "legalities",
+    "game_changer",
+    "reserved",
+    "layout",
+    "produced_mana",
+    "is_funny",
+    "is_permanent",
+    "is_legendary",
+    "can_be_commander",
+    "partner_kind",
+    "power",
+    "toughness",
+    "loyalty",
+    "defense",
+    "tags",
+)
+
+# Not hashed: change without any rules change (popularity, links, and the attributes of
+# whichever printing Scryfall picks as representative).
+VOLATILE_COLUMNS: tuple[str, ...] = (
+    "edhrec_rank",
+    "image_uri",
+    "scryfall_uri",
+    "set",
+    "set_type",
+    "released_at",
+    "rarity",
+)
+
+
+def _row_json(row: dict[str, Any]) -> str:
+    return json.dumps(row, sort_keys=True, ensure_ascii=False, separators=(",", ":"), default=str)
+
+
+def frame_hash(df: pl.DataFrame, columns: Iterable[str] | None = None, *, ordered: bool = True) -> str:
+    """SHA-256 over the rows of ``df[columns]`` as canonical JSON, one line per row.
+
+    ``ordered=False`` sorts the row lines first (for tables whose row order carries no
+    meaning and may tie, e.g. rulings on the same date)."""
+    if columns is not None:
+        df = df.select(list(columns))
+    lines = (_row_json(r) for r in df.iter_rows(named=True))
+    if not ordered:
+        lines = iter(sorted(lines))
+    h = hashlib.sha256()
+    for line in lines:
+        h.update(line.encode())
+        h.update(b"\n")
+    return h.hexdigest()
+
+
+def fingerprint(cards_df: pl.DataFrame, tags_df: pl.DataFrame, rulings_df: pl.DataFrame) -> dict[str, Any]:
+    """Manifest fingerprint fields (see the comment block above)."""
+    oids = hashlib.sha256()
+    for oid in cards_df["oracle_id"]:
+        oids.update(oid.encode())
+        oids.update(b"\n")
+    aux = hashlib.sha256()
+    aux.update(frame_hash(tags_df, ordered=False).encode())
+    aux.update(frame_hash(rulings_df, ordered=False).encode())
+    return {
+        "fingerprint_version": FINGERPRINT_VERSION,
+        "oracle_ids_sha256": oids.hexdigest(),
+        "text_hash": frame_hash(cards_df, TEXT_HASH_COLUMNS),
+        "gameplay_hash": frame_hash(cards_df, GAMEPLAY_HASH_COLUMNS),
+        "aux_hash": aux.hexdigest(),
+    }
+
+
+def fingerprint_dir(data_dir: Path) -> dict[str, Any]:
+    """:func:`fingerprint` of the parquet files in ``data_dir``."""
+    return fingerprint(*(pl.read_parquet(data_dir / f"{n}.parquet") for n in ("cards", "tags", "rulings")))
+
+
 # --------------------------------------------------------------------------- main
 
 
@@ -533,6 +633,7 @@ def build_from_raw(raw: dict[str, Path], metas: dict[str, dict[str, Any]], out_d
         "card_count": cards_df.height,
         "tag_count": tags_df.height,
         "ruling_count": rulings_df.height,
+        **fingerprint(cards_df, tags_df, rulings_df),
         "built_at": datetime.now(UTC).isoformat(timespec="seconds"),
     }
     (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

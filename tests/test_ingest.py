@@ -95,8 +95,67 @@ def test_build_from_raw(tmp_path, raw_cards, raw_tags, raw_rulings):
     out = tmp_path / "out"
     manifest = ingest.build_from_raw(raw, metas, out)
     assert manifest["card_count"] == pl.read_parquet(out / "cards.parquet").height
-    assert json.loads((out / "manifest.json").read_text())["schema_version"] == 1
+    assert json.loads((out / "manifest.json").read_text())["schema_version"] == 2
     assert (out / "tags.parquet").exists() and (out / "rulings.parquet").exists()
+    fp = ingest.fingerprint_dir(out)
+    assert {k: manifest[k] for k in fp} == fp
+    assert manifest["fingerprint_version"] == ingest.FINGERPRINT_VERSION
+
+
+def test_fingerprint_columns_cover_cards_schema(cards_df):
+    text, game, vol = set(ingest.TEXT_HASH_COLUMNS), set(ingest.GAMEPLAY_HASH_COLUMNS), set(ingest.VOLATILE_COLUMNS)
+    assert not (game | text) & vol
+    assert set(cards_df.columns) == text | game | vol, "classify every new cards.parquet column"
+
+
+def _fp(raw_cards, raw_tags, raw_rulings):
+    cards = ingest.build_cards(raw_cards, ingest.tags_by_oracle_id(raw_tags))
+    keep = set(cards["oracle_id"])
+    return ingest.fingerprint(cards, ingest.build_tags(raw_tags, keep), ingest.build_rulings(raw_rulings, keep))
+
+
+def _edit(raw_cards, name, **changes):
+    out = []
+    for c in raw_cards:
+        if c["name"] == name:
+            c = {**c, **changes}
+        out.append(c)
+    return out
+
+
+def test_fingerprint_is_deterministic_and_ignores_volatile(raw_cards, raw_tags, raw_rulings):
+    base = _fp(raw_cards, raw_tags, raw_rulings)
+    assert base == _fp(raw_cards, raw_tags, list(reversed(raw_rulings)))
+    sol = next(c for c in raw_cards if c["name"] == "Sol Ring")
+    volatile = _edit(raw_cards, "Sol Ring", prices={"usd": "999.99"}, edhrec_rank=1, released_at="2099-01-01",
+                     image_uris={"normal": "https://example.invalid/x.jpg"}, scryfall_uri="https://example.invalid",
+                     set="zzz", rarity="mythic" if sol.get("rarity") != "mythic" else "common")
+    assert _fp(volatile, raw_tags, raw_rulings) == base
+
+
+def test_fingerprint_legality_change_is_gameplay_only(raw_cards, raw_tags, raw_rulings):
+    base = _fp(raw_cards, raw_tags, raw_rulings)
+    sol = next(c for c in raw_cards if c["name"] == "Sol Ring")
+    banned = _edit(raw_cards, "Sol Ring", legalities={**sol["legalities"], "commander": "banned"})
+    fp = _fp(banned, raw_tags, raw_rulings)
+    assert fp["text_hash"] == base["text_hash"] and fp["oracle_ids_sha256"] == base["oracle_ids_sha256"]
+    assert fp["gameplay_hash"] != base["gameplay_hash"]
+
+
+def test_fingerprint_oracle_text_change_changes_text_hash(raw_cards, raw_tags, raw_rulings):
+    base = _fp(raw_cards, raw_tags, raw_rulings)
+    errata = _edit(raw_cards, "Lightning Bolt", oracle_text="Lightning Bolt deals 4 damage to any target.")
+    fp = _fp(errata, raw_tags, raw_rulings)
+    assert fp["text_hash"] != base["text_hash"] and fp["gameplay_hash"] != base["gameplay_hash"]
+    assert _fp(raw_cards[1:], raw_tags, raw_rulings)["text_hash"] != base["text_hash"]  # card removed
+
+
+def test_fingerprint_ruling_change_is_aux_only(raw_cards, raw_tags, raw_rulings):
+    base = _fp(raw_cards, raw_tags, raw_rulings)
+    rulings = [{**raw_rulings[0], "comment": "changed"}, *raw_rulings[1:]]
+    fp = _fp(raw_cards, raw_tags, rulings)
+    assert (fp["text_hash"], fp["gameplay_hash"]) == (base["text_hash"], base["gameplay_hash"])
+    assert fp["aux_hash"] != base["aux_hash"]
 
 
 def test_stamp():
@@ -137,7 +196,7 @@ def test_deck_columns_schema(cards_df):
     s = cards_df.schema
     assert s["rarity"] == pl.String and s["partner_kind"] == pl.String
     assert s["produced_mana"] == pl.List(pl.String)
-    assert s["prices"] == pl.Struct({k: pl.Float64 for k in ("usd", "usd_foil", "eur", "tix")})
+    assert "prices" not in s
     for col in ("is_permanent", "is_legendary", "can_be_commander", "reserved"):
         assert s[col] == pl.Boolean
     for col in ("power", "toughness", "loyalty", "defense"):
@@ -161,11 +220,9 @@ def test_mdfc_land_back_face(cards_df):
     assert invasion["defense"] == "4" and invasion["faces"][1]["power"] == "4"
 
 
-def test_mana_rock_and_prices(cards_df):
+def test_mana_rock(cards_df):
     sol = row(cards_df, "Sol Ring")
     assert sol["produced_mana"] == ["C"] and sol["is_permanent"] and not sol["is_legendary"]
-    assert set(sol["prices"]) == {"usd", "usd_foil", "eur", "tix"}
-    assert isinstance(sol["prices"]["usd"], float)
     assert row(cards_df, "Llanowar Elves")["produced_mana"] == ["G"]
     assert row(cards_df, "Lightning Bolt")["produced_mana"] == []
     assert not row(cards_df, "Lightning Bolt")["is_permanent"]
