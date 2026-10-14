@@ -1,6 +1,6 @@
 # EXP-006: Agentic multi-step search: does SparseUp term feedback steer the agent?
 
-**Status: main run in progress, shortened to 1 repeat of every condition (A, B, C, D, F)** (≈ $17 projected). The planned second repeat of A and C (≈ $7) was dropped by the owner to save API spend, so there are no repeat-variance estimates; comparisons are paired over tasks only.
+**Status: stopped early, partial result.** The main run (1 repeat of all five conditions, 468 episodes planned after resume) stopped at 249 completed episodes when the GLM key ran out of balance (Z.ai HTTP 429 "Insufficient balance"). Following the owner's instruction, it was stopped there rather than topped up. Only **deck-need tasks** were reached: 45–51 of 65 per condition, 45 complete in all five. Attribute and known-item tasks never ran. Spend: $8.21 main + $1.47 pilot. The planned second repeat of A and C was already dropped to save spend, so there are no repeat-variance estimates and comparisons are paired over tasks only.
 Harness and how to run it: [`eval/agentic/README.md`](../agentic/README.md). Pilot data: `eval/agentic/runs/pilot/`, `eval/agentic/results/pilot.json`.
 
 ## Hypothesis (user)
@@ -108,4 +108,35 @@ Options within $25:
 
 ## Results
 
-Pending the budget decision. Tables, recall@t curves (`agentic_recall_at_t.png`), bootstrap CIs, term-pivot excerpts and the conclusion will go here.
+Deck-need tasks only (45–51 per condition), GLM-5.3, 1 repeat. Labels are the original incomplete ones, so absolute recall is low by construction; compare conditions, not levels. Data: `eval/agentic/runs/main/`, `eval/agentic/results/main.json`, curve `agentic_recall_at_t.png`. The run was interrupted once by a machine OOM and resumed (57 episodes before, 192 after; same code except the leak-guard fix below). It was synced to the private HF dataset `kasper-cbx/mtg-search-experiments`.
+
+| cond | retriever / feedback | recall@1 | recall@3 | recall@5 | nDCG@10 | nDCG@20 | P@10 | new cards / search | term uptake | $/episode |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | mLateOn | 0.083 | 0.154 | 0.201 | 0.647 | 0.603 | 0.633 | 13.5 | 0.240 (hidden) | 0.029 |
+| B | SparseUp | 0.061 | 0.121 | 0.165 | 0.640 | 0.589 | 0.633 | 13.5 | 0.201 (hidden) | 0.030 |
+| C | SparseUp + per-result and aggregate terms | 0.067 | 0.123 | 0.166 | 0.656 | 0.602 | 0.651 | 13.6 | 0.214 (shown) | 0.033 |
+| D | mLateOn + aggregate SparseUp terms | 0.089 | 0.158 | 0.206 | 0.674 | 0.621 | 0.669 | 13.5 | 0.201 (shown) | 0.029 |
+| F | grep + BM25 tools only | 0.111 | 0.187 | 0.227 | 0.672 | 0.650 | 0.670 | 11.4 | 0.146 (hidden) | 0.044 |
+
+`recall@t` is the recall of labelled cards among everything retrieved up to search t. nDCG/P are computed on the agent's final ranked list.
+
+Paired bootstrap over tasks (10k resamples), difference in points ×100 [95% CI]:
+
+| comparison | question | recall@5 | nDCG@10 | final R@20 | term uptake |
+|---|---|---|---|---|---|
+| C − B | do SparseUp terms help (same retriever)? | +0.8 [−1.1, +2.7] | +2.1 [−2.6, +6.9] | +0.5 [−0.8, +1.6] | +0.5 [−6.6, +6.6] |
+| D − A | do aggregate terms help mLateOn? | +0.5 [−1.4, +2.3] | +2.8 [−1.1, +6.8] | +0.9 [−0.2, +2.1] | −3.9 [−10.8, +3.4] |
+| C − A | SparseUp + terms vs mLateOn | **−4.0 [−7.1, −1.1]** | +0.2 [−4.2, +4.4] | −1.0 [−2.9, +0.5] | −3.6 [−10.7, +3.1] |
+| B − A | SparseUp vs mLateOn | **−4.7 [−7.3, −2.3]** | −1.5 [−6.0, +2.8] | −1.5 [−3.4, +0.1] | — |
+| A − F | mLateOn agent vs lexical agent | −2.3 [−5.1, +0.1] | −4.1 [−9.6, +1.5] | **−1.9 [−3.4, −0.6]** | — |
+
+Term uptake is the share of follow-up queries that introduce a word from the aggregate term line. For A, B and F the terms were computed but hidden, which gives the chance rate.
+
+**Conclusion (partial, deck needs only).**
+- **The hypothesis is not supported.** Showing SparseUp's expansion terms changes neither what the agent finds (C − B, D − A: all CIs span 0) nor what it searches for next. The agent uses shown terms no more often than hidden ones (21% / 20% vs 20–24% chance).
+- **The agent steers from its own card knowledge.** It names cards and rewrites into rules text (as in the pilot), so a term line adds little.
+- **As the agent's retriever, SparseUp finds fewer labelled cards in the first 5 searches** than mLateOn (−4.7 recall@5). This matches the static evals (EXP-004, EXP-008).
+- **The lexical-only agent (F) is competitive and ends with significantly more labelled cards in its final 20** (+1.9 R@20 over A). It sees fewer new cards per search (11.4 vs 13.5) and costs 1.5× per episode (longer transcripts). With grep, a strong LLM can recover exact rules wording itself. This is consistent with EXP-008, where BM25 fusion helped once queries were in rules text.
+- **Not answered:** attribute and known-item tasks never ran, so nothing here speaks to "find this specific card", which is where the user expected term feedback to matter most.
+
+**Leak-guard fix during the run.** `Env.assert_no_leak` rejected two episodes (need-anti-tokens, B and C), because the agent's own query named the card *Illness in the Ranks* and the tool output echoes the query. The guard now ignores the echoed query (commit `1e1a21b`). Those two episodes could not be re-run once the balance ran out.

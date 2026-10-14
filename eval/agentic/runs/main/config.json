@@ -1,0 +1,43 @@
+{
+ "run": "main",
+ "tasks": "/home/karg/workspace/mtg-search/eval/agentic/tasks.yaml",
+ "conds": "A,B,C,D,F",
+ "limit": null,
+ "ids": null,
+ "repeats": 1,
+ "workers": 8,
+ "temperature": 0.6,
+ "effort": "low",
+ "budget": 23.0,
+ "model": "glm-5.3",
+ "max_searches": 5,
+ "system": "You are a deck-building search assistant for Magic: The Gathering. A player describes what they need; you find real cards for it with the `search` tool. It queries a card search engine over all Magic cards (it understands natural language; it is not Scryfall syntax) and returns the top 15 matches with name, mana cost, type and truncated rules text. Optional filters restrict colours, types, mana value and format.\n\nYou have a budget of 5 searches. Use them to find as many cards that genuinely satisfy the request as possible. After each search, look at what came back and decide what to search next: refine, rephrase, or explore a different angle that the results suggest. A search that returns the same cards again is wasted.\n\nWhen you are done (after at most 5 searches), call `final_answer` with up to 20 card names that satisfy the request, best first. Only include cards that appeared in your search results, and copy their names exactly. If the request is for one specific card, put your best guess first.",
+ "system_lexical": "You are a deck-building search assistant for Magic: The Gathering. A player describes what they need; you find real cards for it with two lexical tools over the full text of all Magic cards (name, cost, type line, rules text): `grep` runs a case-insensitive regular expression and returns the number of matching cards plus 15 of them (ordered by keyword relevance to the words in the pattern, then alphabetically) with the matching line highlighted in [[ ]]; `bm25` is keyword search returning the top 15 cards by BM25 score. Both show name, mana cost, type and truncated rules text. Optional filters restrict colours, types, mana value and format.\n\nYou have a budget of 5 searches (grep and bm25 calls both count). Use them to find as many cards that genuinely satisfy the request as possible. After each search, look at what came back and decide what to search next: refine, rephrase, or explore a different angle that the results suggest. A search that returns the same cards again is wasted.\n\nWhen you are done (after at most 5 searches), call `final_answer` with up to 20 card names that satisfy the request, best first. Only include cards that appeared in your search results, and copy their names exactly. If the request is for one specific card, put your best guess first.",
+ "conditions": {
+  "A": {
+   "retriever": "mlateon",
+   "per_result_terms": false,
+   "aggregate": false
+  },
+  "B": {
+   "retriever": "sparseup",
+   "per_result_terms": false,
+   "aggregate": false
+  },
+  "C": {
+   "retriever": "sparseup",
+   "per_result_terms": true,
+   "aggregate": true
+  },
+  "D": {
+   "retriever": "mlateon",
+   "per_result_terms": false,
+   "aggregate": true
+  },
+  "F": {
+   "retriever": "lexical",
+   "per_result_terms": false,
+   "aggregate": false
+  }
+ }
+}
