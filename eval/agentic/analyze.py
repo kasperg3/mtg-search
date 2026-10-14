@@ -154,7 +154,7 @@ def per_task_means(rows, metric, cond, kinds=None):
     """task_id -> mean over repeats of metric for one condition."""
     acc = defaultdict(list)
     for r in rows:
-        if r["cond"] == cond and (kinds is None or r["kind"] in kinds) and metric in r and not (isinstance(r[metric], float) and math.isnan(r[metric])):
+        if r["cond"] == cond and (kinds is None or r["kind"] in kinds or r.get("kind2") in kinds) and metric in r and not (isinstance(r[metric], float) and math.isnan(r[metric])):
             acc[r["task_id"]].append(r[metric])
     return {k: float(np.mean(v)) for k, v in acc.items()}
 
@@ -188,7 +188,7 @@ def rep_spread(rows, metric, cond, kinds):
     """Mean over tasks per repeat -> list (variance across repeats)."""
     by = defaultdict(list)
     for r in rows:
-        if r["cond"] == cond and r["kind"] in kinds and metric in r:
+        if r["cond"] == cond and (r["kind"] in kinds or r.get("kind2") in kinds) and metric in r:
             by[r["rep"]].append(r[metric])
     return {int(k): float(np.mean(v)) for k, v in sorted(by.items())}
 
@@ -215,24 +215,27 @@ def main() -> None:
         rows = []
         for e in eps:
             t = tasks[e["task_id"]]
-            rows.append({"task_id": e["task_id"], "cond": e["cond"], "rep": e["rep"], "kind": t["kind"],
+            kind2 = ("known-popular" if t.get("popular") else "known-obscure") if t["kind"] == "known" else None
+            rows.append({"task_id": e["task_id"], "cond": e["cond"], "rep": e["rep"], "kind": t["kind"], "kind2": kind2,
                          **episode_metrics(e, t, labels[e["task_id"]], jd[e["task_id"]])})
         res = {}
-        groups = {"all-nonknown": {"deck", "attr"}, "deck": {"deck"}, "attr": {"attr"}, "known": {"known"}}
+        groups = {"all-nonknown": {"deck", "attr"}, "deck": {"deck"}, "attr": {"attr"}, "known": {"known"},
+                  "known-popular": {"known-popular"}, "known-obscure": {"known-obscure"}}
         ret_metrics = [f"recall@{t}" for t in range(1, T_MAX + 1)] + ["ndcg@10", "ndcg@20", "condensed_ndcg@10", "p@10", "recall@20_final", "retrieved_relevant"]
         known_metrics = [f"success@{t}" for t in range(1, T_MAX + 1)] + ["rr", "found_in_final"]
         behav = ["final_len", "final_unretrieved", "iterations", "novel_per_iter", "n_unique_retrieved", "result_jaccard", "query_jaccard", "query_type_token",
                  "term_uptake_agg", "term_uptake_any", "cost_usd", "prompt_tokens", "completion_tokens"]
         for g, kinds in groups.items():
-            mets = known_metrics + behav if g == "known" else ret_metrics + behav
+            isk = g.startswith("known")
+            mets = known_metrics + behav if isk else ret_metrics + behav
             res[g] = {"summary": summarize(rows, conds, kinds, mets), "bootstrap": {}, "repeats": {}}
-            key = "found_in_final" if g == "known" else "ndcg@10"
+            key = "found_in_final" if isk else "ndcg@10"
             for c in conds:
-                res[g]["repeats"][c] = {key: rep_spread(rows, key, c, kinds), "recall@5" if g != "known" else "success@5":
-                                        rep_spread(rows, "recall@5" if g != "known" else "success@5", c, kinds)}
+                res[g]["repeats"][c] = {key: rep_spread(rows, key, c, kinds), "success@5" if isk else "recall@5":
+                                        rep_spread(rows, "success@5" if isk else "recall@5", c, kinds)}
             for a, b in (("A", "C"), ("B", "C"), ("A", "D"), ("A", "B"), ("F", "C"), ("F", "A")):
                 if a in conds and b in conds:
-                    for mt in (known_metrics if g == "known" else ["recall@5", "ndcg@10", "ndcg@20", "condensed_ndcg@10", "p@10", "recall@20_final"]) + ["novel_per_iter", "result_jaccard", "term_uptake_agg"]:
+                    for mt in (known_metrics if isk else ["recall@5", "ndcg@10", "ndcg@20", "condensed_ndcg@10", "p@10", "recall@20_final"]) + ["novel_per_iter", "result_jaccard", "term_uptake_agg"]:
                         bs = paired_bootstrap(rows, mt, a, b, kinds)
                         if bs:
                             res[g]["bootstrap"][f"{a}vs{b}:{mt}"] = bs
@@ -247,9 +250,9 @@ def main() -> None:
         Path(args.out).write_text(json.dumps(result, indent=1) + "\n")
     # console summary
     for lname, _ in label_list:
-        for g in ("all-nonknown", "known"):
+        for g in ("deck", "attr", "all-nonknown", "known", "known-popular", "known-obscure"):
             s = result["labels"][lname][g]["summary"]
-            keys = ["recall@1", "recall@3", "recall@5", "ndcg@10", "ndcg@20", "condensed_ndcg@10", "p@10", "novel_per_iter", "result_jaccard", "term_uptake_agg", "iterations", "cost_usd"] if g != "known" else \
+            keys = ["recall@1", "recall@3", "recall@5", "ndcg@10", "ndcg@20", "condensed_ndcg@10", "p@10", "novel_per_iter", "result_jaccard", "term_uptake_agg", "iterations", "cost_usd"] if not g.startswith("known") else \
                 ["success@1", "success@3", "success@5", "found_in_final", "rr", "iterations", "cost_usd"]
             print(f"\n[{lname}/{g}] " + " ".join(f"{k:>10s}" for k in keys))
             for c in conds:

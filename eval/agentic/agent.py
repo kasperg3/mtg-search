@@ -233,7 +233,8 @@ class Runner:
                                    shown_terms=cond["per_result_terms"] or cond["aggregate"], n_match=n_match)
                         searches.append(rec)
                         content = format_results(env, cond, q, len(searches), rows, per, agg, snippets, n_match, name)
-                        env.assert_no_leak(content, rows, snippets)
+                        # the echoed query is the agent's own text (it may name e.g. "Illness in the Ranks"), not a harness signal
+                        env.assert_no_leak(content, rows, [*(snippets or []), q])
                     except ValueError as e:
                         rec.update(rows=[], oids=[], per_terms=[], agg_terms=[], error=str(e))
                         searches.append(rec)
@@ -256,7 +257,7 @@ class Runner:
             "usage": usage_tot, "cost_usd": round(cost, 6), "model": MODEL,
         }
 
-    def run(self, tasks, conds, repeats, workers):
+    def run(self, tasks, conds, repeats, workers, budget=None):
         out = self.run_dir / "episodes.jsonl"
         done = set()
         if out.exists():
@@ -266,12 +267,24 @@ class Runner:
         jobs = [(t, c, r) for r in range(repeats) for t in tasks for c in conds if (t["id"], c, r) not in done]
         print(f"{len(jobs)} episodes to run ({len(done)} already done)", flush=True)
         total, t0 = 0.0, time.time()
+        prior = sum(json.loads(x)["cost_usd"] for x in out.read_text().splitlines()) if out.exists() else 0.0
+        stop_flag = threading.Event()
+
+        def guarded(t, c, r):
+            # budget guard: stop starting new episodes once this run's spend reaches the cap
+            if stop_flag.is_set() or (budget is not None and prior + total >= budget):
+                stop_flag.set()
+                return None
+            return self.episode(t, c, r)
+
         with ThreadPoolExecutor(workers) as ex:
-            futs = {ex.submit(self.episode, t, c, r): (t["id"], c, r) for t, c, r in jobs}
+            futs = {ex.submit(guarded, t, c, r): (t["id"], c, r) for t, c, r in jobs}
             for i, f in enumerate(as_completed(futs), 1):
                 key = futs[f]
                 try:
                     rec = f.result()
+                    if rec is None:
+                        continue
                 except Exception:
                     print(f"FAILED {key}:\n{traceback.format_exc()}", flush=True)
                     continue
@@ -280,6 +293,8 @@ class Runner:
                     fh.write(json.dumps(rec, ensure_ascii=False) + "\n")
                 print(f"[{i}/{len(jobs)}] {key} searches={len(rec['searches'])} final={len(rec['final'])} "
                       f"stop={rec['stop']} ${rec['cost_usd']:.4f} total=${total:.3f} {time.time() - t0:.0f}s", flush=True)
+        if stop_flag.is_set():
+            print(f"BUDGET STOP: run spend ${prior + total:.3f} reached cap ${budget}", flush=True)
         return total
 
 
@@ -294,6 +309,7 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--temperature", type=float, default=0.6)
     ap.add_argument("--effort", default="low")
+    ap.add_argument("--budget", type=float, default=None, help="USD cap on this run dir's total spend")
     args = ap.parse_args()
 
     tasks = yaml.safe_load(Path(args.tasks).read_text())
@@ -323,7 +339,7 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.json").write_text(json.dumps({**vars(args), "model": MODEL, "max_searches": MAX_SEARCHES,
                                                      "system": SYSTEM, "system_lexical": SYSTEM_LEXICAL, "conditions": CONDITIONS}, indent=1))
-    total = Runner(env, run_dir, args.temperature, args.effort).run(tasks, conds, args.repeats, args.workers)
+    total = Runner(env, run_dir, args.temperature, args.effort).run(tasks, conds, args.repeats, args.workers, args.budget)
     print(f"done; cost this invocation ${total:.3f}")
 
 

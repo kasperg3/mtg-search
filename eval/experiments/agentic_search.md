@@ -1,6 +1,6 @@
 # EXP-006: Agentic multi-step search: does SparseUp term feedback steer the agent?
 
-**Status: harness built, pilot done; the full run is on hold for a budget decision** (projected ≈ $33 > the $25 cap; see [Budget](#budget)).
+**Status: main run in progress** (budget option (a): 2 repeats of A and C, 1 repeat of B, D and F, ≈ $23; hard stop at $25 total spend).
 Harness and how to run it: [`eval/agentic/README.md`](../agentic/README.md). Pilot data: `eval/agentic/runs/pilot/`, `eval/agentic/results/pilot.json`.
 
 ## Hypothesis (user)
@@ -24,6 +24,14 @@ In multi-step agentic retrieval, SparseUp's interpretable expansion terms let th
 E (SparseUp + role descriptions) was dropped when EXP-005 was cancelled.
 
 **Aggregate line** ("Frequent terms in these results not in your query: …", top 15). Each vocab term t gets the score idf(t) · Σ_r d_r[t] over the SparseUp document vectors of the 15 results. A term counts only if it appears in at least 2 results, is a whole-word alphabetic token, is not a generic rules stopword, and is neither literally nor by crude stemming in the query. Terms are computed for **every** condition and logged, but shown only in C and D. A and B therefore give a chance baseline for "term uptake".
+
+**Term filter, tightened after the pilot (applies to the main run).** In the pilot the aggregate line was dominated by BPE fragments and junk ("mai, ana, manit, dru, gent", "inert, inst, hovering"), so the hypothesis never got a fair test. Before the main run, and without re-piloting, the shown terms (per-result and aggregate, C/D) are restricted to:
+- whole-word vocabulary items only: Ġ-prefixed (word-initial) tokens of 3 or more letters a–z; subword continuations, short tokens and non-alphabetic tokens are dropped;
+- no English or generic-rules stopwords;
+- no popularity or price vocabulary (the LEAK filter);
+- words that occur as a standalone word in the `doc_text` of at least 5 non-funny cards.
+
+This leaves 3,571 eligible vocab terms. The identical filter applies to the terms logged (hidden) in A, B and F, so the chance baseline stays comparable. A by-eye check on 3 pilot tasks shows real words, though they are still semantically loose. "green one-drop creature that taps to add green mana" → `colors, colored, tap, color, tapped, purple, elf, rainbow, addition, white, spend…`; "efficient creature with reach to block flying creatures" → `breach, spiders, channel, spider, flight, archer, fly, attach, arrows…`. The pilot numbers below were produced with the old, unfiltered terms.
 
 **No popularity signals.** No tool output contains EDHREC rank, prices, salt or inclusion counts, and no ordering uses them. The grep tool orders matches by the BM25 score of the pattern's literal words over the matching cards, with ties broken alphabetically by name. `Env.assert_no_leak` raises on `/edhrec|price|\$|rank|popular|salt/` in all harness-written tool text: headers, legends and term lists. Card renders are exempt, because card names can contain words such as "rank". SparseUp vocab terms that match the pattern are excluded from the term lists. `edhrec_rank` was used only offline, to pick known-item targets, and is never shown to the agent.
 - *Pilot incident 1:* the first F pilot ordered grep matches by EDHREC rank, and its prompt said "most popular". Those 10 episodes are quarantined in `runs/pilot/tainted_F_edhrec_order/` and excluded; F was rerun with BM25 ordering.

@@ -35,7 +35,15 @@ _WORD = re.compile(r"^[a-z][a-z'-]{2,}$")
 # no popularity / price / crowd signal may reach the agent (asserted on every tool result)
 LEAK = re.compile(r"edhrec|price|\$|rank|popular|salt", re.IGNORECASE)
 # generic rules words that every card shares; never useful as steering feedback
-TERM_STOP = set(
+ENGLISH_STOP = set(
+    "a about above after again against all also am an and any are as at be because been before being below between both but by "
+    "can could did do does doing down during each few for from further had has have having he her here hers him his how if in "
+    "into is it its itself just more most must no nor not now of off on once only or other our out over own same she should so "
+    "some such than that their theirs them then there these they this those through to too under until up very was we were what "
+    "when where which while who whom why will with would yet you your yours".split()
+)
+MIN_CORPUS_DF = 5  # a feedback term must occur as a standalone word in at least this many cards' text
+TERM_STOP = ENGLISH_STOP | set(
     "the and you your this that with for from into its card cards target each player players creature creatures "
     "turn end may put get gets one two three until control controller spell spells ability abilities battlefield "
     "mana cost costs pay additional instead then also any can't cant don't other another".split()
@@ -78,8 +86,21 @@ class Env:
         vocab = tok.convert_ids_to_tokens(list(range(self.sparseup.csr.shape[1])))
         self.vocab = vocab
         # whole-word, alphabetic, non-stopword vocab dims are eligible as feedback terms
+        # Feedback-term filter (identical for every condition; tightened after the pilot showed the
+        # aggregate line was dominated by subword fragments): whole-word vocab items only (Ġ-prefixed,
+        # alphabetic, >= 3 letters), no stopwords, no popularity/price vocabulary, and the word must
+        # occur as a standalone word in >= MIN_CORPUS_DF cards' doc_text.
+        from collections import Counter
+
+        corpus_df = Counter()
+        for d in self.cards.filter(~pl.col("is_funny"))["doc_text"].to_list():
+            corpus_df.update(set(re.findall(r"[a-z]+", d.lower())))
         self.term_ok = np.array(
-            [t.startswith("Ġ") and bool(_WORD.match(t[1:].lower())) and t[1:].lower() not in TERM_STOP and not LEAK.search(t[1:]) for t in vocab]
+            [
+                t.startswith("Ġ") and bool(re.fullmatch(r"[a-z]{3,}", t[1:].lower())) and t[1:].lower() not in TERM_STOP
+                and not LEAK.search(t[1:]) and corpus_df.get(t[1:].lower(), 0) >= MIN_CORPUS_DF
+                for t in vocab
+            ]
         )
         df = np.diff(self.sparseup.docs.indptr)
         self.idf = np.log(self.sparseup.n / (1.0 + df)).astype(np.float32)
