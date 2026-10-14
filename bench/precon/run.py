@@ -117,6 +117,10 @@ def make_llm(args):
         return FakeLLM(completion_per_call=args.fake_completion)
     if not args.allow_llm:
         sys.exit("refusing to call a real LLM without --allow-llm (LLM runs need the owner's approval)")
+    if args.llm == "claude-code":
+        from bench.precon.harness.claude_code import ClaudeCode
+
+        return ClaudeCode(model=args.cc_model)
     from bench.precon.harness.llm import GLM
 
     return GLM(temperature=args.temperature, effort=args.effort)
@@ -136,6 +140,11 @@ class AgentSystem:
         self.llm = make_llm(args)
         self.budget = Budget(args.max_usd)
         self.toolset = make_toolset(args.tools, bench.denylist, backend=args.backend) if args.system == "agent" else None
+        self.service = None
+        if args.llm == "claude-code" and self.toolset is not None and self.toolset.schemas():
+            from bench.precon.harness.claude_code import ToolService
+
+            self.service = ToolService(self.toolset)
         cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
         need = {c["oracle_id"] for d in bench.decks.values() for c in d.cards}
         self.rows = {r["oracle_id"]: r for r in cards.filter(pl.col("oracle_id").is_in(list(need))).iter_rows(named=True)}
@@ -158,6 +167,8 @@ class AgentSystem:
             from bench.precon.harness.probe import run_probe
 
             meta = self.bench.precons.get(deck.precon_id, {})
+            if self.args.llm == "claude-code":
+                return self.llm.probe(meta.get("deck_name", ""), meta.get("product", ""), transcript_path=tpath)
             return run_probe(self.llm, meta.get("deck_name", ""), meta.get("product", ""), budget=self.budget,
                              transcript_path=tpath)
         ci = "".join(c for c in "WUBRG" if c in deck.color_identity)
@@ -167,8 +178,11 @@ class AgentSystem:
         tool_names = [t["function"]["name"] for t in self.toolset.schemas()]
         preflight(system, user, deck_names=deck_names, forbidden_gold=self.forbidden, identifying=self.identifying,
                   tool_names=tool_names)
-        res = run_episode(self.llm, self.toolset, task, system, user, budget=self.budget, transcript_path=tpath)
-        d = res.to_dict()
+        if self.args.llm == "claude-code":
+            d = self.llm.episode(task, system, user, tool_url=self.service.url if self.service else None,
+                                 transcript_path=tpath)
+        else:
+            d = run_episode(self.llm, self.toolset, task, system, user, budget=self.budget, transcript_path=tpath).to_dict()
         d["prompt_hash"] = prompt_hash(system, user)
         d["prompt_chars"] = len(system) + len(user)
         return d
@@ -435,8 +449,10 @@ def main(argv=None) -> None:
     ap.add_argument("--tools", default="mcp", choices=["mcp", "lexical", "none"])
     ap.add_argument("--backend", default="late", choices=["late", "bm25", "docker"],
                     help="retrieval backend for --tools mcp and the heuristic baseline")
-    ap.add_argument("--llm", default="fake", choices=["fake", "glm"])
-    ap.add_argument("--allow-llm", action="store_true", help="required for --llm glm (spends money)")
+    ap.add_argument("--llm", default="fake", choices=["fake", "glm", "claude-code"],
+                    help="claude-code = headless `claude -p` on the Claude Code subscription (no API key)")
+    ap.add_argument("--cc-model", default="claude-sonnet-5-5", help="model for --llm claude-code")
+    ap.add_argument("--allow-llm", action="store_true", help="required for --llm glm|claude-code (owner approval)")
     ap.add_argument("--max-usd", type=float, default=5.0, help="hard run budget cap")
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--effort", default="low")
