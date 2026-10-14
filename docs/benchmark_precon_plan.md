@@ -95,7 +95,7 @@ Every task uses the same system prompt template, `temperature=0`, and the same t
 - Commander format: singleton, except basic lands and cards that allow any number.
 - Every card within the commander's colour identity, and commander-legal.
 - **Bracket:** an optional parameter (default bracket 3, so at most 3 Game Changers in the final deck). It uses `game_changer` from `cards.parquet`, which reflects WotC's list rather than popularity.
-- **Budget:** off by default (§7, T6).
+- **Budget:** none. Price is not shown by the shipped server (owner decision, Q3), so there is no budget-limited variant.
 
 Names are resolved exactly, as in `CardService.resolve_name`. Unresolved, illegal or out-of-identity names count as **invalid**. An invalid answer gains nothing and is reported in the validity rate; it does not crash the scoring. Duplicates count once, and missing slots count as zero gain. Scoring is fully deterministic given the output.
 
@@ -153,12 +153,12 @@ Names are resolved exactly, as in `CardService.resolve_name`. Unresolved, illega
 
 | # | Channel | Risk | Mitigation | Check |
 |---|---|---|---|---|
-| T1 | **Popularity in tool output**: EDHREC rank, "most played" ordering, staple labels | The agent picks by hype. | Already done in `619f4cc`: the EDHREC rank has been removed from rendering, ordering, name resolution and docstrings. **Still to do:** `eval/agentic/env.py:172` orders `grep` results by `edhrec_rank`. Switch to alphabetical or oracle_id order for the lexical baseline. | Existing `tests/test_server.py` asserts no EDHREC text. Extend it with a probe sweep over all 4 tools × 50 queries asserting no `edhrec`, `rank #`, `popular`, `staple` or `most played` strings. |
+| T1 | **Popularity in tool output**: EDHREC rank, "most played" ordering, staple labels | The agent picks by hype. | Done: `619f4cc` removed the EDHREC rank from rendering, ordering, name resolution and docstrings. The EXP-006 lexical baseline's `grep` no longer orders by EDHREC rank (it has a LEAK guard). | Existing `tests/test_server.py` asserts no EDHREC text. Extend it with a probe sweep over all 4 tools × 50 queries asserting no `edhrec`, `rank #`, `popular`, `staple` or `most played` strings. |
 | T2 | **Parametric memory of EDHREC / upgrade guides**: the model has read "Precon upgrade guide: cut X, add Y" articles. EDHREC itself publishes one per precon; the Avengers page links one dated 2026-06-15. | Scores measure recall, not reasoning. | (a) **Primary test split = precons released after the model's training cutoff + 2 months** (§8). Spoilers and guides appear around release. (b) Do not name the product or deck in the prompt; give only the card list. (c) **Memorisation probe**: a no-tools model gets *only* the product and deck name ("Avengers Assemble, Marvel Super Heroes Commander") and is asked to list the common EDHREC cuts and adds. Score it with the same metrics. (d) **Anonymised-commander ablation**: the commander's name is replaced with "your commander" and only its rules text is shown. The 99 still identify the deck, so this is only a partial mitigation. | If probe scores on train/dev are much higher than on test, contamination is confirmed and train/dev scores are reported as "contaminated". If the probe scores near random on test, the test split is clean for that model. Report probe scores next to every headline result. |
 | T3 | **Oracle tags or our data encode the ground truth** | A tag like `precon-filler` or an evaluative tag leaks the answer. | Deny-list evaluative or popularity-like tags in the roles line in eval mode. Found so far: `meme` (130), `weaker-in-singleton-formats` (89), `stronger-in-singleton-formats` (6), `staple-with-set-s-mechanic` (63), `planeswalker-deck-staples` (0). Also, `cycle-*-face-commander` / `*-precon-*` tags identify precon membership. They are harmless for the add and cut targets, but they belong on the deny-list too. | **Tag-enrichment audit** on train labels: for each tag, compute lift = P(tag \| gold cut) / P(tag \| kept card), and the same for adds against the candidate pool. Review by hand any tag with lift > 3 and support ≥ 5. Functional tags with high lift, such as `tapland` for cuts, are expected merit signals and are fine. Non-functional ones go on the deny-list. |
 | T4 | **Test data in prompts or few-shots** | Direct leakage. | Few-shot examples (if any) come only from the **train** split. The prompt template is hashed per run. | Scorer pre-flight: assert that no oracle_id or name from any dev/test gold set appears in the rendered system prompt or few-shots. This excludes the episode's own deck, which is input. |
 | T5 | **Prompt tuning on test** | Overfitting. | Iterate on train (prompt), select on dev, and run test **once per frozen config**. Test results are logged in REGISTRY with the config hash. | Process rule; REGISTRY records the number of test evaluations. |
-| T6 | **Price as a popularity proxy**: the price shown in tool output | Price correlates with demand, which is mostly EDHREC demand. | In the benchmark's primary condition, run the server with price **hidden** (new flag `MTG_SEARCH_HIDE_PRICE=1`). The budget constraint, if used, is enforced by the *scorer* only. Ablation: price shown. | Compare add-side scores with price on and off. |
+| T6 | **Price as a popularity proxy** | Price correlates with demand, which is mostly EDHREC demand. | Resolved: price is removed from the shipped MCP server's output (owner decision, Q3). There is no price-shown ablation and no budget variant. | Covered by the T1 probe sweep: assert no `$` price strings in any tool output. |
 | T7 | **Rarity / reprint markers** | Weaker proxies, such as "mythic". | Keep them: they are printed facts on the card. Note this as a known weak proxy. | Diagnostic: correlation of picks with rarity, per condition. |
 | T8 | **The agent prefers popular cards anyway** (parametric "staple" prior) | Not leakage of *labels*, but the bias the user wants to avoid. | Measure it: mean log `edhrec_rank` of the agent's adds, computed offline by the scorer and never shown to the agent, compared with the popularity-oracle baseline. | Reported as "popularity drift" per condition. |
 | T9 | **Web access** | Direct lookup. | The agent has only the mtg-search tools; there is no web or fetch tool in the harness. | Harness allow-list assert. |
@@ -180,35 +180,35 @@ All are run on the same precons, budgets and scorer.
 1. **Random-legal** (seeded). Cuts: uniform over non-commander nonbasic cards. Adds: uniform over the commander-legal, in-identity pool, excluding the deck. This is the floor.
 2. **Text heuristic, no LLM.** Cuts: tapped lands first (from oracle text), then highest MV among cards whose oracle tags have no role overlap with the commander's tags. Adds: top results from `search_cards` on the commander's own oracle text plus 4 generic role queries. This shows how far a simple text rule gets.
 3. **Popularity oracle (reference, not a competitor).** Adds: best global `edhrec_rank` in the commander's identity, not in the deck. Cuts: worst `edhrec_rank` cards in the deck. **This quantifies how much of the ground truth is plain global popularity.** If it beats the agents, the add-synergy metric (§6) becomes the more meaningful headline.
-4. **Lexical agent** (EXP-006 condition F: `grep` + `bm25`), with grep ordering fixed (T1).
-5. **mLateOn agent** (the shipped MCP, popularity-free, price hidden). This is the **main system**.
-6. **mLateOn agent with price shown** (ablation T6).
-7. **No-tools LLM** with the same deck input. It measures parametric deck-building; adds must still be real cards and are validated.
-8. **Memorisation probe** (T2c): no tools, product name only.
-9. **Anonymised-commander** variant of system 5 (T2d).
+4. **Lexical agent** (EXP-006 condition F: `grep` + `bm25`; no popularity ordering).
+5. **mLateOn agent** (the shipped MCP, which shows neither popularity nor price). This is the **main system**.
+6. **No-tools LLM** with the same deck input. It measures parametric deck-building; adds must still be real cards and are validated.
+7. **Memorisation probe** (T2c): no tools, product name only.
+8. **Anonymised-commander** variant of system 5 (T2d).
 
 ## 10. Implementation steps and effort
 
 | # | Step | Effort | Depends on |
 |---|---|---|---|
 | 0 | Owner decides on and sends the permission request to EDHREC (and optionally Archidekt). Draft text from §2. | 0.5 h, then waiting | — |
-| 1 | `MTG_SEARCH_HIDE_PRICE` flag and eval-mode tag deny-list in `render.py` / `server.py`; the probe-sweep test (T1, T3, T6). | 0.5 day | — |
-| 2 | Fix `eval/agentic/env.py` grep ordering (T1). | 1 h | — |
-| 3 | `eval/precon/build_precons.py`: MTGJSON precon decklists → `precons.parquet`, with oracle_id mapping and tests. | 0.5 day | — |
-| 4 | `eval/precon/fetch_gold.py`: polite single-pass fetcher (UA, 5 s delay, cache, manifest), plus a parser into `labels.parquet`. **Run only after written permission.** | 0.5 day | 0 |
-| 5 | `eval/precon/score.py`: gains, metrics, validity and structural diagnostics, bootstrap. Unit tests on synthetic labels. | 1 day | 3 |
-| 6 | Harness: task kinds `precon_cut`, `precon_add` and `precon_swap` in `eval/agentic/agent.py` (reuse GLM client, transcripts, resumable runs), `final_answer` schemas, prompt-leak pre-flight (T4). | 1 day | 1, 5 |
-| 7 | Leakage tooling: memorisation probe, cutoff-estimation sweep, tag-enrichment audit. | 0.5 day | 4, 6 |
-| 8 | Pilot: 5 precons (3 train, 2 test), all baselines, 1 repeat. Sanity-check thresholds; estimate cost. | 0.5 day + about $1–3 API | 4–7 |
-| 9 | Full run (3 repeats), write-up `eval/experiments/precon_benchmark.md`, REGISTRY row. | 1 day | 8 |
+| 1 | Eval-mode tag deny-list in `render.py` / `server.py`, and the probe-sweep test (T1, T3, T6). Price removal is already being done on the shipped server. | 0.5 day | — |
+| 2 | `eval/precon/build_precons.py`: MTGJSON precon decklists → `precons.parquet`, with oracle_id mapping and tests. | 0.5 day | — |
+| 3 | `eval/precon/fetch_gold.py`: polite single-pass fetcher (UA, 5 s delay, cache, manifest), plus a parser into `labels.parquet`. **Run only after written permission.** | 0.5 day | 0 |
+| 4 | `eval/precon/score.py`: gains, metrics, validity and structural diagnostics, bootstrap. Unit tests on synthetic labels. | 1 day | 2 |
+| 5 | Harness: task kinds `precon_cut`, `precon_add` and `precon_swap` in `eval/agentic/agent.py` (reuse GLM client, transcripts, resumable runs), `final_answer` schemas, prompt-leak pre-flight (T4). | 1 day | 1, 4 |
+| 6 | Leakage tooling: memorisation probe, cutoff-estimation sweep, tag-enrichment audit. | 0.5 day | 3, 5 |
+| 7 | Pilot: 5 precons (3 train, 2 test), all baselines, 1 repeat. Sanity-check thresholds; estimate cost. | 0.5 day + about $1–3 API | 3–6 |
+| 8 | Full run (3 repeats), write-up `eval/experiments/precon_benchmark.md`, REGISTRY row. | 1 day | 7 |
 
-Total: **about 6 developer-days**, excluding the wait for permission. Steps 1–3 and 5–6 do not need EDHREC data and can start now, using a hand-made toy label file for tests.
+Total: **about 5.5 developer-days**, excluding the wait for permission. Steps 1, 2, 4 and 5 do not need EDHREC data and can start now, using a hand-made toy label file for tests.
 
 ## 11. Open questions for the owner
 
+Still open: 1, 2, 4, 5, 6, 7, 8, 9, 10. Resolved: 3.
+
 1. **Permission:** may we contact EDHREC (and Archidekt)? Who sends the request, under which identity, and should it describe the use as commercial (a product evaluation)? EDHREC's ToS is personal and non-commercial only, and forbids automated requests and downloading.
 2. **Models under test, and their training cutoffs:** GLM-5.3 only, or Claude models too? The test split is defined per cutoff.
-3. **Price:** hide price in the tool for the benchmark (proposed), or for the shipped server too? Do you want a budget-constrained task variant?
+3. ~~**Price:**~~ **Resolved:** price is removed from the shipped MCP server too, so there is no price-shown ablation and no budget variant.
 4. **Bracket:** target bracket and Game Changer limit (proposed: bracket 3, at most 3 GCs)?
 5. **Headline add metric:** raw inclusion-rate gains, or synergy-filtered gains (proposed as secondary, but arguably closer to "merit")?
 6. **Lands:** keep land cuts and adds out of the headline score (proposed), or include them?
