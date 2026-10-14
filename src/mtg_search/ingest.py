@@ -160,6 +160,63 @@ def _mana_cost(card: dict[str, Any]) -> str:
     return " // ".join(costs)
 
 
+PIP_COLORS = "WUBRGC"
+_SYMBOL_RE = re.compile(r"\{([^}]*)\}")
+_X_SYMBOLS = frozenset({"X", "Y", "Z"})
+
+
+def parse_mana_cost(cost: str | None) -> dict[str, Any]:
+    """Parse one face's mana cost (e.g. ``{1}{U}{U}``) into symbol counts.
+
+    Pips use *devotion* semantics: every symbol containing a colour counts once for
+    that colour, so hybrid ``{G/W}`` adds to both G and W, ``{2/W}`` and Phyrexian
+    ``{W/P}`` add to W. ``{C}`` is counted as ``pips_C``. ``generic`` sums plain
+    numeric symbols; ``{X}``/``{Y}``/``{Z}`` set ``has_x``.
+    """
+    out: dict[str, Any] = {f"pips_{c}": 0 for c in PIP_COLORS}
+    out.update(generic=0, has_x=False, has_hybrid=False, has_phyrexian=False)
+    for sym in _SYMBOL_RE.findall(cost or ""):
+        parts = sym.upper().split("/")
+        if len(parts) == 1:
+            p = parts[0]
+            if p.isdigit():
+                out["generic"] += int(p)
+            elif p in _X_SYMBOLS:
+                out["has_x"] = True
+            elif p in PIP_COLORS:
+                out[f"pips_{p}"] += 1
+            continue
+        if "P" in parts:
+            out["has_phyrexian"] = True
+        if len([q for q in parts if q != "P"]) > 1:
+            out["has_hybrid"] = True
+        for q in parts:
+            if q in PIP_COLORS:
+                out[f"pips_{q}"] += 1
+    return out
+
+
+def face_costs(card: dict[str, Any]) -> list[dict[str, Any]]:
+    """Per-face parsed mana costs (one entry for single-faced cards)."""
+    face_list = card.get("card_faces") or [card]
+    return [
+        {"name": f.get("name", ""), "mana_cost": f.get("mana_cost") or "", **parse_mana_cost(f.get("mana_cost"))}
+        for f in face_list
+    ]
+
+
+def mana_columns(card: dict[str, Any]) -> dict[str, Any]:
+    """Card-level cost columns: per-colour pips / generic are the max over faces,
+    flags are true if any face has them; ``face_costs`` keeps the per-face detail."""
+    fc = face_costs(card)
+    cols: dict[str, Any] = {f"pips_{c}": max(f[f"pips_{c}"] for f in fc) for c in PIP_COLORS}
+    cols["generic"] = max(f["generic"] for f in fc)
+    for flag in ("has_x", "has_hybrid", "has_phyrexian"):
+        cols[flag] = any(f[flag] for f in fc)
+    cols["face_costs"] = fc
+    return cols
+
+
 def _type_line(card: dict[str, Any]) -> str:
     if card.get("type_line"):
         return card["type_line"]
@@ -177,6 +234,7 @@ def normalize_card(card: dict[str, Any], tags: list[str] | None = None) -> dict[
         "doc_text": doc_text(card),
         "mana_cost": _mana_cost(card),
         "cmc": float(card.get("cmc") or 0.0),
+        **mana_columns(card),
         "colors": _union_colors(card),
         "color_identity": list(card.get("color_identity") or []),
         "type_line": type_line,
@@ -209,6 +267,21 @@ CARD_SCHEMA_OVERRIDES = {
     "tags": pl.List(pl.String),
     "edhrec_rank": pl.Int64,
     "cmc": pl.Float64,
+    **{f"pips_{c}": pl.Int16 for c in PIP_COLORS},
+    "generic": pl.Int32,
+    "face_costs": pl.List(
+        pl.Struct(
+            {
+                "name": pl.String,
+                "mana_cost": pl.String,
+                **{f"pips_{c}": pl.Int16 for c in PIP_COLORS},
+                "generic": pl.Int32,
+                "has_x": pl.Boolean,
+                "has_hybrid": pl.Boolean,
+                "has_phyrexian": pl.Boolean,
+            }
+        )
+    ),
 }
 
 

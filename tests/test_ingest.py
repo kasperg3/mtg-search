@@ -101,3 +101,33 @@ def test_build_from_raw(tmp_path, raw_cards, raw_tags, raw_rulings):
 
 def test_stamp():
     assert ingest.stamp("2026-10-14T09:01:55.948+00:00") == "20261014T090155"
+
+
+def test_parse_mana_cost():
+    p = ingest.parse_mana_cost
+    cc = p("{1}{U}{U}{U}")
+    assert (cc["pips_U"], cc["generic"], cc["has_x"], cc["has_hybrid"]) == (3, 1, False, False)
+    fb = p("{X}{R}")
+    assert fb["has_x"] and fb["pips_R"] == 1 and fb["generic"] == 0
+    kf = p("{1}{G/W}{G/W}")
+    assert kf["has_hybrid"] and kf["pips_G"] == 2 and kf["pips_W"] == 2 and not kf["has_phyrexian"]
+    gp = p("{U/P}")
+    assert gp["has_phyrexian"] and not gp["has_hybrid"] and gp["pips_U"] == 1
+    sp = p("{2/W}{2/W}{2/W}")
+    assert sp["has_hybrid"] and sp["pips_W"] == 3 and sp["generic"] == 0
+    assert p("{W/U/P}")["has_hybrid"] and p("{W/U/P}")["has_phyrexian"]
+    assert p("{C}{C}{2}")["pips_C"] == 2
+    assert p("") == p(None) and sum(v for k, v in p("").items() if k.startswith("pips_")) == 0
+
+
+def test_mana_columns_per_face(cards_df):
+    fi = row(cards_df, "Fire // Ice")
+    assert [f["mana_cost"] for f in fi["face_costs"]] == ["{1}{R}", "{1}{U}"]
+    assert (fi["pips_R"], fi["pips_U"], fi["generic"]) == (1, 1, 1)
+    emeria = row(cards_df, "Emeria's Call // Emeria, Shattered Skyclave")
+    assert [f["pips_W"] for f in emeria["face_costs"]] == [3, 0]
+    assert emeria["pips_W"] == 3 and emeria["generic"] == 4
+    bolt = row(cards_df, "Lightning Bolt")
+    assert len(bolt["face_costs"]) == 1 and bolt["pips_R"] == 1
+    assert row(cards_df, "Fireball")["has_x"]
+    assert row(cards_df, "Gitaxian Probe")["has_phyrexian"]
