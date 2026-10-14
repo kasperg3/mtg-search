@@ -12,6 +12,7 @@ dependencies = [
     "rapidfuzz>=3.9",
     "huggingface_hub>=0.25",
     "pyyaml>=6",
+    "mcp>=2.3,<3",
 ]
 
 [project.optional-dependencies]
@@ -46,8 +47,9 @@ testpaths = ["tests"]
 
 markers = [
     "models: tests that download/run ML models (deselect with -m 'not models')",
+    "docker: tests that run the built mtg-search image (uv run pytest -m docker)",
 ]
-addopts = "-m 'not models'"
+addopts = "-m 'not models and not docker'"
 
 [[tool.uv.index]]
 name = "pytorch-cpu"
