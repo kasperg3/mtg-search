@@ -1,7 +1,28 @@
 # Experiment registry
 
-One row per experiment. Pull before editing and edit only your own row.
+Every experiment must have a row here. Pull before editing, and edit only your own row (plus new rows).
 
-| ID | experiment | status | write-up | run JSON |
-|---|---|---|---|---|
-| EXP-005 | Document expansion with GLM-5.3 role descriptions (SparseUp / mLateOn) | cancelled by user — single-role descriptions would bias deck design (only the SparseUp k=12 findings were kept; spend ≈ $0.01) | [doc_expansion.md](doc_expansion.md) | — |
+| ID | date | experiment / question | config | headline result | status / conclusion | write-up | run JSON |
+|---|---|---|---|---|---|---|---|
+| EXP-001 | 2026-10-14 | Baseline retriever comparison (wave 3): which of BM25 / learned sparse / dense / late interaction, alone or fused with RRF, best handles vague queries (para+deck) without losing precise wording (handwritten)? | bm25, bm25+tags; sparse `opensearch-neural-sparse-encoding-doc-v3-gte@1646fef`; dense `google/embeddinggemma-2`; late `lightonai/mLateOn`, `answerai-colbert-small-v1`; 12 RRF fusions. All 4 query sets (tags 65, handwritten 46, paraphrase 222, deckneeds 30). git `0021ae3` | para+deck nDCG@10: rrf(dense+mLateOn) 14.0, late-mLateOn 13.0, dense 10.1, sparse 6.7, bm25 3.2. Handwritten: late-mLateOn 70.7 vs dense 36.7. Late vs best non-late: +3.9 [+2.0, +6.0] para+deck, +22.4 handwritten | done: late interaction (mLateOn) wins clearly, and the fusion with dense is best on vague queries. This motivated the NextPlaid serving path | [../results.md](../results.md) | — (predates run records; rankings cached in `eval/.cache/`) |
+| EXP-002 | 2026-10-14 | NextPlaid spike: can `lightonai/mLateOn` be served by NextPlaid on CPU with acceptable latency and size? | `ghcr.io/lightonai/next-plaid:cpu-1.8.5`, mLateOn fp32 ONNX and re-quantized int8 (`--reduce-range`), 35k cards, i5-9600K. git `0021ae3` | ~40 ms end-to-end query latency, ~350 MB index. The published `model_int8.onnx` is broken on CPUs without VNNI (collapsed embeddings) | done: GO (conditional). Use fp32 or re-quantized int8 ONNX; encode docs with PyLate on GPU and push them via `/update` | [../../spike/nextplaid.md](../../spike/nextplaid.md) | — |
+| EXP-003 | 2026-10-14 | Query rewriting: does an LLM rewrite of vague queries into rules-text phrasing improve para+deck retrieval? | see write-up (`query_rewriting.py`, `rewrites.yaml`) | — | **running** (another agent) | [query_rewriting.md](query_rewriting.md) | (pending) |
+| EXP-004 | 2026-10-14 | SparseUp: does a modern learned-sparse model with a transformer query encoder (`Linkup-Platform/linkup-sparseup-embed-v1`) beat our sparse/dense baselines, does it fuse well with mLateOn, and are its per-term explanations human-meaningful? | SparseUp `@08314498` (ModernBERT 149M, `[Q]`/`[D]`, q≤128/d≤512, top-12/pos, vocab fold); docs encoded on HF Jobs T4 (transformers 5.19, ST 6.1); queries on CPU. All 4 sets + fusions rrf(sparseup+mLateOn), rrf(sparseup+dense). Eval at git `633cefa` + run.py changes (committed in the EXP-004 commit) | para+deck nDCG@10 8.0 (sparse-gte 6.7, dense 10.1, mLateOn 13.0); handwritten 47.3; deckneeds 20.0 (best single non-late). rrf(sparseup+mLateOn) 10.9 is −2.1 vs mLateOn alone. CPU search p50 57 ms (2 threads) / 77 ms (6 threads) vs dense 99/151 ms and mLateOn 164/141 ms (quiet machine). 198 nnz/doc, 35.5 MB index | done: not adopted. It is better than gte-sparse on vague queries (+1.3, p=0.04), worse than dense (−2.1) and mLateOn (−5.0), and it hurts mLateOn in fusion. Explanations are readable (whole words, 3% subwords) and expose failure modes (polysemy of "counter", card-name matches) | [sparseup.md](sparseup.md) | [runs/20261014T125242Z_sparseup.json](runs/20261014T125242Z_sparseup.json) (+ `runs/sparseup_latency_*.json`, `runs/sparseup_explain.json`) |
+| EXP-005 | 2026-10-14 | Document expansion with GLM-5.3 role descriptions (SparseUp / mLateOn) | — | — | cancelled by user — single-role descriptions would bias deck design (only the SparseUp k=12 findings were kept; spend ≈ $0.01) | [doc_expansion.md](doc_expansion.md) | — |
+| EXP-006 | 2026-10-14 | Agentic search harness: an agent that uses the sparseup retriever and `explain()` (term contributions) to iterate on queries | see write-up (`eval/agentic/`) | — | **running** (another agent) | (pending) | (pending) |
+| EXP-007 | 2026-10-14 | Precon cut/add benchmark (issue #3): how well does the agent (LLM + popularity-free mtg-search MCP) choose cards to cut from, and add to, Commander precons, graded against EDHREC cut/add rates, with leakage control (post-cutoff test split, memorisation probe)? | see plan; nothing run yet. Blocked on EDHREC permission for the labels (ToS: personal non-commercial use only, no automated requests) | — | **planned** (not started) | [../../docs/benchmark_precon_plan.md](../../docs/benchmark_precon_plan.md) | — |
+
+## How to add an experiment
+
+1. **Claim an ID.** Pull, then add a row with the next free `EXP-NNN`, the date, the question or hypothesis, and status **running**. Commit and push this early so IDs don't collide.
+2. **Put code and notes in `eval/experiments/`.** Name files after the experiment (e.g. `sparseup_explain.py`, `sparseup.md`). Keep code reusable by others in `src/` or `jobs/`.
+3. **Run through `eval/run.py` with a label.** For example `uv run --extra models python eval/run.py --only <system> --label <short-name>`. Every invocation writes `eval/experiments/runs/<UTC timestamp>_<label>.json`, which records:
+   - git sha and dirty flag, and argv;
+   - sha256 of the corpus and of each query-set YAML;
+   - model ids, revisions and encode provenance from the index meta files;
+   - per-system, per-set nDCG@10, Recall@50/100, MRR@10 and latency;
+   - the paired comparisons.
+
+   Commit the JSON. Store any extra machine-readable output (latency benchmarks, explanation dumps) in `runs/` too.
+4. **Write `<name>.md`.** Cover the setup (models and revisions, library versions, hardware, git sha), the results table, the paired tests, caveats and the conclusion.
+5. **Fill in the row.** Add the config, the headline numbers (with CIs where relevant), the conclusion, and links to the write-up and run JSON. Then set the status to done, cancelled or failed. Never delete rows: a negative or cancelled result is still a result.

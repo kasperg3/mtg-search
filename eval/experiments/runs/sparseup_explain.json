@@ -1,0 +1,2544 @@
+{
+ "stats": {
+  "docs": 34646,
+  "vocab": 50370,
+  "active_vocab_dims": 24350,
+  "nnz_per_doc_mean": 198.31498585695317,
+  "nnz_per_doc_p50": 196.0,
+  "nnz_per_doc_max": 636,
+  "npz_mb": 35.5,
+  "gte_npz_mb": 36.7,
+  "csr_ram_mb": 55.1,
+  "query_nnz_mean": 78.85399449035813,
+  "query_nnz_p50": 79.0,
+  "query_nnz_max": 146
+ },
+ "queries": [
+  {
+   "set": "paraphrase",
+   "id": "hw-soft-counter-para",
+   "query": "counter they can pay around",
+   "query_terms": [
+    "counter 3.32",
+    "counters[+q] 3.09",
+    "pay 2.95",
+    "around 2.87",
+    "can 2.74",
+    "they 2.24",
+    "payment[+q] 2.18",
+    "corner[+q] 2.17",
+    "count[+q] 2.11",
+    "counts[+q] 2.05",
+    "paying[+q] 2.04",
+    "·ounter[+q] 1.93"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Fraying Line",
+     "relevant": 0,
+     "score": 51.642,
+     "n_shared": 15,
+     "coverage": 0.881,
+     "terms": [
+      {
+       "term": "counter",
+       "token": "Ġcounter",
+       "q": 3.322,
+       "d": 3.123,
+       "contrib": 10.372,
+       "share": 0.201,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "counters",
+       "token": "Ġcounters",
+       "q": 3.095,
+       "d": 3.006,
+       "contrib": 9.303,
+       "share": 0.18,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "pay",
+       "token": "Ġpay",
+       "q": 2.946,
+       "d": 2.72,
+       "contrib": 8.014,
+       "share": 0.155,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "payment",
+       "token": "Ġpayment",
+       "q": 2.184,
+       "d": 1.922,
+       "contrib": 4.198,
+       "share": 0.081,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "paying",
+       "token": "Ġpaying",
+       "q": 2.042,
+       "d": 2.027,
+       "contrib": 4.138,
+       "share": 0.08,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "count",
+       "token": "Ġcount",
+       "q": 2.105,
+       "d": 1.9,
+       "contrib": 4.001,
+       "share": 0.077,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "counts",
+       "token": "Ġcounts",
+       "q": 2.053,
+       "d": 1.706,
+       "contrib": 3.503,
+       "share": 0.068,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "can",
+       "token": "Ġcan",
+       "q": 2.736,
+       "d": 0.728,
+       "contrib": 1.992,
+       "share": 0.039,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Die Young",
+     "relevant": 0,
+     "score": 51.418,
+     "n_shared": 14,
+     "coverage": 0.864,
+     "terms": [
+      {
+       "term": "counters",
+       "token": "Ġcounters",
+       "q": 3.095,
+       "d": 3.013,
+       "contrib": 9.324,
+       "share": 0.181,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "counter",
+       "token": "Ġcounter",
+       "q": 3.322,
+       "d": 2.669,
+       "contrib": 8.866,
+       "share": 0.172,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "pay",
+       "token": "Ġpay",
+       "q": 2.946,
+       "d": 2.683,
+       "contrib": 7.905,
+       "share": 0.154,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "payment",
+       "token": "Ġpayment",
+       "q": 2.184,
+       "d": 2.034,
+       "contrib": 4.441,
+       "share": 0.086,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "counts",
+       "token": "Ġcounts",
+       "q": 2.053,
+       "d": 1.978,
+       "contrib": 4.061,
+       "share": 0.079,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "paying",
+       "token": "Ġpaying",
+       "q": 2.042,
+       "d": 1.903,
+       "contrib": 3.886,
+       "share": 0.076,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "count",
+       "token": "Ġcount",
+       "q": 2.105,
+       "d": 1.421,
+       "contrib": 2.993,
+       "share": 0.058,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "paid",
+       "token": "Ġpaid",
+       "q": 1.209,
+       "d": 2.434,
+       "contrib": 2.941,
+       "share": 0.057,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Aether Spike",
+     "relevant": 1,
+     "score": 50.826,
+     "n_shared": 13,
+     "coverage": 0.882,
+     "terms": [
+      {
+       "term": "counters",
+       "token": "Ġcounters",
+       "q": 3.095,
+       "d": 2.983,
+       "contrib": 9.233,
+       "share": 0.182,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "counter",
+       "token": "Ġcounter",
+       "q": 3.322,
+       "d": 2.757,
+       "contrib": 9.157,
+       "share": 0.18,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "pay",
+       "token": "Ġpay",
+       "q": 2.946,
+       "d": 2.61,
+       "contrib": 7.69,
+       "share": 0.151,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "counts",
+       "token": "Ġcounts",
+       "q": 2.053,
+       "d": 2.139,
+       "contrib": 4.392,
+       "share": 0.086,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "payment",
+       "token": "Ġpayment",
+       "q": 2.184,
+       "d": 1.91,
+       "contrib": 4.17,
+       "share": 0.082,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "count",
+       "token": "Ġcount",
+       "q": 2.105,
+       "d": 1.726,
+       "contrib": 3.635,
+       "share": 0.072,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "paying",
+       "token": "Ġpaying",
+       "q": 2.042,
+       "d": 1.775,
+       "contrib": 3.624,
+       "share": 0.071,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "paid",
+       "token": "Ġpaid",
+       "q": 1.209,
+       "d": 2.427,
+       "contrib": 2.934,
+       "share": 0.058,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "paraphrase",
+   "id": "tag-removal-sacrifice-para",
+   "query": "forces them to give up one of their own guys",
+   "query_terms": [
+    "own 2.72",
+    "forces 2.37",
+    "surrender[+q] 2.25",
+    "one 2.21",
+    "force[+q] 2.21",
+    "guy[+q] 2.19",
+    "up 2.13",
+    "sacrifice[+q] 2.12",
+    "guys 1.97",
+    "them 1.95",
+    "give 1.89",
+    "they[+q] 1.85"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Force of Negation",
+     "relevant": 0,
+     "score": 35.423,
+     "n_shared": 23,
+     "coverage": 0.802,
+     "terms": [
+      {
+       "term": "force",
+       "token": "Ġforce",
+       "q": 2.21,
+       "d": 3.177,
+       "contrib": 7.022,
+       "share": 0.198,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "forces",
+       "token": "Ġforces",
+       "q": 2.369,
+       "d": 2.816,
+       "contrib": 6.671,
+       "share": 0.188,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "forcing",
+       "token": "Ġforcing",
+       "q": 1.687,
+       "d": 2.77,
+       "contrib": 4.672,
+       "share": 0.132,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "way",
+       "token": "Ġway",
+       "q": 1.296,
+       "d": 1.824,
+       "contrib": 2.364,
+       "share": 0.067,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "owner",
+       "token": "Ġowner",
+       "q": 1.053,
+       "d": 2.122,
+       "contrib": 2.234,
+       "share": 0.063,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "of",
+       "token": "Ġof",
+       "q": 1.197,
+       "d": 1.807,
+       "contrib": 2.162,
+       "share": 0.061,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "opponent",
+       "token": "Ġopponent",
+       "q": 1.334,
+       "d": 1.287,
+       "contrib": 1.717,
+       "share": 0.048,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "one",
+       "token": "Ġone",
+       "q": 2.214,
+       "d": 0.708,
+       "contrib": 1.567,
+       "share": 0.044,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Force Away",
+     "relevant": 0,
+     "score": 34.721,
+     "n_shared": 18,
+     "coverage": 0.899,
+     "terms": [
+      {
+       "term": "force",
+       "token": "Ġforce",
+       "q": 2.21,
+       "d": 3.171,
+       "contrib": 7.007,
+       "share": 0.202,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "forces",
+       "token": "Ġforces",
+       "q": 2.369,
+       "d": 2.483,
+       "contrib": 5.88,
+       "share": 0.169,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "forcing",
+       "token": "Ġforcing",
+       "q": 1.687,
+       "d": 2.795,
+       "contrib": 4.715,
+       "share": 0.136,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "away",
+       "token": "Ġaway",
+       "q": 1.292,
+       "d": 3.101,
+       "contrib": 4.005,
+       "share": 0.115,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "enforce",
+       "token": "Ġenforce",
+       "q": 1.736,
+       "d": 1.973,
+       "contrib": 3.426,
+       "share": 0.099,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "owner",
+       "token": "Ġowner",
+       "q": 1.053,
+       "d": 2.419,
+       "contrib": 2.547,
+       "share": 0.073,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "surrender",
+       "token": "Ġsurrender",
+       "q": 2.247,
+       "d": 0.813,
+       "contrib": 1.827,
+       "share": 0.053,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "ownership",
+       "token": "Ġownership",
+       "q": 1.223,
+       "d": 1.483,
+       "contrib": 1.813,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Force Bubble",
+     "relevant": 0,
+     "score": 34.371,
+     "n_shared": 13,
+     "coverage": 0.941,
+     "terms": [
+      {
+       "term": "force",
+       "token": "Ġforce",
+       "q": 2.21,
+       "d": 3.162,
+       "contrib": 6.989,
+       "share": 0.203,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "forces",
+       "token": "Ġforces",
+       "q": 2.369,
+       "d": 2.709,
+       "contrib": 6.417,
+       "share": 0.187,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "sacrifice",
+       "token": "Ġsacrifice",
+       "q": 2.119,
+       "d": 2.88,
+       "contrib": 6.102,
+       "share": 0.178,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "forcing",
+       "token": "Ġforcing",
+       "q": 1.687,
+       "d": 2.803,
+       "contrib": 4.728,
+       "share": 0.138,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "pressure",
+       "token": "Ġpressure",
+       "q": 1.34,
+       "d": 1.879,
+       "contrib": 2.516,
+       "share": 0.073,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "way",
+       "token": "Ġway",
+       "q": 1.296,
+       "d": 1.885,
+       "contrib": 2.443,
+       "share": 0.071,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "surrender",
+       "token": "Ġsurrender",
+       "q": 2.247,
+       "d": 0.978,
+       "contrib": 2.198,
+       "share": 0.064,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "method",
+       "token": "Ġmethod",
+       "q": 0.455,
+       "d": 2.109,
+       "contrib": 0.96,
+       "share": 0.028,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "deckneeds",
+   "id": "need-fliers-mono-green",
+   "query": "I keep losing to fliers in my mono-green deck",
+   "query_terms": [
+    "fl 3.13",
+    "mono 3.12",
+    "green 2.98",
+    "·iers 2.91",
+    "deck 2.76",
+    "mon[+q] 2.65",
+    "·fers[+q] 2.60",
+    "losing 2.48",
+    "·liers[+q] 2.45",
+    "keep 2.39",
+    "greens[+q] 2.35",
+    "fer[+q] 2.22"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Summoner's Pact",
+     "relevant": 0,
+     "score": 70.216,
+     "n_shared": 27,
+     "coverage": 0.638,
+     "terms": [
+      {
+       "term": "green",
+       "token": "Ġgreen",
+       "q": 2.978,
+       "d": 3.054,
+       "contrib": 9.093,
+       "share": 0.129,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "keep",
+       "token": "Ġkeep",
+       "q": 2.392,
+       "d": 2.609,
+       "contrib": 6.24,
+       "share": 0.089,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "mon",
+       "token": "Ġmon",
+       "q": 2.653,
+       "d": 2.332,
+       "contrib": 6.186,
+       "share": 0.088,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "greens",
+       "token": "Ġgreens",
+       "q": 2.352,
+       "d": 2.312,
+       "contrib": 5.437,
+       "share": 0.077,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "color",
+       "token": "Ġcolor",
+       "q": 1.819,
+       "d": 2.536,
+       "contrib": 4.613,
+       "share": 0.066,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "deck",
+       "token": "Ġdeck",
+       "q": 2.763,
+       "d": 1.661,
+       "contrib": 4.588,
+       "share": 0.065,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "lose",
+       "token": "Ġlose",
+       "q": 1.86,
+       "d": 2.385,
+       "contrib": 4.436,
+       "share": 0.063,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "losing",
+       "token": "Ġlosing",
+       "q": 2.475,
+       "d": 1.697,
+       "contrib": 4.2,
+       "share": 0.06,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Amulet of Quoz",
+     "relevant": 0,
+     "score": 59.465,
+     "n_shared": 27,
+     "coverage": 0.614,
+     "terms": [
+      {
+       "term": "deck",
+       "token": "Ġdeck",
+       "q": 2.763,
+       "d": 2.781,
+       "contrib": 7.683,
+       "share": 0.129,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "keep",
+       "token": "Ġkeep",
+       "q": 2.392,
+       "d": 2.516,
+       "contrib": 6.017,
+       "share": 0.101,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "decks",
+       "token": "Ġdecks",
+       "q": 2.136,
+       "d": 2.172,
+       "contrib": 4.641,
+       "share": 0.078,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "lose",
+       "token": "Ġlose",
+       "q": 1.86,
+       "d": 2.092,
+       "contrib": 3.891,
+       "share": 0.065,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "fl",
+       "token": "Ġfl",
+       "q": 3.126,
+       "d": 1.205,
+       "contrib": 3.768,
+       "share": 0.063,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "card",
+       "token": "Ġcard",
+       "q": 1.369,
+       "d": 2.692,
+       "contrib": 3.685,
+       "share": 0.062,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "opponent",
+       "token": "Ġopponent",
+       "q": 1.693,
+       "d": 2.067,
+       "contrib": 3.499,
+       "share": 0.059,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "losing",
+       "token": "Ġlosing",
+       "q": 2.475,
+       "d": 1.354,
+       "contrib": 3.352,
+       "share": 0.056,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Flare of Cultivation",
+     "relevant": 0,
+     "score": 58.442,
+     "n_shared": 21,
+     "coverage": 0.729,
+     "terms": [
+      {
+       "term": "fl",
+       "token": "Ġfl",
+       "q": 3.126,
+       "d": 2.858,
+       "contrib": 8.934,
+       "share": 0.153,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "green",
+       "token": "Ġgreen",
+       "q": 2.978,
+       "d": 2.988,
+       "contrib": 8.898,
+       "share": 0.152,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "greens",
+       "token": "Ġgreens",
+       "q": 2.352,
+       "d": 2.313,
+       "contrib": 5.439,
+       "share": 0.093,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "fly",
+       "token": "Ġfly",
+       "q": 2.122,
+       "d": 2.434,
+       "contrib": 5.164,
+       "share": 0.088,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "color",
+       "token": "Ġcolor",
+       "q": 1.819,
+       "d": 2.464,
+       "contrib": 4.481,
+       "share": 0.077,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "f",
+       "token": "Ġf",
+       "q": 2.027,
+       "d": 1.651,
+       "contrib": 3.346,
+       "share": 0.057,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "flo",
+       "token": "Ġflo",
+       "q": 2.19,
+       "d": 1.466,
+       "contrib": 3.21,
+       "share": 0.055,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "deck",
+       "token": "Ġdeck",
+       "q": 2.763,
+       "d": 1.142,
+       "contrib": 3.155,
+       "share": 0.054,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "deckneeds",
+   "id": "need-punish-spells",
+   "query": "something to punish opponents who play lots of spells",
+   "query_terms": [
+    "spells 3.03",
+    "spell[+q] 2.77",
+    "opponents 2.58",
+    "punish 2.36",
+    "punishment[+q] 2.32",
+    "magic[+q] 2.24",
+    "lots 2.20",
+    "play 2.09",
+    "lot[+q] 2.01",
+    "opponent[+q] 1.92",
+    "·cery[+q] 1.78",
+    "playing[+q] 1.62"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Remorseless Punishment",
+     "relevant": 0,
+     "score": 69.831,
+     "n_shared": 30,
+     "coverage": 0.587,
+     "terms": [
+      {
+       "term": "punishment",
+       "token": "Ġpunishment",
+       "q": 2.316,
+       "d": 2.851,
+       "contrib": 6.603,
+       "share": 0.095,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "punish",
+       "token": "Ġpunish",
+       "q": 2.364,
+       "d": 2.444,
+       "contrib": 5.777,
+       "share": 0.083,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "·cery",
+       "token": "cery",
+       "q": 1.779,
+       "d": 3.121,
+       "contrib": 5.552,
+       "share": 0.08,
+       "subword": true,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "spell",
+       "token": "Ġspell",
+       "q": 2.767,
+       "d": 1.969,
+       "contrib": 5.449,
+       "share": 0.078,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "spells",
+       "token": "Ġspells",
+       "q": 3.027,
+       "d": 1.556,
+       "contrib": 4.71,
+       "share": 0.067,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "opponent",
+       "token": "Ġopponent",
+       "q": 1.922,
+       "d": 2.341,
+       "contrib": 4.5,
+       "share": 0.064,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "opponents",
+       "token": "Ġopponents",
+       "q": 2.577,
+       "d": 1.723,
+       "contrib": 4.44,
+       "share": 0.064,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "pun",
+       "token": "Ġpun",
+       "q": 1.447,
+       "d": 2.714,
+       "contrib": 3.927,
+       "share": 0.056,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Crime // Punishment",
+     "relevant": 0,
+     "score": 69.568,
+     "n_shared": 33,
+     "coverage": 0.566,
+     "terms": [
+      {
+       "term": "punishment",
+       "token": "Ġpunishment",
+       "q": 2.316,
+       "d": 2.618,
+       "contrib": 6.065,
+       "share": 0.087,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "·cery",
+       "token": "cery",
+       "q": 1.779,
+       "d": 3.158,
+       "contrib": 5.617,
+       "share": 0.081,
+       "subword": true,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "punish",
+       "token": "Ġpunish",
+       "q": 2.364,
+       "d": 2.336,
+       "contrib": 5.521,
+       "share": 0.079,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "spell",
+       "token": "Ġspell",
+       "q": 2.767,
+       "d": 1.922,
+       "contrib": 5.318,
+       "share": 0.076,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "spells",
+       "token": "Ġspells",
+       "q": 3.027,
+       "d": 1.445,
+       "contrib": 4.374,
+       "share": 0.063,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "opponent",
+       "token": "Ġopponent",
+       "q": 1.922,
+       "d": 2.223,
+       "contrib": 4.273,
+       "share": 0.061,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "opponents",
+       "token": "Ġopponents",
+       "q": 2.577,
+       "d": 1.657,
+       "contrib": 4.27,
+       "share": 0.061,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "pun",
+       "token": "Ġpun",
+       "q": 1.447,
+       "d": 2.741,
+       "contrib": 3.965,
+       "share": 0.057,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Press the Enemy",
+     "relevant": 0,
+     "score": 67.149,
+     "n_shared": 29,
+     "coverage": 0.631,
+     "terms": [
+      {
+       "term": "spells",
+       "token": "Ġspells",
+       "q": 3.027,
+       "d": 2.731,
+       "contrib": 8.266,
+       "share": 0.123,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "spell",
+       "token": "Ġspell",
+       "q": 2.767,
+       "d": 2.966,
+       "contrib": 8.207,
+       "share": 0.122,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "opponents",
+       "token": "Ġopponents",
+       "q": 2.577,
+       "d": 2.026,
+       "contrib": 5.221,
+       "share": 0.078,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "·cery",
+       "token": "cery",
+       "q": 1.779,
+       "d": 2.832,
+       "contrib": 5.039,
+       "share": 0.075,
+       "subword": true,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "magic",
+       "token": "Ġmagic",
+       "q": 2.237,
+       "d": 2.195,
+       "contrib": 4.912,
+       "share": 0.073,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "opponent",
+       "token": "Ġopponent",
+       "q": 1.922,
+       "d": 2.445,
+       "contrib": 4.699,
+       "share": 0.07,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "casting",
+       "token": "Ġcasting",
+       "q": 1.423,
+       "d": 2.29,
+       "contrib": 3.259,
+       "share": 0.049,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "play",
+       "token": "Ġplay",
+       "q": 2.09,
+       "d": 1.336,
+       "contrib": 2.792,
+       "share": 0.042,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "deckneeds",
+   "id": "need-aristocrats-value",
+   "query": "I need ways to get value from creatures dying in an aristocrats deck",
+   "query_terms": [
+    "arist 3.03",
+    "creatures 2.81",
+    "dying 2.72",
+    "deck 2.71",
+    "value 2.56",
+    "ways 2.22",
+    "death[+q] 2.22",
+    "creature[+q] 2.20",
+    "·ocrats 2.14",
+    "valuation[+q] 2.13",
+    "need 2.04",
+    "get 2.00"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Death Frenzy",
+     "relevant": 1,
+     "score": 82.161,
+     "n_shared": 40,
+     "coverage": 0.485,
+     "terms": [
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.812,
+       "d": 2.634,
+       "contrib": 7.405,
+       "share": 0.09,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "death",
+       "token": "Ġdeath",
+       "q": 2.218,
+       "d": 3.07,
+       "contrib": 6.811,
+       "share": 0.083,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 2.195,
+       "d": 2.519,
+       "contrib": 5.529,
+       "share": 0.067,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "dying",
+       "token": "Ġdying",
+       "q": 2.72,
+       "d": 1.948,
+       "contrib": 5.3,
+       "share": 0.065,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "deck",
+       "token": "Ġdeck",
+       "q": 2.707,
+       "d": 1.529,
+       "contrib": 4.139,
+       "share": 0.05,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "die",
+       "token": "Ġdie",
+       "q": 1.731,
+       "d": 2.335,
+       "contrib": 4.043,
+       "share": 0.049,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "gain",
+       "token": "Ġgain",
+       "q": 1.324,
+       "d": 2.542,
+       "contrib": 3.367,
+       "share": 0.041,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "value",
+       "token": "Ġvalue",
+       "q": 2.564,
+       "d": 1.266,
+       "contrib": 3.247,
+       "share": 0.04,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Life // Death",
+     "relevant": 0,
+     "score": 75.337,
+     "n_shared": 38,
+     "coverage": 0.552,
+     "terms": [
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.812,
+       "d": 2.585,
+       "contrib": 7.269,
+       "share": 0.096,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "death",
+       "token": "Ġdeath",
+       "q": 2.218,
+       "d": 3.086,
+       "contrib": 6.846,
+       "share": 0.091,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "dying",
+       "token": "Ġdying",
+       "q": 2.72,
+       "d": 2.019,
+       "contrib": 5.493,
+       "share": 0.073,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 2.195,
+       "d": 2.498,
+       "contrib": 5.484,
+       "share": 0.073,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "deck",
+       "token": "Ġdeck",
+       "q": 2.707,
+       "d": 1.636,
+       "contrib": 4.429,
+       "share": 0.059,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "value",
+       "token": "Ġvalue",
+       "q": 2.564,
+       "d": 1.698,
+       "contrib": 4.353,
+       "share": 0.058,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "die",
+       "token": "Ġdie",
+       "q": 1.731,
+       "d": 2.384,
+       "contrib": 4.127,
+       "share": 0.055,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "card",
+       "token": "Ġcard",
+       "q": 1.35,
+       "d": 2.635,
+       "contrib": 3.558,
+       "share": 0.047,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Death's Oasis",
+     "relevant": 1,
+     "score": 74.269,
+     "n_shared": 38,
+     "coverage": 0.57,
+     "terms": [
+      {
+       "term": "death",
+       "token": "Ġdeath",
+       "q": 2.218,
+       "d": 3.059,
+       "contrib": 6.787,
+       "share": 0.091,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.812,
+       "d": 2.386,
+       "contrib": 6.709,
+       "share": 0.09,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 2.195,
+       "d": 2.646,
+       "contrib": 5.809,
+       "share": 0.078,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "value",
+       "token": "Ġvalue",
+       "q": 2.564,
+       "d": 2.195,
+       "contrib": 5.628,
+       "share": 0.076,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "dying",
+       "token": "Ġdying",
+       "q": 2.72,
+       "d": 2.047,
+       "contrib": 5.569,
+       "share": 0.075,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "die",
+       "token": "Ġdie",
+       "q": 1.731,
+       "d": 2.478,
+       "contrib": 4.29,
+       "share": 0.058,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "deck",
+       "token": "Ġdeck",
+       "q": 2.707,
+       "d": 1.403,
+       "contrib": 3.798,
+       "share": 0.051,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "valuation",
+       "token": "Ġvaluation",
+       "q": 2.131,
+       "d": 1.774,
+       "contrib": 3.779,
+       "share": 0.051,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "handwritten",
+   "id": "hw-soft-counter",
+   "query": "counter target spell unless its controller pays",
+   "query_terms": [
+    "counter 3.10",
+    "controller 3.00",
+    "spell 2.95",
+    "pay[+q] 2.68",
+    "controllers[+q] 2.65",
+    "pays 2.61",
+    "spells[+q] 2.61",
+    "counters[+q] 2.52",
+    "target 2.50",
+    "unless 2.29",
+    "paid[+q] 2.23",
+    "magic[+q] 2.20"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Lofty Denial",
+     "relevant": 2,
+     "score": 136.389,
+     "n_shared": 45,
+     "coverage": 0.453,
+     "terms": [
+      {
+       "term": "counter",
+       "token": "Ġcounter",
+       "q": 3.101,
+       "d": 3.231,
+       "contrib": 10.019,
+       "share": 0.073,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "controller",
+       "token": "Ġcontroller",
+       "q": 2.996,
+       "d": 2.962,
+       "contrib": 8.874,
+       "share": 0.065,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "spell",
+       "token": "Ġspell",
+       "q": 2.946,
+       "d": 2.948,
+       "contrib": 8.686,
+       "share": 0.064,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "spells",
+       "token": "Ġspells",
+       "q": 2.612,
+       "d": 2.772,
+       "contrib": 7.24,
+       "share": 0.053,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "controllers",
+       "token": "Ġcontrollers",
+       "q": 2.648,
+       "d": 2.686,
+       "contrib": 7.114,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "counters",
+       "token": "Ġcounters",
+       "q": 2.516,
+       "d": 2.821,
+       "contrib": 7.096,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "pay",
+       "token": "Ġpay",
+       "q": 2.679,
+       "d": 2.442,
+       "contrib": 6.543,
+       "share": 0.048,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "pays",
+       "token": "Ġpays",
+       "q": 2.613,
+       "d": 2.354,
+       "contrib": 6.151,
+       "share": 0.045,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Dazzling Denial",
+     "relevant": 2,
+     "score": 135.872,
+     "n_shared": 45,
+     "coverage": 0.455,
+     "terms": [
+      {
+       "term": "counter",
+       "token": "Ġcounter",
+       "q": 3.101,
+       "d": 3.198,
+       "contrib": 9.919,
+       "share": 0.073,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "controller",
+       "token": "Ġcontroller",
+       "q": 2.996,
+       "d": 2.96,
+       "contrib": 8.869,
+       "share": 0.065,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "spell",
+       "token": "Ġspell",
+       "q": 2.946,
+       "d": 3.009,
+       "contrib": 8.865,
+       "share": 0.065,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "spells",
+       "token": "Ġspells",
+       "q": 2.612,
+       "d": 2.838,
+       "contrib": 7.413,
+       "share": 0.055,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "controllers",
+       "token": "Ġcontrollers",
+       "q": 2.648,
+       "d": 2.692,
+       "contrib": 7.128,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "counters",
+       "token": "Ġcounters",
+       "q": 2.516,
+       "d": 2.785,
+       "contrib": 7.008,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "pay",
+       "token": "Ġpay",
+       "q": 2.679,
+       "d": 2.358,
+       "contrib": 6.318,
+       "share": 0.047,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "target",
+       "token": "Ġtarget",
+       "q": 2.503,
+       "d": 2.523,
+       "contrib": 6.315,
+       "share": 0.046,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Miscast",
+     "relevant": 1,
+     "score": 134.226,
+     "n_shared": 44,
+     "coverage": 0.453,
+     "terms": [
+      {
+       "term": "counter",
+       "token": "Ġcounter",
+       "q": 3.101,
+       "d": 3.164,
+       "contrib": 9.812,
+       "share": 0.073,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "controller",
+       "token": "Ġcontroller",
+       "q": 2.996,
+       "d": 2.927,
+       "contrib": 8.771,
+       "share": 0.065,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "spell",
+       "token": "Ġspell",
+       "q": 2.946,
+       "d": 2.918,
+       "contrib": 8.598,
+       "share": 0.064,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "spells",
+       "token": "Ġspells",
+       "q": 2.612,
+       "d": 2.822,
+       "contrib": 7.37,
+       "share": 0.055,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "counters",
+       "token": "Ġcounters",
+       "q": 2.516,
+       "d": 2.755,
+       "contrib": 6.931,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "controllers",
+       "token": "Ġcontrollers",
+       "q": 2.648,
+       "d": 2.591,
+       "contrib": 6.861,
+       "share": 0.051,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "pay",
+       "token": "Ġpay",
+       "q": 2.679,
+       "d": 2.417,
+       "contrib": 6.475,
+       "share": 0.048,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "target",
+       "token": "Ġtarget",
+       "q": 2.503,
+       "d": 2.403,
+       "contrib": 6.014,
+       "share": 0.045,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "handwritten",
+   "id": "hw-one-blocker-max",
+   "query": "creatures that can't be blocked by more than one creature",
+   "query_terms": [
+    "blocked 2.68",
+    "creature 2.67",
+    "creatures[+q] 2.56",
+    "block[+q] 2.41",
+    "list[+q] 2.39",
+    "blocking[+q] 2.26",
+    "multiple[+q] 2.17",
+    "creat 2.11",
+    "multi[+q] 2.08",
+    "one 2.07",
+    "impossible[+q] 1.81",
+    "animals[+q] 1.75"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Battlefront Krushok",
+     "relevant": 1,
+     "score": 112.665,
+     "n_shared": 57,
+     "coverage": 0.401,
+     "terms": [
+      {
+       "term": "blocked",
+       "token": "Ġblocked",
+       "q": 2.684,
+       "d": 2.864,
+       "contrib": 7.688,
+       "share": 0.068,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 2.666,
+       "d": 2.848,
+       "contrib": 7.592,
+       "share": 0.067,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.562,
+       "d": 2.51,
+       "contrib": 6.431,
+       "share": 0.057,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "block",
+       "token": "Ġblock",
+       "q": 2.408,
+       "d": 2.601,
+       "contrib": 6.263,
+       "share": 0.056,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "blocking",
+       "token": "Ġblocking",
+       "q": 2.263,
+       "d": 2.453,
+       "contrib": 5.552,
+       "share": 0.049,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "creat",
+       "token": "Ġcreat",
+       "q": 2.108,
+       "d": 2.278,
+       "contrib": 4.803,
+       "share": 0.043,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "blocks",
+       "token": "Ġblocks",
+       "q": 1.654,
+       "d": 2.067,
+       "contrib": 3.418,
+       "share": 0.03,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "multiple",
+       "token": "Ġmultiple",
+       "q": 2.166,
+       "d": 1.562,
+       "contrib": 3.383,
+       "share": 0.03,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Familiar Ground",
+     "relevant": 1,
+     "score": 100.786,
+     "n_shared": 52,
+     "coverage": 0.441,
+     "terms": [
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 2.666,
+       "d": 2.893,
+       "contrib": 7.711,
+       "share": 0.077,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "blocked",
+       "token": "Ġblocked",
+       "q": 2.684,
+       "d": 2.726,
+       "contrib": 7.316,
+       "share": 0.073,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.562,
+       "d": 2.725,
+       "contrib": 6.981,
+       "share": 0.069,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "block",
+       "token": "Ġblock",
+       "q": 2.408,
+       "d": 2.447,
+       "contrib": 5.891,
+       "share": 0.058,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "blocking",
+       "token": "Ġblocking",
+       "q": 2.263,
+       "d": 2.362,
+       "contrib": 5.345,
+       "share": 0.053,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "multiple",
+       "token": "Ġmultiple",
+       "q": 2.166,
+       "d": 1.772,
+       "contrib": 3.838,
+       "share": 0.038,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "creat",
+       "token": "Ġcreat",
+       "q": 2.108,
+       "d": 1.775,
+       "contrib": 3.741,
+       "share": 0.037,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "list",
+       "token": "Ġlist",
+       "q": 2.385,
+       "d": 1.523,
+       "contrib": 3.632,
+       "share": 0.036,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Yuan Shao, the Indecisive",
+     "relevant": 1,
+     "score": 97.197,
+     "n_shared": 48,
+     "coverage": 0.466,
+     "terms": [
+      {
+       "term": "blocked",
+       "token": "Ġblocked",
+       "q": 2.684,
+       "d": 2.839,
+       "contrib": 7.619,
+       "share": 0.078,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 2.666,
+       "d": 2.844,
+       "contrib": 7.581,
+       "share": 0.078,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.562,
+       "d": 2.585,
+       "contrib": 6.622,
+       "share": 0.068,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "block",
+       "token": "Ġblock",
+       "q": 2.408,
+       "d": 2.59,
+       "contrib": 6.235,
+       "share": 0.064,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "blocking",
+       "token": "Ġblocking",
+       "q": 2.263,
+       "d": 2.433,
+       "contrib": 5.506,
+       "share": 0.057,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "creat",
+       "token": "Ġcreat",
+       "q": 2.108,
+       "d": 2.599,
+       "contrib": 5.479,
+       "share": 0.056,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "blocks",
+       "token": "Ġblocks",
+       "q": 1.654,
+       "d": 2.023,
+       "contrib": 3.346,
+       "share": 0.034,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "blocker",
+       "token": "Ġblocker",
+       "q": 1.659,
+       "d": 1.752,
+       "contrib": 2.907,
+       "share": 0.03,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "set": "tags",
+   "id": "tag-free-sacrifice-outlet",
+   "query": "free way to sacrifice my own creatures whenever I want",
+   "query_terms": [
+    "sacrifice 2.95",
+    "creatures 2.81",
+    "free 2.78",
+    "·rifice[+q] 2.58",
+    "own 2.51",
+    "want 2.43",
+    "method[+q] 2.26",
+    "ritual[+q] 2.22",
+    "way 2.18",
+    "animals[+q] 2.17",
+    "sacrific[+q] 2.14",
+    "pets[+q] 2.09"
+   ],
+   "hits": [
+    {
+     "rank": 1,
+     "name": "Tide of War",
+     "relevant": 0,
+     "score": 78.181,
+     "n_shared": 31,
+     "coverage": 0.584,
+     "terms": [
+      {
+       "term": "sacrifice",
+       "token": "Ġsacrifice",
+       "q": 2.95,
+       "d": 2.723,
+       "contrib": 8.03,
+       "share": 0.103,
+       "subword": false,
+       "in_query": true,
+       "in_card": false
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.815,
+       "d": 2.575,
+       "contrib": 7.247,
+       "share": 0.093,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "·rifice",
+       "token": "rifice",
+       "q": 2.577,
+       "d": 2.744,
+       "contrib": 7.07,
+       "share": 0.09,
+       "subword": true,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "sacrificed",
+       "token": "Ġsacrificed",
+       "q": 1.955,
+       "d": 2.868,
+       "contrib": 5.609,
+       "share": 0.072,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "sacrific",
+       "token": "Ġsacrific",
+       "q": 2.138,
+       "d": 2.178,
+       "contrib": 4.657,
+       "share": 0.06,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 1.98,
+       "d": 2.325,
+       "contrib": 4.602,
+       "share": 0.059,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "sacrifices",
+       "token": "Ġsacrifices",
+       "q": 1.974,
+       "d": 2.262,
+       "contrib": 4.466,
+       "share": 0.057,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "method",
+       "token": "Ġmethod",
+       "q": 2.259,
+       "d": 1.763,
+       "contrib": 3.982,
+       "share": 0.051,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 2,
+     "name": "Vile Consumption",
+     "relevant": 0,
+     "score": 77.993,
+     "n_shared": 23,
+     "coverage": 0.587,
+     "terms": [
+      {
+       "term": "sacrifice",
+       "token": "Ġsacrifice",
+       "q": 2.95,
+       "d": 2.906,
+       "contrib": 8.571,
+       "share": 0.11,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.815,
+       "d": 2.946,
+       "contrib": 8.292,
+       "share": 0.106,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "·rifice",
+       "token": "rifice",
+       "q": 2.577,
+       "d": 2.601,
+       "contrib": 6.703,
+       "share": 0.086,
+       "subword": true,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "creature",
+       "token": "Ġcreature",
+       "q": 1.98,
+       "d": 2.736,
+       "contrib": 5.416,
+       "share": 0.069,
+       "subword": false,
+       "in_query": false,
+       "in_card": true
+      },
+      {
+       "term": "sacrific",
+       "token": "Ġsacrific",
+       "q": 2.138,
+       "d": 2.1,
+       "contrib": 4.491,
+       "share": 0.058,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "animals",
+       "token": "Ġanimals",
+       "q": 2.168,
+       "d": 1.972,
+       "contrib": 4.277,
+       "share": 0.055,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "ritual",
+       "token": "Ġritual",
+       "q": 2.225,
+       "d": 1.825,
+       "contrib": 4.06,
+       "share": 0.052,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "monsters",
+       "token": "Ġmonsters",
+       "q": 1.911,
+       "d": 2.064,
+       "contrib": 3.945,
+       "share": 0.051,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    },
+    {
+     "rank": 3,
+     "name": "Death Pit Offering",
+     "relevant": 0,
+     "score": 77.931,
+     "n_shared": 29,
+     "coverage": 0.551,
+     "terms": [
+      {
+       "term": "sacrifice",
+       "token": "Ġsacrifice",
+       "q": 2.95,
+       "d": 2.934,
+       "contrib": 8.653,
+       "share": 0.111,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "creatures",
+       "token": "Ġcreatures",
+       "q": 2.815,
+       "d": 2.667,
+       "contrib": 7.507,
+       "share": 0.096,
+       "subword": false,
+       "in_query": true,
+       "in_card": true
+      },
+      {
+       "term": "·rifice",
+       "token": "rifice",
+       "q": 2.577,
+       "d": 2.666,
+       "contrib": 6.871,
+       "share": 0.088,
+       "subword": true,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "sacrific",
+       "token": "Ġsacrific",
+       "q": 2.138,
+       "d": 2.198,
+       "contrib": 4.699,
+       "share": 0.06,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "sacrifices",
+       "token": "Ġsacrifices",
+       "q": 1.974,
+       "d": 2.014,
+       "contrib": 3.977,
+       "share": 0.051,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "sacrificed",
+       "token": "Ġsacrificed",
+       "q": 1.955,
+       "d": 1.971,
+       "contrib": 3.853,
+       "share": 0.049,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "monsters",
+       "token": "Ġmonsters",
+       "q": 1.911,
+       "d": 1.962,
+       "contrib": 3.75,
+       "share": 0.048,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      },
+      {
+       "term": "animals",
+       "token": "Ġanimals",
+       "q": 2.168,
+       "d": 1.678,
+       "contrib": 3.638,
+       "share": 0.047,
+       "subword": false,
+       "in_query": false,
+       "in_card": false
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "summary": {
+  "terms_shown": 192,
+  "doc_expansion_share": 0.5833333333333334,
+  "query_expansion_share": 0.6302083333333334,
+  "subword_share": 0.03125
+ }
+}

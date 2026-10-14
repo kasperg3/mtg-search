@@ -4,6 +4,12 @@
     uv run --extra models python eval/run.py --only bm25 dense   # (re)run some base systems
     uv run --extra models python eval/run.py --refresh dense     # ignore cache for these
     uv run --extra models python eval/run.py --report-only       # metrics from cache only
+    uv run --extra models python eval/run.py --label sparseup    # tag the run record
+
+Every invocation also writes a machine-readable run record to
+``eval/experiments/runs/<UTC timestamp>_<label>.json`` (git sha + dirty flag, systems,
+per-set metrics and latency, model ids/revisions from the index meta files, sha256 of each
+query-set YAML). Reference it from ``eval/experiments/REGISTRY.md``.
 
 Base systems are run one at a time (load -> warm up -> every query of every set -> free),
 and their top-100 rankings plus per-query latency (query encoding + scoring + top-k, CPU,
@@ -23,8 +29,11 @@ import gc
 import hashlib
 import json
 import math
+import platform
+import subprocess
 import sys
 import time
+from datetime import UTC, datetime
 from pathlib import Path
 
 import numpy as np
@@ -43,6 +52,7 @@ CARDS = ROOT / "data" / "cards.parquet"
 INDEX_DIR = ROOT / "index" / "embeddings"
 CACHE_DIR = EVAL_DIR / ".cache"
 RESULTS_MD = EVAL_DIR / "results.md"
+RUNS_DIR = EVAL_DIR / "experiments" / "runs"
 
 SETS = ["tags", "handwritten", "paraphrase", "deckneeds"]
 DEPTH = 100  # retrieved per component
@@ -57,6 +67,8 @@ BASE = {
     "dense": ("dense", "google/embeddinggemma-2"),
     "late-mLateOn": ("late", "lightonai/mLateOn"),
     "late-answerai": ("late", "answerdotai/answerai-colbert-small-v1"),
+    # Learned sparse with a transformer query encoder (EXP-004, eval/experiments/sparseup.md).
+    "sparseup": ("sparseup", "Linkup-Platform/linkup-sparseup-embed-v1"),
 }
 LATE_COMPONENTS = {"late-mLateOn", "late-answerai"}
 
@@ -75,7 +87,19 @@ FUSIONS: dict[str, dict[str, float]] = {
     "rrf(sparse+dense=2)": {"sparse": 1, "dense": 2},
     "rrf(dense=2+mLateOn)": {"dense": 2, "late-mLateOn": 1},
     "rrf(dense+mLateOn=2)": {"dense": 1, "late-mLateOn": 2},
+    "rrf(sparseup+mLateOn)": {"sparseup": 1, "late-mLateOn": 1},
+    "rrf(sparseup+dense)": {"sparseup": 1, "dense": 1},
 }
+
+# Extra paired comparisons reported (and stored in the run record): (A, B).
+EXTRA_PAIRS = [
+    ("sparseup", "sparse"),
+    ("sparseup", "dense"),
+    ("sparseup", "late-mLateOn"),
+    ("rrf(sparseup+mLateOn)", "late-mLateOn"),
+    ("rrf(sparseup+mLateOn)", "rrf(dense+mLateOn)"),
+    ("rrf(sparseup+dense)", "dense"),
+]
 
 
 def uses_late(system: str) -> bool:
@@ -128,9 +152,14 @@ def run_base(system: str, queries: dict[str, list[dict]], masks: Masks, refresh:
         return
     kind, model_id = BASE[system]
     t0 = time.perf_counter()
-    r = __import__("mtg_search.retrievers", fromlist=["load_retriever"]).load_retriever(
-        kind, model_id, index_dir=INDEX_DIR, cards_parquet=CARDS
-    )
+    if kind == "sparseup":
+        from mtg_search.retrievers.sparseup import SparseUpRetriever
+
+        r = SparseUpRetriever.from_dir(INDEX_DIR, model_id)
+    else:
+        r = __import__("mtg_search.retrievers", fromlist=["load_retriever"]).load_retriever(
+            kind, model_id, index_dir=INDEX_DIR, cards_parquet=CARDS
+        )
     print(f"[{system}] loaded in {time.perf_counter() - t0:.1f}s; {len(todo)} queries to run")
     # Warm-up: first calls pay for lazy init / allocator growth.
     for w in ["destroy target creature", "draw a card whenever", "cheap removal for my deck"]:
@@ -206,6 +235,70 @@ def paired_stats(a: np.ndarray, b: np.ndarray, cl: list[str], rng: np.random.Gen
     return {"diff": obs, "lo": lo, "hi": hi, "p": p, "n": len(d), "clusters": m}
 
 
+# --------------------------------------------------------------------------- run record
+
+
+def _git(*a: str) -> str:
+    try:
+        return subprocess.run(["git", *a], cwd=ROOT, capture_output=True, text=True, check=True).stdout.strip()
+    except Exception:  # noqa: BLE001
+        return ""
+
+
+def model_meta(kind: str, model_id: str | None) -> dict:
+    """Model id / revision / encode provenance from the index meta json (None for bm25)."""
+    if model_id is None:
+        return {"kind": kind}
+    slug = model_id.replace("/", "__")
+    sub = {"sparseup": "sparse"}.get(kind, kind)
+    cands = {"dense": [INDEX_DIR / "dense" / f"{slug}.json"], "sparse": [INDEX_DIR / "sparse" / f"{slug}.json"],
+             "late": [INDEX_DIR / "late" / slug / "meta.json"]}.get(sub, [])
+    for c in cands:
+        if c.exists():
+            m = json.loads(c.read_text())
+            keep = ("model", "revision", "kind", "card_count", "oracle_ids_sha256", "scryfall_updated_at",
+                    "query_prompt", "doc_prompt", "versions", "device", "created_at", "nnz_per_doc", "query_encoder")
+            return {"kind": kind, **{k: m[k] for k in keep if k in m}}
+    return {"kind": kind, "model": model_id, "meta": "missing"}
+
+
+def write_run_record(label: str, args_ns, systems, M, lat, pooled, extra_stats, cards_n) -> Path:
+    ts = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+    safe = "".join(c if c.isalnum() or c in "-_." else "-" for c in (label or "run"))
+    sets = {}
+    for st in SETS:
+        p = EVAL_DIR / f"queries_{st}.yaml"
+        sets[st] = {"file": str(p.relative_to(ROOT)), "sha256": hashlib.sha256(p.read_bytes()).hexdigest()}
+    rec = {
+        "label": label,
+        "timestamp": ts,
+        "git": {"sha": _git("rev-parse", "HEAD"), "dirty": bool(_git("status", "--porcelain", "--", "src", "eval/run.py", "jobs"))},
+        "argv": sys.argv[1:],
+        "host": {"platform": platform.platform(), "python": platform.python_version()},
+        "corpus": {"file": "data/cards.parquet", "cards": cards_n,
+                   "sha256": hashlib.sha256(CARDS.read_bytes()).hexdigest()},
+        "query_sets": sets,
+        "protocol": {"depth": DEPTH, "rrf_k": 60, "n_boot": N_BOOT, "seed": SEED,
+                     "latency": "CPU, warm, sequential; fusion = sum of components + RRF"},
+        "models": {name: model_meta(kind, mid) for name, (kind, mid) in BASE.items()},
+        "fusions": FUSIONS,
+        "systems": {},
+        "paired": extra_stats,
+    }
+    for sy in systems:
+        ls = np.array(list(lat[sy].values()))
+        rec["systems"][sy] = {
+            "para+deck_ndcg10": round(pooled[sy], 5),
+            "latency_ms": {"p50": round(float(np.percentile(ls, 50)), 2), "p95": round(float(np.percentile(ls, 95)), 2)},
+            "sets": {st: {m: round(float(np.mean([v[m] for v in M[sy][st].values()])), 5) for m in ("ndcg10", "r50", "r100", "mrr10")}
+                     for st in SETS},
+        }
+    RUNS_DIR.mkdir(parents=True, exist_ok=True)
+    out = RUNS_DIR / f"{ts}_{safe}.json"
+    out.write_text(json.dumps(rec, indent=1) + "\n")
+    return out
+
+
 # --------------------------------------------------------------------------- report
 
 
@@ -214,6 +307,7 @@ def main() -> None:
     ap.add_argument("--only", nargs="*", help="base systems to (re)run; default all")
     ap.add_argument("--refresh", nargs="*", default=[], help="ignore cache for these base systems")
     ap.add_argument("--report-only", action="store_true")
+    ap.add_argument("--label", default="run", help="short name for the run record in eval/experiments/runs/")
     args = ap.parse_args()
 
     cards = pl.read_parquet(CARDS)
@@ -377,6 +471,23 @@ def main() -> None:
           f"{np.percentile(list(lat[b].values()), 50):.0f} ms.")
     w("")
 
+    # Extra paired comparisons (EXTRA_PAIRS), on para+deck and on handwritten.
+    extra_stats = []
+    w("## Additional paired comparisons (nDCG@10 points)\n")
+    w("Row − column, same cluster bootstrap / sign-flip test as above. See `eval/experiments/` for the experiment write-ups.\n")
+    w("| A | B | para+deck: A − B [95% CI] | p | handwritten: A − B [95% CI] | p |")
+    w("|---|---|---|---|---|---|")
+    for a, b in EXTRA_PAIRS:
+        if a not in M or b not in M:
+            continue
+        r1 = paired_stats(vec(a), vec(b), cl, rng)
+        r2 = paired_stats(vec(a, hw_keys), vec(b, hw_keys), hw_cl, rng)
+        w(f"| {a} | {b} | {fmt(r1)} | {fmt(r2)} |")
+        extra_stats.append({"a": a, "b": b, "metric": "ndcg10",
+                            "para+deck": {k: float(v) for k, v in r1.items()},
+                            "handwritten": {k: float(v) for k, v in r2.items()}})
+    w("")
+
     # Observations
     w("## Observations\n")
     for suf in ("-para", "-need"):
@@ -429,6 +540,8 @@ def main() -> None:
 
     RESULTS_MD.write_text("\n".join(out))
     print(f"wrote {RESULTS_MD}")
+    rec = write_run_record(args.label, args, systems, M, lat, pooled, extra_stats, len(cards))
+    print(f"wrote {rec}")
     # console summary
     for sy in order:
         print(f"{sy:32s} " + " ".join(f"{100 * mean(sy, st, 'ndcg10'):5.1f}" for st in SETS) + f"  pd={100 * pooled[sy]:.1f}")
