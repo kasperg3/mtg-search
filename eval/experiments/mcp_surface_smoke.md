@@ -75,9 +75,17 @@ From EXP-006 (GLM-5.3, deck needs, forced 5-search budget; no wall time was reco
 - A task that rewards several searches would be needed to show a turns/time gap. Examples: known-item finding, or an unconstrained budget with a stop condition. EXP-006's known-item tasks never ran.
 - From now on, every summary reports turns, wall time and tokens per episode (`smoke.py`-style table).
 
+## Review caveats
+
+From [`docs/review_2026-10-14.md`](../../docs/review_2026-10-14.md), M1–M3:
+- **e6desc_slim was picked as the best of 7 arms on the same 14 test precons.** Its ADD nDCG@10 vs shipped is +0.021 [−0.091, +0.129], sign test p=0.79. The quality ranking between arms is noise-level.
+- **The robust finding is the trigger rate.** e1desc 14/14 vs shipped 13/28 over both runs, Fisher p=0.0005. Separately, check_cards replaces searching in all 28 episodes.
+- **Retrieval.** All arms used the exact in-process mLateOn ranker, not the shipped NextPlaid/int8 path.
+- **Turns include a ToolSearch step.** Deferred arms spend one turn on `ToolSearch` to load `final_answer`, so turn and token counts include that constant.
+
 ## Recommendation
 
-1. **Ship e6desc_slim.** It adds the description trigger (e1desc), slims the schemas and drops `list_tags`. It is the only arm that improves both trigger rate and quality while cutting surface size. If `list_tags` should stay for human users, ship e1desc instead.
+1. **Candidate, not yet established: e6desc_slim** (or e1desc). It adds the description trigger (e1desc), slims the schemas and drops `list_tags`. It improved the trigger rate and, in this smoke test, quality, while cutting surface size. The quality gain is not established (see caveats). Choose between the arms on the **dev** split, then confirm once on test. If `list_tags` should stay for human users, ship e1desc instead.
 2. **Do not ship `check_cards` as a standalone tool.** Options for issue #4:
    - fold validity into what `search_cards` already guarantees (filters);
    - expose the check only after a search;

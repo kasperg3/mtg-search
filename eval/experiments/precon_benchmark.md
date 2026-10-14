@@ -57,7 +57,7 @@ Paired differences vs `none` (14 precons):
 |---|---|---|
 | CUT nDCG@10 | −1.7 [−5.2, +1.6] | +2.0 [−1.4, +5.4] |
 | ADD nDCG@10 | +2.0 [−2.6, +6.9] | +4.6 [−9.5, +18.7] |
-| ADD validity | +1.4 [−3.2, +6.4] | **+7.9 [+2.1, +14.3]** |
+| ADD validity | +1.4 [−3.2, +6.4] | **+7.9 [+2.1, +14.3]** (sign test p=0.11) |
 | SWAP add nDCG@10 | +5.7 [−1.1, +12.9] | +5.8 [−0.6, +12.9] |
 | SWAP add validity | +5.2 [−0.7, +11.9] | +7.4 [−0.0, +14.8] |
 
@@ -72,6 +72,14 @@ Invalid ADD picks by reason (out of 280):
 | not Commander-legal | 1 | 2 | 0 |
 
 Tool use in `mcp-hint`: 0.8 calls per CUT episode, 0.9 per ADD and 2.1 per SWAP (27 `search_cards`, 27 `get_card`). `find_similar` was never used.
+
+## Review caveats
+
+From the independent review ([`docs/review_2026-10-14.md`](../../docs/review_2026-10-14.md)):
+- **Retrieval path.** All conditions used the exact in-process mLateOn ranker, not the shipped NextPlaid/int8 path (top-10 overlap with exact 72–85%).
+- **Validity gain.** The `mcp-hint` validity gain has bootstrap CI > 0 but sign test p=0.11. The popularity-drift shift is robust (sign test p=0.002).
+- **Land picks.** Land picks fill headline ADD slots with zero gain (lands are scored separately). Tool-using arms pick slightly more lands, a small bias against them.
+- **Name resolution.** The name-resolution bug fixed in `eaa0919` was live during these runs.
 
 ## Reading
 

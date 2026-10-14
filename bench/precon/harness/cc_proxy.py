@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import urllib.request
 
 import anyio
@@ -25,10 +26,15 @@ class CallBudget:
     """Tool-call accounting shared with the GLM loop's wording (agent.py)."""
 
     def __init__(self, cap: int):
-        self.cap, self.n, self.final = cap, 0, None
+        self.cap, self.n, self.final, self.over = cap, 0, None, 0
+        self._lock = threading.Lock()  # parallel tool calls run in worker threads
 
     def handle(self, name: str, args: dict, call) -> tuple[str, dict | None]:
         """-> (content for the model, log record or None)."""
+        with self._lock:
+            return self._handle(name, args, call)
+
+    def _handle(self, name: str, args: dict, call) -> tuple[str, dict | None]:
         if name == "final_answer":
             if self.final is not None:
                 return "Already received.", None
@@ -36,7 +42,8 @@ class CallBudget:
             return "Received. Your answer is recorded; reply with a one-line confirmation and stop.", {
                 "event": "final_answer", "args": args}
         if self.n >= self.cap:
-            return "Tool budget exhausted. Call final_answer now.", {"event": "over_budget", "tool": name}
+            self.over += 1
+            return "Tool budget exhausted. Call final_answer now.", {"event": "over_budget", "tool": name, "n_over": self.over}
         self.n += 1
         rec = {"event": "tool_call", "n": self.n, "tool": name, "args": args}
         try:

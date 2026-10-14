@@ -299,7 +299,7 @@ def summarise(args, bench, episodes, run_id, cfg, system, stopped, wall) -> dict
         slices[t] = {name: scorer.slice_aggregate(eps, fn, head, n_boot=1000) for name, fn in fns.items()}
     conf = {k: v for k, v in vars(args).items() if k not in ("func",)}
     rec = {
-        "experiment": "EXP-007", "run_id": run_id, "created": datetime.now(UTC).isoformat(timespec="seconds"),
+        "experiment": args.experiment, "run_id": run_id, "created": datetime.now(UTC).isoformat(timespec="seconds"),
         "git": git_info(), "dataset": {"revision": bench.revision, "snapshot_date": bench.manifest.get("snapshot_date"),
                                         "cards_manifest": bench.manifest.get("cards_parquet") or bench.manifest.get("cards_manifest"),
                                         "cutoff": next((s.get("cutoff") for s in bench.splits.values()), None)},
@@ -466,6 +466,7 @@ def main(argv=None) -> None:
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--anonymise-commander", action="store_true")
     ap.add_argument("--tool-hint", action="store_true", help="tell the agent to use its tools before answering")
+    ap.add_argument("--experiment", default="EXP-007", help="registry id written into the run record")
     run(ap.parse_args(argv))
 
 

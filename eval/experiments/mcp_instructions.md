@@ -6,7 +6,7 @@
 - **General best-practice wording is not enough (v2).** A research-based rewrite triggered tool use in 1 of 42 episodes. It did make picks more careful even without searching: ADD validity +5.4 points.
 - **One procedural sentence in the server instructions works when the tools load upfront (v3).** The sentence ties tool use to the moment of answering: "Before you answer a deck-building request, use the tools: search for candidate cards and check exact card text, colour identity and legality of your picks."
   - 29% of episodes searched.
-  - ADD nDCG@10 +0.139 [+0.048, +0.236] vs v1, the best ADD score of any arm.
+  - ADD nDCG@10 +0.139 [+0.048, +0.236] vs v1, but the sign test gives p=0.42 (a few precons drive the mean), so this is not established. See Review caveats.
   - Validity +7.9 points; adds less popularity-biased.
   - The same sentence in the system prompt triggers more often (57%). The channel matters, but the server channel works.
 - **Under deferred loading (Claude Code's default), instructions alone fail again (v3: 5%).** Marking `search_cards` and `get_card` with `_meta["anthropic/alwaysLoad"]` restores tool use (45%). It gives ADD nDCG@10 +0.090 [−0.002, +0.183], ADD validity +5.7 [+1.1, +11.8] and SWAP add validity +5.0 [+2.1, +8.6].
@@ -70,6 +70,25 @@ Paired differences vs v1 (upfront), 14 precons:
 | full tool surface incl. JSON schemas (chars) | 14,462 | 12,410 | 12,566 |
 
 The input schemas are now the largest part, about 950 tokens each for the two filter tools. Dropping pydantic's per-property `title`s and the `anyOf [T, null]` wrappers would save roughly 200 tokens per filter tool. This is a code change, not done here.
+
+## Review caveats (independent review 2026-10-14, [`docs/review_2026-10-14.md`](../../docs/review_2026-10-14.md))
+
+- **Retriever (M1).** All arms used the exact in-process mLateOn ranker (fp32 MaxSim over the stored embeddings). The shipped Docker image serves through NextPlaid with an int8 model and a PLAID index; its top-10 agrees with the exact ranking on about 72–85% of slots. Tool-use behaviour should not depend on this. Retrieval quality as users see it may differ.
+- **Statistics (M2).** At n=14 the percentile bootstrap and the exact sign test can disagree. Only effects that pass both tests, or Fisher's exact test for tool-use rates, should be read as established:
+
+| effect | test | p |
+|---|---|---|
+| tool use v3 (12/42) vs v1 (0/42) | Fisher | 0.0002 |
+| tool use v3 + alwaysLoad, deferred (19/42) vs v3 deferred (2/42) | Fisher | 2.5e-5 |
+| tool use, system-prompt hint (24/42) vs v3 (12/42) | Fisher | 0.015 |
+| ADD validity v3 − v1, +0.079 | sign | 0.021 |
+| ADD popularity drift v3 − v1, +0.86 | sign | 0.013 |
+| ADD nDCG@10 v3 + alwaysLoad, deferred − v1, +0.090 | sign | 0.022 (bootstrap CI touches 0) |
+| **ADD nDCG@10 v3 − v1, +0.139** | sign | **0.42: not established** |
+| ADD validity v3 + alwaysLoad, deferred − v1, +0.057 | sign | 0.23: not established |
+
+- **Test-set reuse (M3).** The 14 test precons were used for 21 arms chosen adaptively; the plan says to select on dev and run test once. The tool-use effects are large enough to survive this. The small quality differences between arms are not.
+- **Name resolution (m2).** Before commit `eaa0919`, exact name lookups could resolve a card's name to another card's face of the same name (e.g. "Lightning Bolt"). That bug was live during these runs and affects `get_card` answers in a few episodes.
 
 ## Reading
 

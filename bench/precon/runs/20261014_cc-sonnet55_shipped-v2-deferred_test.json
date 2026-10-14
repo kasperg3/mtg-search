@@ -1,5 +1,5 @@
 {
- "experiment": "EXP-007",
+ "experiment": "EXP-009",
  "run_id": "20261014_cc-sonnet55_shipped-v2-deferred_test",
  "created": "2026-10-14T16:27:36+00:00",
  "git": {
@@ -4427,5 +4427,7 @@
     }
    }
   }
- }
+ },
+ "experiment_recorded": "EXP-007",
+ "note": "experiment id corrected 2026-10-14 (review m4): run.py hard-coded EXP-007 at run time"
 }

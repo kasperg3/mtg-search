@@ -1,5 +1,5 @@
 {
- "experiment": "EXP-007",
+ "experiment": "EXP-010",
  "run_id": "20261014_smoke-add_e1desc",
  "created": "2026-10-14T16:49:26+00:00",
  "git": {
@@ -1655,5 +1655,7 @@
     }
    }
   }
- }
+ },
+ "experiment_recorded": "EXP-007",
+ "note": "experiment id corrected 2026-10-14 (review m4): run.py hard-coded EXP-007 at run time"
 }
