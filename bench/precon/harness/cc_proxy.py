@@ -61,7 +61,8 @@ def main() -> None:
     base, task = os.environ["CC_TOOL_URL"].rstrip("/"), os.environ["CC_TASK"]
     budget = CallBudget(int(os.environ["CC_MAX_CALLS"]))
     log_path = os.environ["CC_LOG"]
-    schemas = _http(f"{base}/schemas?task={task}")["tools"]
+    meta = _http(f"{base}/schemas?task={task}")
+    schemas = meta["tools"]
 
     def log(rec: dict) -> None:
         with open(log_path, "a") as f:
@@ -89,7 +90,8 @@ def main() -> None:
         return types.CallToolResult(content=[types.TextContent(type="text", text=content)],
                                     is_error=bool(rec and rec.get("error")))
 
-    server = Server("deck", on_list_tools=on_list_tools, on_call_tool=on_call_tool)
+    server = Server(os.environ.get("CC_SERVER_NAME", "deck"), instructions=meta.get("instructions"),
+                    on_list_tools=on_list_tools, on_call_tool=on_call_tool)
 
     async def run() -> None:
         async with stdio_server() as (r, w):

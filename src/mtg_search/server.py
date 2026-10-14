@@ -434,21 +434,23 @@ When `prefix` is an exact tag slug, also lists up to 15 example cards with that 
 the `roles:` line of search results; use their wording to phrase better search queries."""
 
 
-def build_mcp(service: CardService):
+INSTRUCTIONS = (
+    "Semantic search over all Magic: The Gathering cards for deck building. "
+    "search_cards for roles/effects (with filters for colours, format, mana value, types), "
+    "find_similar for substitutes of a known card, get_card for exact text/rulings/legality, "
+    "list_tags to discover functional tag vocabulary."
+)
+
+
+def build_mcp(service: CardService, surface: dict[str, str] | None = None):
+    """``surface`` overrides the model-facing text for A/B tests (EXP-009): keys ``instructions``,
+    ``search_cards``, ``find_similar``, ``get_card``, ``list_tags`` (tool descriptions)."""
     from mcp.server.mcpserver import MCPServer
 
     from . import __version__
 
-    mcp = MCPServer(
-        "mtg-search",
-        version=__version__,
-        instructions=(
-            "Semantic search over all Magic: The Gathering cards for deck building. "
-            "search_cards for roles/effects (with filters for colours, format, mana value, types), "
-            "find_similar for substitutes of a known card, get_card for exact text/rulings/legality, "
-            "list_tags to discover functional tag vocabulary."
-        ),
-    )
+    surface = surface or {}
+    mcp = MCPServer("mtg-search", version=__version__, instructions=surface.get("instructions", INSTRUCTIONS))
     fp = filter_parameters()
     limit_p = _P("limit", Annotated[int, Field(ge=1, le=MAX_LIMIT)], DEFAULT_LIMIT,
                  f"Number of cards to return (1-{MAX_LIMIT}).")
@@ -458,14 +460,15 @@ def build_mcp(service: CardService):
         _P("query", str | None, None, "One query phrased like Oracle rules text (shorthand for queries=[query])."),
         _P("queries", Annotated[list[str], Field(max_length=MAX_QUERIES)] | None, None,
            f"1-{MAX_QUERIES} rules-text queries, each a different mechanism; rankings are fused (RRF)."),
-        *fp, limit_p, detail_p], SEARCH_DOC)
+        *fp, limit_p, detail_p], surface.get("search_cards", SEARCH_DOC))
     similar = _make_tool("find_similar", service.find_similar, [
         _P("card_name", str, desc="Name of the reference card (fuzzy matched)."),
-        *fp, limit_p, detail_p], SIMILAR_DOC)
-    get = _make_tool("get_card", service.get_card, [_P("name", str, desc="Card name (fuzzy matched).")], GET_DOC)
+        *fp, limit_p, detail_p], surface.get("find_similar", SIMILAR_DOC))
+    get = _make_tool("get_card", service.get_card, [_P("name", str, desc="Card name (fuzzy matched).")],
+                     surface.get("get_card", GET_DOC))
     tags = _make_tool("list_tags", service.list_tags, [
         _P("prefix", str | None, None, "Tag slug prefix, e.g. 'sacrifice' or 'ramp'."),
-        _P("limit", Annotated[int, Field(ge=1, le=200)], 60, "Max tags to list.")], TAGS_DOC)
+        _P("limit", Annotated[int, Field(ge=1, le=200)], 60, "Max tags to list.")], surface.get("list_tags", TAGS_DOC))
     for fn in (search, similar, get, tags):
         mcp.add_tool(fn, structured_output=False)
     return mcp

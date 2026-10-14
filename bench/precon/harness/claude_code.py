@@ -60,7 +60,8 @@ class ToolService:
 
             def do_GET(self):
                 task = parse_qs(urlparse(self.path).query).get("task", ["cut"])[0]
-                self._send({"tools": svc.toolset.schemas() + [final_answer_tool(task)]})
+                self._send({"tools": svc.toolset.schemas() + [final_answer_tool(task)],
+                            "instructions": getattr(svc.toolset, "instructions", None)})
 
             def do_POST(self):
                 req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -93,12 +94,13 @@ def _usage(result: dict) -> dict:
     return {"prompt": prompt, "cached": cached, "completion": u.get("output_tokens") or 0, "reasoning": 0}
 
 
-def check_isolation(init: dict, with_proxy: bool) -> None:
+def check_isolation(init: dict, with_proxy: bool, server: str = PROXY_SERVER) -> None:
     """The session must see only the proxy's tools (or none) and no other MCP server."""
     tools = init.get("tools") or []
     servers = [s.get("name") for s in init.get("mcp_servers") or []]
-    bad = [t for t in tools if not (with_proxy and t.startswith(f"mcp__{PROXY_SERVER}__"))]
-    if bad or servers != ([PROXY_SERVER] if with_proxy else []):
+    prefix = f"mcp__{server.replace('-', '_')}__"
+    bad = [t for t in tools if not (with_proxy and (t.startswith(prefix) or t.startswith(f"mcp__{server}__")))]
+    if bad or servers != ([server] if with_proxy else []):
         raise LeakError(f"Claude Code session not isolated: tools={tools} mcp_servers={servers}")
     if with_proxy and any(s.get("status") != "connected" for s in init.get("mcp_servers") or []):
         raise RuntimeError(f"proxy MCP server not connected: {init.get('mcp_servers')}")
@@ -120,8 +122,9 @@ class ClaudeCode:
     def _session(self, system: str, user: str, transcript_path: Path | None, mcp: dict | None) -> tuple[dict, list]:
         cmd = ["claude", "-p", "--model", self.model, "--system-prompt", system, "--tools", "",
                "--strict-mcp-config", "--no-session-persistence", "--output-format", "stream-json", "--verbose"]
+        server = (mcp or {}).get("env", {}).get("CC_SERVER_NAME", PROXY_SERVER)
         if mcp:
-            cmd += ["--mcp-config", json.dumps({"mcpServers": {PROXY_SERVER: mcp}}), "--allowedTools", f"mcp__{PROXY_SERVER}"]
+            cmd += ["--mcp-config", json.dumps({"mcpServers": {server: mcp}}), "--allowedTools", f"mcp__{server}"]
         cwd = tempfile.mkdtemp(prefix="cc-precon-")
         try:
             p = subprocess.run(cmd, input=user, capture_output=True, text=True, cwd=cwd, env=_env(), timeout=self.timeout)
@@ -143,7 +146,7 @@ class ClaudeCode:
         result = next((e for e in reversed(events) if e.get("type") == "result"), None)
         if init is None or result is None:
             raise RuntimeError(f"claude -p failed (exit {p.returncode}): {p.stderr[-500:] or p.stdout[-500:]}")
-        check_isolation(init, with_proxy=mcp is not None)
+        check_isolation(init, with_proxy=mcp is not None, server=server)
         if result.get("is_error"):
             raise RuntimeError(f"claude -p error: {result.get('subtype')} {str(result.get('result'))[:300]}")
         return result, events
@@ -162,7 +165,8 @@ class ClaudeCode:
                 time.sleep(self.backoff * (attempt + 1))
         raise AssertionError("unreachable")
 
-    def episode(self, task: str, system: str, user: str, *, tool_url: str | None, transcript_path: Path) -> dict:
+    def episode(self, task: str, system: str, user: str, *, tool_url: str | None, transcript_path: Path,
+                server_name: str = PROXY_SERVER) -> dict:
         t0 = time.time()
         with open(transcript_path, "w") as f:
             f.write(json.dumps({"event": "config", "task": task, "llm": self.config(), "tool_url": bool(tool_url),
@@ -171,7 +175,8 @@ class ClaudeCode:
         if tool_url:
             mcp = {"type": "stdio", "command": sys.executable, "args": ["-m", "bench.precon.harness.cc_proxy"],
                    "env": {"PYTHONPATH": str(ROOT), "CC_TOOL_URL": tool_url, "CC_TASK": task,
-                           "CC_MAX_CALLS": str(BUDGETS[task][0]), "CC_LOG": str(transcript_path)}}
+                           "CC_MAX_CALLS": str(BUDGETS[task][0]), "CC_LOG": str(transcript_path),
+                           "CC_SERVER_NAME": server_name}}
         rec = {"task": task, "output": {KEYS[task]: []}, "stop": "error", "tool_calls": [], "llm_calls": 0,
                "usage": {"prompt": 0, "cached": 0, "completion": 0, "reasoning": 0}, "cost_usd": 0.0,
                "notional_usd": 0.0, "wall_s": 0.0, "parse": "", "error": None}

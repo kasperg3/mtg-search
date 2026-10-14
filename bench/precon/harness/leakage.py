@@ -17,7 +17,7 @@ from collections.abc import Iterable
 
 from .tools import LEAK
 
-ALLOWED_TOOLS = {"search_cards", "find_similar", "get_card", "grep", "bm25", "final_answer"}
+ALLOWED_TOOLS = {"search_cards", "find_similar", "get_card", "list_tags", "grep", "bm25", "final_answer"}
 
 
 class PromptLeak(AssertionError):

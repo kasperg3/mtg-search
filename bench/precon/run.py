@@ -139,7 +139,8 @@ class AgentSystem:
         self.args, self.bench, self.db = args, bench, db
         self.llm = make_llm(args)
         self.budget = Budget(args.max_usd)
-        self.toolset = make_toolset(args.tools, bench.denylist, backend=args.backend) if args.system == "agent" else None
+        kw = {"surface": args.surface} if args.tools == "shipped" else {}
+        self.toolset = make_toolset(args.tools, bench.denylist, backend=args.backend, **kw) if args.system == "agent" else None
         self.service = None
         if args.llm == "claude-code" and self.toolset is not None and self.toolset.schemas():
             from bench.precon.harness.claude_code import ToolService
@@ -181,7 +182,7 @@ class AgentSystem:
                   tool_names=tool_names)
         if self.args.llm == "claude-code":
             d = self.llm.episode(task, system, user, tool_url=self.service.url if self.service else None,
-                                 transcript_path=tpath)
+                                 transcript_path=tpath, server_name="mtg-search" if self.args.tools == "shipped" else "deck")
         else:
             d = run_episode(self.llm, self.toolset, task, system, user, budget=self.budget, transcript_path=tpath).to_dict()
         d["prompt_hash"] = prompt_hash(system, user)
@@ -447,7 +448,9 @@ def main(argv=None) -> None:
     ap.add_argument("--add-thresholds", default=None, help="grade 3,2,1 lower bounds on r (default .30,.15,.05)")
     ap.add_argument("--n-boot", type=int, default=10_000)
     ap.add_argument("--run-id", default=None)
-    ap.add_argument("--tools", default="mcp", choices=["mcp", "lexical", "none"])
+    ap.add_argument("--tools", default="mcp", choices=["mcp", "lexical", "none", "shipped"],
+                    help="shipped = the real MCP server surface (instructions + tool descriptions), see --surface")
+    ap.add_argument("--surface", default="v1", help="model-facing text variant for --tools shipped (surfaces.py)")
     ap.add_argument("--backend", default="late", choices=["late", "bm25", "docker"],
                     help="retrieval backend for --tools mcp and the heuristic baseline")
     ap.add_argument("--llm", default="fake", choices=["fake", "glm", "claude-code"],

@@ -150,7 +150,8 @@ class MCPToolset(Toolset):
             else:
                 raise ValueError(f"unknown backend {backend!r}")
         self.svc = CardService(cards, _MaskBackend(retriever, cards.height),
-                               tags=tags_df.select("slug", "label", "description", "card_count", "parent_slugs")
+                               tags=tags_df.filter(~pl.col("slug").is_in(list(self.deny)))
+                               .select("slug", "label", "description", "card_count", "parent_slugs")
                                if tags_df is not None else None,
                                rulings_path=data_dir / "rulings.parquet")
 
@@ -325,6 +326,56 @@ class LexicalToolset(Toolset):
         return out
 
 
+class ShippedToolset(MCPToolset):
+    """The shipped MCP server's own surface (instructions, tool names, descriptions, schemas and
+    argument handling via ``build_mcp``) over the in-process eval service. ``surface`` selects the
+    model-facing text: "v1" = as shipped in server.py, otherwise a variant from ``surfaces.SURFACES``."""
+
+    name = "shipped"
+    tool_names = ("search_cards", "find_similar", "get_card", "list_tags")
+
+    def __init__(self, surface: str = "v1", **kw: Any):
+        super().__init__(**kw)
+        if self.svc is None:
+            raise ValueError("shipped toolset needs an in-process backend (late or bm25)")
+        import anyio
+
+        from mtg_search.server import build_mcp
+
+        from .surfaces import SURFACES
+
+        self.surface = surface
+        self.mcp = build_mcp(self.svc, SURFACES[surface])
+        self.instructions = self.mcp.instructions
+        self._schemas = [_fn(t.name, t.description or "", t.input_schema.get("properties", {}),
+                             t.input_schema.get("required", [])) for t in anyio.run(self.mcp.list_tools)]
+        for sc, t in zip(self._schemas, anyio.run(self.mcp.list_tools)):
+            sc["function"]["parameters"] = dict(t.input_schema)  # keep $defs / constraints verbatim
+
+    def config(self) -> dict:
+        return {"tools": "shipped", "surface": self.surface, "backend": self.backend_name, "n_denied_tags": len(self.deny),
+                "surface_chars": len(self.instructions or "") + sum(len(json.dumps(s)) for s in self._schemas)}
+
+    def schemas(self) -> list[dict]:
+        return self._schemas
+
+    def call(self, name: str, args: dict) -> str:
+        import anyio
+
+        if name not in self.tool_names:
+            raise ValueError(f"unknown tool {name}")
+        try:
+            res = anyio.run(self.mcp.call_tool, name, args)
+        except Exception as e:  # ToolError / validation error -> shown to the model, like the real server
+            raise ValueError(str(e)) from e
+        text = "\n".join(getattr(c, "text", "") for c in getattr(res, "content", []) or [])
+        if getattr(res, "is_error", False):
+            raise ValueError(text)
+        text = self._strip_denied_roles(text)
+        check_tool_output(text)
+        return text
+
+
 def make_toolset(kind: str, denylist: dict | None = None, backend: str = "late", **kw: Any) -> Toolset:
     if kind == "none":
         return NoTools()
@@ -332,4 +383,6 @@ def make_toolset(kind: str, denylist: dict | None = None, backend: str = "late",
         return MCPToolset(backend=backend, denylist=denylist, **kw)
     if kind == "lexical":
         return LexicalToolset(denylist=denylist, **kw)
+    if kind == "shipped":
+        return ShippedToolset(backend=backend, denylist=denylist, **kw)
     raise ValueError(f"unknown toolset {kind!r}")

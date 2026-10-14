@@ -43,6 +43,8 @@ TOOLS_TEXT = {
                 "regular expression; returns the match count and 15 matching cards ordered by keyword relevance) and "
                 "`bm25` (keyword search, top 15). Both accept optional filters such as color_identity and format."),
     "none": "You have no tools: answer from your own knowledge of Magic cards.",
+    # EXP-009: the connected MCP server describes itself (instructions + tool descriptions), as in real use
+    "shipped": "",
 }
 
 SYSTEM = """You are an expert Magic: The Gathering Commander deck builder. You are given a complete 100-card Commander deck as card text and asked to improve it.

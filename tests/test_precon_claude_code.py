@@ -60,3 +60,11 @@ def test_isolation_accepts_proxy_only():
 def test_isolation_rejects_extra_tools_or_servers(init, with_proxy):
     with pytest.raises(LeakError):
         check_isolation(init, with_proxy)
+
+
+def test_isolation_with_shipped_server_name():
+    init = {"tools": ["mcp__mtg-search__search_cards", "mcp__mtg-search__final_answer"],
+            "mcp_servers": [{"name": "mtg-search", "status": "connected"}]}
+    check_isolation(init, with_proxy=True, server="mtg-search")
+    with pytest.raises(LeakError):
+        check_isolation(init, with_proxy=True)  # wrong server name expected
