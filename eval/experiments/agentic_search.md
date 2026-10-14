@@ -1,6 +1,6 @@
 # EXP-006: Agentic multi-step search: does SparseUp term feedback steer the agent?
 
-**Status: main run in progress** (budget option (a): 2 repeats of A and C, 1 repeat of B, D and F, ≈ $23; hard stop at $25 total spend).
+**Status: main run in progress, shortened to 1 repeat of every condition (A, B, C, D, F)** (≈ $17 projected). The planned second repeat of A and C (≈ $7) was dropped by the owner to save API spend, so there are no repeat-variance estimates; comparisons are paired over tasks only.
 Harness and how to run it: [`eval/agentic/README.md`](../agentic/README.md). Pilot data: `eval/agentic/runs/pilot/`, `eval/agentic/results/pilot.json`.
 
 ## Hypothesis (user)

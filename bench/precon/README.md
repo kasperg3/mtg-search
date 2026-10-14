@@ -140,3 +140,5 @@ Token profile from fake-LLM dry runs on the test split (`runs/20261014_dry_{mcp,
 | **total** | **$56.11** | **$92.16** |
 
 `uv run python -m bench.precon.run estimate --dry mcp=20261014_dry_mcp,lexical=20261014_dry_lexical,none=20261014_dry_none --precons 20`
+
+**Deferred (2026-10-14):** the owner deferred the LLM run as too expensive for a hobby project. Nothing in this benchmark calls the API unless `--llm glm --allow-llm` is passed.
