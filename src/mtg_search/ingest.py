@@ -223,6 +223,130 @@ def _type_line(card: dict[str, Any]) -> str:
     return " // ".join(f.get("type_line") or "" for f in card.get("card_faces") or [])
 
 
+# --------------------------------------------------------------------------- deck-building fields
+
+PERMANENT_TYPES = frozenset({"Artifact", "Creature", "Enchantment", "Land", "Planeswalker", "Battle"})
+PRICE_KEYS = ("usd", "usd_foil", "eur", "tix")
+_PARTNER_VARIANT_RE = re.compile(r"^Partner\s*[\u2014-]\s*([^(\n]+?)\s*(?:\(|$)", re.MULTILINE)
+
+
+def _face_is_permanent(type_line: str | None) -> bool:
+    _, typ, _ = parse_type_line(type_line or "")
+    return bool(PERMANENT_TYPES.intersection(typ))
+
+
+def _opt_str(val: Any) -> str | None:
+    return None if val is None else str(val)
+
+
+def face_details(card: dict[str, Any]) -> list[dict[str, Any]]:
+    """One struct per face (a single-faced card has one) so callers can render each
+    face without parsing ``doc_text``. P/T, loyalty and defense stay strings
+    (``*``, ``1+*``, ``X`` occur)."""
+    return [
+        {
+            "name": f.get("name", ""),
+            "mana_cost": f.get("mana_cost") or "",
+            "type_line": f.get("type_line") or "",
+            "oracle_text": f.get("oracle_text") or "",
+            "power": _opt_str(f.get("power")),
+            "toughness": _opt_str(f.get("toughness")),
+            "loyalty": _opt_str(f.get("loyalty")),
+            "defense": _opt_str(f.get("defense")),
+            "is_permanent": _face_is_permanent(f.get("type_line")),
+        }
+        for f in faces(card)
+    ]
+
+
+def _all_text(card: dict[str, Any]) -> str:
+    parts = [card.get("oracle_text") or ""] + [f.get("oracle_text") or "" for f in card.get("card_faces") or []]
+    return "\n".join(p for p in parts if p)
+
+
+def partner_kind(card: dict[str, Any], type_line: str | None = None) -> str | None:
+    """How a card pairs as a second commander, or ``None``.
+
+    Values: ``"partner"``, ``"partner with"`` (named pair), ``"friends forever"``,
+    other ``"partner—<group>"`` variants (``character select``, ``survivors``,
+    ``father & son``), ``"choose a background"``, ``"background"`` (a Background that
+    can be the second commander), ``"doctor's companion"`` and ``"doctor"`` (a legendary
+    Time Lord Doctor creature that pairs with a companion).
+    """
+    text = _all_text(card)
+    kws = {k.lower() for k in card.get("keywords") or []}
+    m = _PARTNER_VARIANT_RE.search(text)
+    if m:
+        group = m.group(1).strip().lower()
+        return "friends forever" if group == "friends forever" else f"partner\u2014{group}"
+    if "partner with" in kws:
+        return "partner with"
+    if "partner" in kws:
+        return "partner"
+    if "friends forever" in kws or re.search(r"^Friends forever\b", text, re.MULTILINE):
+        return "friends forever"
+    if "choose a background" in kws:
+        return "choose a background"
+    if "doctor's companion" in kws:
+        return "doctor's companion"
+    sup, typ, sub = parse_type_line(type_line if type_line is not None else _type_line(card))
+    if "Background" in sub and "Legendary" in sup:
+        return "background"
+    if "Legendary" in sup and "Creature" in typ and "Doctor" in sub:
+        return "doctor"
+    return None
+
+
+def can_be_commander(card: dict[str, Any]) -> bool:
+    """Legendary creature on the front face, or text saying it "can be your commander".
+
+    Backgrounds (second commander only via "Choose a Background") are not counted;
+    see ``partner_kind``.
+    """
+    front = faces(card)[0].get("type_line") or _type_line(card).split(" // ")[0]
+    sup, typ, _ = parse_type_line(front)
+    if "Legendary" in sup and "Creature" in typ:
+        return True
+    return "can be your commander" in _all_text(card)
+
+
+def _price(val: Any) -> float | None:
+    try:
+        return None if val is None else float(val)
+    except (TypeError, ValueError):
+        return None
+
+
+def deck_columns(card: dict[str, Any], type_line: str, supertypes: list[str]) -> dict[str, Any]:
+    """Fields a deck-building agent needs.
+
+    ``rarity`` and ``prices`` come from the single representative printing that the
+    ``oracle_cards`` bulk file picks for each card: rarity is informational (pauper
+    legality already accounts for any common printing) and prices are a budget hint
+    only, not the cheapest printing. ``produced_mana`` is Scryfall's card-level list
+    (it is never given per face), e.g. ``["C"]`` for Sol Ring.
+    """
+    fd = face_details(card)
+    front = fd[0]
+    prices = card.get("prices") or {}
+    produced = sorted(set(card.get("produced_mana") or []), key=lambda c: (PIP_COLORS.find(c) % 99, c))
+    return {
+        "rarity": card.get("rarity"),
+        "produced_mana": produced,
+        "prices": {k: _price(prices.get(k)) for k in PRICE_KEYS},
+        "is_permanent": any(f["is_permanent"] for f in fd),
+        "is_legendary": "Legendary" in supertypes,
+        "can_be_commander": can_be_commander(card),
+        "partner_kind": partner_kind(card, type_line),
+        "power": front["power"],
+        "toughness": front["toughness"],
+        "loyalty": front["loyalty"],
+        "defense": front["defense"],
+        "faces": fd,
+        "reserved": bool(card.get("reserved", False)),
+    }
+
+
 def normalize_card(card: dict[str, Any], tags: list[str] | None = None) -> dict[str, Any]:
     type_line = _type_line(card)
     sup, typ, sub = parse_type_line(type_line)
@@ -253,6 +377,7 @@ def normalize_card(card: dict[str, Any], tags: list[str] | None = None) -> dict[
         "scryfall_uri": card.get("scryfall_uri"),
         "image_uri": _image_uri(card),
         "tags": sorted(tags or []),
+        **deck_columns(card, type_line, sup),
     }
 
 
@@ -269,6 +394,29 @@ CARD_SCHEMA_OVERRIDES = {
     "cmc": pl.Float64,
     **{f"pips_{c}": pl.Int16 for c in PIP_COLORS},
     "generic": pl.Int32,
+    "rarity": pl.String,
+    "produced_mana": pl.List(pl.String),
+    "prices": pl.Struct({k: pl.Float64 for k in PRICE_KEYS}),
+    "partner_kind": pl.String,
+    "power": pl.String,
+    "toughness": pl.String,
+    "loyalty": pl.String,
+    "defense": pl.String,
+    "faces": pl.List(
+        pl.Struct(
+            {
+                "name": pl.String,
+                "mana_cost": pl.String,
+                "type_line": pl.String,
+                "oracle_text": pl.String,
+                "power": pl.String,
+                "toughness": pl.String,
+                "loyalty": pl.String,
+                "defense": pl.String,
+                "is_permanent": pl.Boolean,
+            }
+        )
+    ),
     "face_costs": pl.List(
         pl.Struct(
             {

@@ -131,3 +131,74 @@ def test_mana_columns_per_face(cards_df):
     assert len(bolt["face_costs"]) == 1 and bolt["pips_R"] == 1
     assert row(cards_df, "Fireball")["has_x"]
     assert row(cards_df, "Gitaxian Probe")["has_phyrexian"]
+
+
+def test_deck_columns_schema(cards_df):
+    s = cards_df.schema
+    assert s["rarity"] == pl.String and s["partner_kind"] == pl.String
+    assert s["produced_mana"] == pl.List(pl.String)
+    assert s["prices"] == pl.Struct({k: pl.Float64 for k in ("usd", "usd_foil", "eur", "tix")})
+    for col in ("is_permanent", "is_legendary", "can_be_commander", "reserved"):
+        assert s[col] == pl.Boolean
+    for col in ("power", "toughness", "loyalty", "defense"):
+        assert s[col] == pl.String
+
+
+def test_mdfc_land_back_face(cards_df):
+    emeria = row(cards_df, "Emeria's Call // Emeria, Shattered Skyclave")
+    assert [f["is_permanent"] for f in emeria["faces"]] == [False, True]
+    assert [f["type_line"] for f in emeria["faces"]] == ["Sorcery", "Land"]
+    assert emeria["faces"][1]["mana_cost"] == "" and "{T}: Add {W}." in emeria["faces"][1]["oracle_text"]
+    assert emeria["is_permanent"] and emeria["produced_mana"] == ["W"]
+    assert not emeria["can_be_commander"] and emeria["rarity"] == "mythic"
+
+    valki = row(cards_df, "Valki, God of Lies // Tibalt, Cosmic Impostor")
+    assert (valki["power"], valki["toughness"], valki["loyalty"]) == ("2", "1", None)
+    assert [f["loyalty"] for f in valki["faces"]] == [None, "5"]
+    assert valki["is_legendary"] and valki["can_be_commander"]
+
+    invasion = row(cards_df, "Invasion of Ixalan // Belligerent Regisaur")
+    assert invasion["defense"] == "4" and invasion["faces"][1]["power"] == "4"
+
+
+def test_mana_rock_and_prices(cards_df):
+    sol = row(cards_df, "Sol Ring")
+    assert sol["produced_mana"] == ["C"] and sol["is_permanent"] and not sol["is_legendary"]
+    assert set(sol["prices"]) == {"usd", "usd_foil", "eur", "tix"}
+    assert isinstance(sol["prices"]["usd"], float)
+    assert row(cards_df, "Llanowar Elves")["produced_mana"] == ["G"]
+    assert row(cards_df, "Lightning Bolt")["produced_mana"] == []
+    assert not row(cards_df, "Lightning Bolt")["is_permanent"]
+    assert row(cards_df, "Phyrexian Broodstar")["power"] == "*"
+    assert len(row(cards_df, "Lightning Bolt")["faces"]) == 1
+
+
+def test_commanders_and_partners(cards_df):
+    kinds = {r["name"]: r["partner_kind"] for r in cards_df.iter_rows(named=True)}
+    assert kinds["Thrasios, Triton Hero"] == "partner"
+    assert kinds["Wilson, Refined Grizzly"] == "choose a background"
+    assert kinds["Raised by Giants"] == "background"
+    assert kinds["Sophina, Spearsage Deserter"] == "friends forever"
+    assert kinds["Clara Oswald"] == "doctor's companion"
+    assert kinds["Atraxa, Praetors' Voice"] is None and kinds["Sol Ring"] is None
+    for name in ("Thrasios, Triton Hero", "Wilson, Refined Grizzly", "Atraxa, Praetors' Voice"):
+        assert row(cards_df, name)["can_be_commander"]
+    # planeswalker commander via oracle text; plain legendary planeswalker / Background are not
+    assert row(cards_df, "Teferi, Temporal Archmage")["can_be_commander"]
+    assert not row(cards_df, "Jace, the Mind Sculptor")["can_be_commander"]
+    assert not row(cards_df, "Raised by Giants")["can_be_commander"]
+    assert row(cards_df, "Raised by Giants")["is_legendary"]
+    # flip card: legendary back face doesn't make the front a commander
+    assert not row(cards_df, "Akki Lavarunner // Tok-Tok, Volcano Born")["can_be_commander"]
+
+
+def test_partner_kind_variants():
+    pk = ingest.partner_kind
+    base = {"type_line": "Legendary Creature — Human", "keywords": ["Partner"]}
+    assert pk({**base, "oracle_text": "Partner—Survivors (You can have two commanders if both have this ability.)"}) == (
+        "partner—survivors"
+    )
+    assert pk({**base, "keywords": ["Partner with", "Partner"], "oracle_text": "Partner with Rowan Kenrith"}) == (
+        "partner with"
+    )
+    assert pk({"type_line": "Legendary Creature — Time Lord Doctor", "keywords": [], "oracle_text": ""}) == "doctor"
