@@ -54,12 +54,17 @@ def _norm_name(s: str) -> str:
     return re.sub(r"\s+", " ", s).strip()
 
 
+# Popularity signals are never shown or used for ordering: results stay merit/text-based.
+# The columns remain in cards.parquet for offline analysis but are dropped on load.
+POPULARITY_COLUMNS = ("edhrec_rank", "penny_rank")
+
+
 class CardService:
     """Tool logic, independent of MCP (unit-tested with a fake backend)."""
 
     def __init__(self, cards: pl.DataFrame, backend: Backend, *, tags: pl.DataFrame | None = None,
                  rulings_path: Path | None = None):
-        self.cards = cards
+        self.cards = cards.drop([c for c in POPULARITY_COLUMNS if c in cards.columns])
         self.backend = backend
         self.tags = tags if tags is not None else pl.DataFrame({"slug": [], "card_count": []})
         self.rulings_path = rulings_path
@@ -79,16 +84,21 @@ class CardService:
         return r
 
     @cached_property
+    def _funny(self) -> list[bool]:
+        if "is_funny" not in self.cards.columns:
+            return [False] * self.cards.height
+        return [bool(x) for x in self.cards["is_funny"].to_list()]
+
+    @cached_property
     def _name_index(self) -> tuple[list[str], list[int], dict[str, int]]:
         keys, rows = [], []
         exact: dict[str, int] = {}
         names = self.cards["name"].to_list()
         faces = (self.cards["face_names"].to_list() if "face_names" in self.cards.columns
                  else [[] for _ in names])
-        funny = (self.cards["is_funny"].to_list() if "is_funny" in self.cards.columns
-                 else [False] * len(names))
+        funny = self._funny
         # non-funny cards first so they win exact-name ties (e.g. playtest reprints)
-        order = sorted(range(len(names)), key=lambda i: bool(funny[i]))
+        order = sorted(range(len(names)), key=lambda i: funny[i])
         for i in order:
             for nm in [names[i], *(faces[i] or [])]:
                 k = _norm_name(nm)
@@ -105,15 +115,23 @@ class CardService:
         q = _norm_name(name)
         if q in exact:
             return exact[q], []
-        # prefix / whole-word containment before fuzzy: "delver" -> Delver of Secrets,
-        # most-played (lowest EDHREC rank) first
+        # prefix / whole-word containment before fuzzy: "delver" -> Delver of Secrets.
+        # Deterministic, popularity-free order: prefix matches before whole-word matches,
+        # non-funny before Un-/playtest cards, then shortest matching name, then alphabetical
+        # (then row index).
         if len(q) >= 3:
             pat = re.compile(r"(^|\s)" + re.escape(q) + r"(\s|$)")
-            cand = {rows[i] for i, k in enumerate(keys) if k.startswith(q)} or \
-                   {rows[i] for i, k in enumerate(keys) if pat.search(k)}
-            if cand:
-                ranks = self.cards["edhrec_rank"] if "edhrec_rank" in self.cards.columns else None
-                order = sorted(cand, key=lambda r: (ranks[r] is None, ranks[r] or 0) if ranks is not None else (0, r))
+            funny = self._funny
+            best: dict[int, tuple[int, bool, int, str, int]] = {}
+            for i, k in enumerate(keys):
+                tier = 0 if k.startswith(q) else 1 if pat.search(k) else None
+                if tier is None:
+                    continue
+                key = (tier, funny[rows[i]], len(k), k, rows[i])
+                if rows[i] not in best or key < best[rows[i]]:
+                    best[rows[i]] = key
+            if best:
+                order = sorted(best, key=best.__getitem__)
                 return order[0], [(self.cards["name"][r], 100.0) for r in order[1:4]]
         hits = process.extract(q, keys, scorer=fuzz.WRatio, limit=12)
         seen, ranked = set(), []
@@ -270,13 +288,14 @@ class CardService:
                 d = d[:107].rstrip() + "…"
             mark = " [trivia]" if r["_trivia"] else ""
             lines.append(f"- {r['slug']} ({r['card_count']} cards){mark}" + (f": {d}" if d else ""))
-        # exact tag: show its best-known cards
+        # exact tag: show some example cards (alphabetical, no popularity ordering)
         if p and "tags" in self.cards.columns and p in set(m["slug"].to_list()):
             ex = (self.cards.with_row_index("_row")
                   .filter(pl.col("tags").list.contains(p) & ~pl.col("is_funny"))
-                  .sort("edhrec_rank", nulls_last=True).head(15))
+                  .sort(["name", "_row"]).head(15))
             if ex.height:
-                lines.append(f"top cards tagged {p} (by EDHREC rank): " + "; ".join(
+                n_all = self.cards.filter(pl.col("tags").list.contains(p) & ~pl.col("is_funny")).height
+                lines.append(f"example cards tagged {p} ({ex.height} of {n_all}, alphabetical): " + "; ".join(
                     f"{n} {c or ''}".strip() for n, c in zip(ex["name"], ex["mana_cost"], strict=True)))
         return "\n".join(lines)
 
@@ -355,8 +374,8 @@ Output: one summary line (query, active filters, "N shown of M matching filters"
 per card: `rank. Name — cost (MV) · colours · type line · P/T · rarity [markers]`, oracle text
 (each face of a multi-face card as `// Face — cost · type`; "[MDFC: land back face]" flags
 spell/land MDFCs), a roles line (functional Scryfall oracle tags, keywords, mana produced) and a
-footer (legality in the requested format or the main formats it is legal in, EDHREC rank —
-lower = more popular in Commander, approximate USD price, colour identity when it differs).
+footer (legality in the requested format or the main formats it is legal in, approximate
+price as a budget hint, colour identity when it differs). No popularity signal is shown or used.
 """
 
 SEARCH_DOC = f"""Semantic search over every Magic: The Gathering card (oracle text, types, costs).
@@ -368,8 +387,8 @@ its controller pays", "sacrifice a creature: add mana") or describe the effect p
 (colours, format, mana value, card types) in the filter parameters, not in the query text.
 For a vague deck need, pass several phrasings/angles in `queries` (e.g. ["destroy target
 artifact", "exile target artifact or enchantment", "artifacts your opponents control"]); their
-rankings are fused (reciprocal rank fusion). Results are ranked by relevance only (not by power
-or popularity): check the EDHREC rank and price in each block, and call get_card for rulings.
+rankings are fused (reciprocal rank fusion). Results are ranked by text relevance only (not by
+power or popularity); call get_card for full text and rulings.
 
 Args: query or queries (at least one); limit = cards to return (default 15, max 50 — use 30-50
 when surveying options); detail = "compact" (oracle text cut at ~250 chars per face) or "full".
@@ -384,13 +403,13 @@ in-colour replacement: find_similar("Rhystic Study", format="pauper").
 
 GET_DOC = """Look up one card by name (fuzzy: "fire ice", "jace mind sculptor", a face name of a
 double-faced card all work). Returns the full oracle text of every face, mana cost and value,
-types, P/T, markers, all format legalities, functional oracle tags, EDHREC rank, price,
+types, P/T, markers, all format legalities, functional oracle tags, price,
 official rulings and the Scryfall link."""
 
 TAGS_DOC = """List Scryfall oracle tags (community labels of what cards *do*, e.g. "removal",
 "mana-rock", "free-sacrifice-outlet", "draw-engine") with card counts and descriptions.
 `prefix` filters by slug prefix (falls back to substring matches), e.g. "sacrifice", "ramp".
-When `prefix` is an exact tag slug, also lists that tag's most-played cards. Tags appear in
+When `prefix` is an exact tag slug, also lists up to 15 example cards with that tag (alphabetical). Tags appear in
 the `roles:` line of search results; use their wording to phrase better search queries."""
 
 

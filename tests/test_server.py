@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import re
 
 import numpy as np
 import polars as pl
@@ -193,3 +194,76 @@ def test_mcp_call_tool_roundtrip(svc):
     text = ok.content[0].text
     assert not ok.is_error and "colors_mode=subset" in text and "max_pips" in text
     assert "Counterspell" not in names_in(text)  # {U}{U} has two blue pips
+
+
+# ----------------------------------------------------------- no popularity signals in output
+
+
+def test_no_popularity_in_rendered_output(svc, cards_df):
+    assert "edhrec_rank" in cards_df.columns and "edhrec_rank" not in svc.cards.columns
+    ranks = {str(r) for r in cards_df["edhrec_rank"].drop_nulls().to_list()}
+    outs = [
+        svc.search_cards("counter target spell", limit=50, detail="full"),
+        svc.search_cards(queries=["draw a card", "deal damage"], limit=50),
+        svc.find_similar("Counterspell", limit=50),
+        svc.list_tags(),
+        *(svc.list_tags(s) for s in svc.tags["slug"].to_list()[:20]),
+        *(svc.get_card(n) for n in cards_df["name"].to_list()),
+    ]
+    for row in cards_df.iter_rows(named=True):  # render_card ignores the column even if passed
+        outs.append(render_card(row, rank=1, detail="full"))
+    for out in outs:
+        assert "edhrec" not in out.lower()
+        assert not re.search(r"#\d", out)
+    # the per-card footer (last line) never carries an edhrec value
+    for row in cards_df.filter(pl.col("edhrec_rank").is_not_null()).iter_rows(named=True):
+        foot = render_card(row).splitlines()[-1]
+        assert str(row["edhrec_rank"]) not in re.sub(r"~[$€][\d.]+|[\d.]+ tix", "", foot)
+    assert ranks  # fixture actually has ranks to leak
+
+
+def test_tool_docs_do_not_mention_edhrec():
+    for doc in (server.SEARCH_DOC, server.SIMILAR_DOC, server.GET_DOC, server.TAGS_DOC):
+        assert "edhrec" not in doc.lower()
+
+
+def _name_svc(names, ranks, perm):
+    df = pl.DataFrame({
+        "name": [names[i] for i in perm],
+        "face_names": [[] for _ in perm],
+        "is_funny": [False for _ in perm],
+        "edhrec_rank": [ranks[i] for i in perm],
+    })
+    return server.CardService(df, backend=None)
+
+
+def test_get_card_name_order_deterministic_and_popularity_free():
+    names = ["Lightning Helix", "Lightning Bolt", "Lightning Axe", "Chain Lightning", "Bolt Bend"]
+    ranks = [5, 1, 900, 2, None]  # Bolt is "most popular"; must not matter
+    results = set()
+    for perm in ([0, 1, 2, 3, 4], [4, 3, 2, 1, 0], [2, 0, 4, 1, 3]):
+        s = _name_svc(names, ranks, perm)
+        row, alts = s.resolve_name("lightning")
+        results.add((s.cards["name"][row], tuple(n for n, _ in alts)))
+        # whole-word match only when there is no prefix match
+        row, _ = s.resolve_name("helix")
+        assert s.cards["name"][row] == "Lightning Helix"
+        # exact beats prefix
+        row, _ = s.resolve_name("lightning bolt")
+        assert s.cards["name"][row] == "Lightning Bolt"
+        # prefix "bolt" (Bolt Bend) beats the whole-word match (Lightning Bolt, a runner-up)
+        row, alts = s.resolve_name("bolt")
+        assert s.cards["name"][row] == "Bolt Bend" and [n for n, _ in alts] == ["Lightning Bolt"]
+    # prefix matches (shortest name first, then alphabetical), then whole-word matches
+    assert results == {("Lightning Axe", ("Lightning Bolt", "Lightning Helix", "Chain Lightning"))}
+
+
+def test_list_tags_examples_alphabetical(svc):
+    slug = svc.tags.sort("card_count", descending=True)["slug"][0]
+    out = svc.list_tags(slug)
+    line = next(ln for ln in out.splitlines() if ln.startswith(f"example cards tagged {slug}"))
+    shown = svc.cards.filter(pl.col("tags").list.contains(slug) & ~pl.col("is_funny")) \
+        .sort("name")["name"].head(15).to_list()
+    body = line.split(": ", 1)[1]
+    pos = [body.index(n) for n in shown]
+    assert pos == sorted(pos)

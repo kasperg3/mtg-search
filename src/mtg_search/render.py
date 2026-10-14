@@ -5,7 +5,7 @@ One block per card (~60-120 tokens in compact mode)::
     3. Counterspell — {U}{U} (MV 2) · Blue · Instant · uncommon
        Counter target spell.
        roles: counterspell, interrupt
-       legal: pauper ✓ · EDHREC #14 · ~$1.20
+       legal: pauper ✓ · ~$1.20
 
 Columns that are missing from an older ``cards.parquet`` are simply not rendered.
 """
@@ -206,8 +206,6 @@ def render_card(
         lines.append(ind + " · ".join(info))
 
     foot = [legality_text(card.get("legalities"), fmt)]
-    if card.get("edhrec_rank") is not None:
-        foot.append(f"EDHREC #{card['edhrec_rank']}")
     pr = price_text(card.get("prices"))
     if pr:
         foot.append(pr)

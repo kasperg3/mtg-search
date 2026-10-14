@@ -136,7 +136,7 @@ Sizes are for the current `main` (decimal MB).
 | `supertypes` / `types` / `subtypes` | list[string] | Parsed from `type_line`, across all faces. |
 | `keywords` | list[string] | Scryfall keyword abilities and actions. |
 | `legalities` | struct of 23 strings | Per format: `legal` / `not_legal` / `restricted` / `banned`. The formats are alchemy, brawl, commander, competitivebrawl, duel, future, gladiator, historic, legacy, modern, oathbreaker, oldschool, pauper, paupercommander, penny, pioneer, predh, premodern, standard, standardbrawl, timeless, tlr and vintage. |
-| `edhrec_rank` | int64 (nullable) | EDHREC popularity rank (null for 2,306 cards). |
+| `edhrec_rank` | int64 (nullable) | EDHREC popularity rank (null for 2,306 cards). Kept for offline analysis only: the MCP server drops this column on load and never shows it or ranks by it. |
 | `game_changer` | bool | Card is on the Commander "Game Changers" list. |
 | `is_funny` | bool | Un-set / playtest card that is **not tournament legal** (see [filtering](#filtering-rules)). |
 | `layout` | string | Scryfall layout (normal, transform, modal_dfc, split, adventure, saga, …). |
@@ -360,7 +360,7 @@ docker/build.sh --revision scryfall-<stamp>       # a pinned snapshot
 claude mcp add mtg-search -- docker run -i --rm mtg-search
 ```
 
-The server's tools are `search_cards`, `get_card`, `find_similar` and `list_tags`. `search_cards` and `find_similar` take filters for colour identity, colours (with `includes` / `subset` / `exact` modes), format, types, cmc and mana pips.
+The server's tools are `search_cards`, `get_card`, `find_similar` and `list_tags`. `search_cards` and `find_similar` take filters for colour identity, colours (with `includes` / `subset` / `exact` modes), format, types, cmc and mana pips. Results are ordered by text relevance only. No popularity signal, such as EDHREC rank, is shown or used for ordering.
 
 ---
 
