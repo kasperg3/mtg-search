@@ -1,14 +1,19 @@
 """MCP server (stdio) for semantic search over every Magic: The Gathering card.
 
-Retrieval is lightonai/mLateOn late interaction served by NextPlaid (see ``nextplaid.py``);
-structured filters come from ``mtg_search.filters`` (``FILTER_PARAMS`` drives the tool
-schemas, ``allowed_indices`` the filtering), so new filters there show up here automatically.
+Retrieval is lightonai/mLateOn late interaction with exact MaxSim over every card (``exact.py``:
+fp32 ONNX query encoder + numpy; ranks identically to the benchmarks' reference, EXP-012). The
+older approximate NextPlaid path (``nextplaid.py``) remains available with MTG_SEARCH_BACKEND=nextplaid.
+Structured filters come from ``mtg_search.filters`` (``FILTER_PARAMS`` drives the tool schemas,
+``allowed_indices`` the filtering), so new filters there show up here automatically.
 
 Environment:
   MTG_SEARCH_DATA_DIR        cards/tags/rulings parquet dir (default ./data; /app/data in the image)
-  MTG_SEARCH_NEXTPLAID_INDEX NextPlaid --index-dir (default /app/index)
+  MTG_SEARCH_BACKEND         exact (default) | nextplaid
+  MTG_SEARCH_EMBEDDINGS_DIR  doc token embeddings dir for exact (default /app/embeddings)
   MTG_SEARCH_MODEL_DIR       ONNX query encoder dir (default /app/model)
-  NEXTPLAID_URL              use a running NextPlaid instead of spawning one (dev)
+  MTG_SEARCH_THREADS         MaxSim worker threads (default min(8, cpu count))
+  MTG_SEARCH_NEXTPLAID_INDEX nextplaid only: --index-dir (default /app/index)
+  NEXTPLAID_URL              nextplaid only: use a running NextPlaid instead of spawning one (dev)
 
 stdout carries only MCP messages; all logs go to stderr.
 """
@@ -224,7 +229,10 @@ class CardService:
             hits = self.backend.search(qs[0], limit, allowed)
         else:
             depth = max(50, 2 * limit)
-            lists = [self.backend.search(q, depth, allowed) for q in qs]
+            if hasattr(self.backend, "search_many"):  # exact backend scores all queries in one pass
+                lists = self.backend.search_many(qs, depth, allowed)
+            else:
+                lists = [self.backend.search(q, depth, allowed) for q in qs]
             hits = [(int(r), s) for r, s in rrf(lists, limit=limit)]  # k=60, equal weights
         ms = (time.perf_counter() - t0) * 1000
         log.info("search_cards %r %s -> %d hits in %.0f ms", qs, active, len(hits), ms)
@@ -538,7 +546,16 @@ def load_service(backend: Backend | None = None) -> tuple[CardService, Any]:
                             columns=server_columns(pl.read_parquet_schema(data / "cards.parquet")))
     tags = pl.read_parquet(data / "tags.parquet", columns=["slug", "label", "description", "card_count", "parent_slugs"]) \
         if (data / "tags.parquet").exists() else None
-    if backend is None:
+    kind = os.environ.get("MTG_SEARCH_BACKEND", "exact")
+    if backend is None and kind == "exact":  # EXP-012: exact MaxSim, ranks like the benchmarks
+        from .exact import ExactLateBackend
+
+        backend = ExactLateBackend(
+            cards["oracle_id"].to_list(),
+            embeddings_dir=os.environ.get("MTG_SEARCH_EMBEDDINGS_DIR", "/app/embeddings"),
+            model_dir=os.environ.get("MTG_SEARCH_MODEL_DIR", "/app/model"),
+        )
+    elif backend is None and kind == "nextplaid":  # legacy approximate path (PLAID index, int8 encoder)
         from .artifacts import check_index
         from .nextplaid import NextPlaidBackend
 
@@ -555,6 +572,8 @@ def load_service(backend: Backend | None = None) -> tuple[CardService, Any]:
             port=int(os.environ.get("NEXTPLAID_PORT", "8080")),
         )
         backend.start_background()
+    elif backend is None:
+        raise ValueError(f"MTG_SEARCH_BACKEND must be 'exact' or 'nextplaid', got {kind!r}")
     return CardService(cards, backend, tags=tags, rulings_path=data / "rulings.parquet"), backend
 
 

@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import time
@@ -24,6 +25,10 @@ CALLS = [
     ("search_cards", {"queries": ["destroy target artifact", "exile target artifact or enchantment"],
                       "colors": "RW", "colors_mode": "subset", "format": "modern", "limit": 5}),
     ("list_tags", {"prefix": "free-sac"}),
+    ("search_cards", {"queries": ["Reach", "Destroy target creature with flying.",
+                                  "Creatures you control gain reach until end of turn.",
+                                  "Whenever a creature with flying attacks you, it deals no combat damage."],
+                      "color_identity": "G", "format": "commander", "limit": 15}),
 ]
 
 
@@ -80,7 +85,8 @@ def main() -> None:
     ap.add_argument("--repeat", type=int, default=3)
     a = ap.parse_args()
     t0 = time.time()
-    c = StdioClient(["docker", "run", "-i", "--rm", a.image])
+    name = f"mtg-smoke-{os.getpid()}"
+    c = StdioClient(["docker", "run", "-i", "--rm", "--name", name, a.image])
     info = c.initialize()
     print(f"initialize: {info['serverInfo']} in {time.time() - t0:.1f}s")
     tools = c.request("tools/list")["tools"]
@@ -104,6 +110,9 @@ def main() -> None:
         print(f"\n===== {name}({json.dumps(args)})  first {first:.0f} ms, warm {best:.0f} ms"
               + ("  [ERROR]" if err else ""))
         print(text)
+    mem = subprocess.run(["docker", "stats", "--no-stream", "--format", "{{.MemUsage}}", name],
+                         capture_output=True, text=True).stdout.strip()
+    print(f"container memory after the calls: {mem}")
     rc = c.close()
     print(f"\nwarm latency (best of {a.repeat}): " + ", ".join(f"{n} {ms:.0f}ms" for n, ms in lat))
     print(f"server exit code after stdin EOF: {rc}")

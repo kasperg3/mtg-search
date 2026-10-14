@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1.10
-# mtg-search: one image = stdio MCP server (Python) + NextPlaid (Rust, localhost subprocess)
-# + mLateOn int8 (reduce-range) query encoder + the card index baked at build time.
+# mtg-search: one image = stdio MCP server (Python) with exact late-interaction search:
+# mLateOn fp32 ONNX query encoder (onnxruntime) + exact MaxSim over the precomputed card token vectors
+# (numpy). No index service: at ~35k cards exact search is one matrix product (~100 ms) and ranks
+# identically to the benchmarks' reference (EXP-012). The older NextPlaid path lives in git history
+# and in src/mtg_search/nextplaid.py (MTG_SEARCH_BACKEND=nextplaid, not built into this image).
 #
 # Build with docker/build.sh (see docker/README.md). Directly:
 #   HF_TOKEN=... docker build -f docker/Dockerfile --secret id=hf_token,env=HF_TOKEN \
@@ -9,20 +12,14 @@
 # Run:
 #   docker run -i --rm mtg-search
 
-ARG NEXTPLAID_IMAGE=ghcr.io/lightonai/next-plaid:cpu-1.8.5
-# hf = fetch artifacts from the private HF dataset; local = take ./data and ./index from the context
+# hf = fetch artifacts from the private HF dataset (+ the public query model); local = ./data and ./index
 ARG SOURCE=hf
 
-FROM ${NEXTPLAID_IMAGE} AS nextplaid
-
-# ---- runtime base: python 3.12 on the same Debian (bookworm) as next-plaid -------------------
+# ---- runtime base ------------------------------------------------------------------------------
 FROM python:3.12-slim-bookworm AS base
-COPY --from=nextplaid /usr/local/bin/next-plaid-api /usr/local/bin/next-plaid-api
-COPY --from=nextplaid /opt/ort_cpu /opt/ort_cpu
-ENV ORT_DYLIB_PATH=/opt/ort_cpu/libonnxruntime.so.1.23.0 \
-    LD_LIBRARY_PATH=/opt/ort_cpu \
-    OPENBLAS_NUM_THREADS=1 \
-    RUST_LOG=warn \
+# the MaxSim thread pool owns the cores; keep BLAS single-threaded inside each worker
+ENV OPENBLAS_NUM_THREADS=1 \
+    OMP_NUM_THREADS=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app/src
@@ -33,43 +30,35 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.0,source=/uv,target=/usr/local/bin/uv
 
 # ---- artifacts from the private HF dataset (token via BuildKit secret, never in a layer) ------
 FROM base AS fetch-hf
-RUN --mount=from=ghcr.io/astral-sh/uv:0.11.0,source=/uv,target=/usr/local/bin/uv \
-    uv pip install --system --no-cache huggingface_hub==1.33.0
-# only the downloader (so server code edits do not invalidate the download/index layers)
+# only the downloader (so server code edits do not invalidate the download layer)
 COPY src/mtg_search/__init__.py src/mtg_search/config.py src/mtg_search/artifacts.py /app/src/mtg_search/
 # build.sh passes the resolved commit sha so the layer cache follows the dataset
 ARG HF_REVISION=main
 RUN --mount=type=secret,id=hf_token,env=HF_TOKEN \
     test -n "$HF_TOKEN" || { echo "HF_TOKEN secret missing: --secret id=hf_token,env=HF_TOKEN" >&2; exit 1; }; \
     python -m mtg_search.artifacts download --dest /artifacts --revision "${HF_REVISION}" \
-    && rm -rf /artifacts/.cache
+        --parts data,embeddings,model \
+    && rm -rf /artifacts/.cache /root/.cache
 
 # ---- artifacts from the build context (dev): ./data, ./index/embeddings, ./index/models -------
 FROM scratch AS fetch-local
 COPY data/cards.parquet data/tags.parquet data/rulings.parquet data/manifest.json /artifacts/data/
 COPY index/embeddings/late/lightonai__mLateOn/ /artifacts/embeddings/late/lightonai__mLateOn/
-COPY index/models/lightonai__mLateOn-int8rr/ /artifacts/models/lightonai__mLateOn-int8rr/
+COPY index/models/lightonai__mLateOn-fp32/ /artifacts/models/lightonai__mLateOn-fp32/
 
 FROM fetch-${SOURCE} AS fetch
-
-# ---- indexer: push precomputed doc token embeddings into an embeddings-only NextPlaid ---------
-FROM base AS indexer
-COPY docker/build_index.py /build/build_index.py
-RUN --mount=from=fetch,source=/artifacts,target=/artifacts \
-    python /build/build_index.py --artifacts /artifacts --out /index
 
 # ---- final ------------------------------------------------------------------------------------
 FROM base
 RUN useradd -m -u 1000 app
-COPY --from=fetch /artifacts/models/lightonai__mLateOn-int8rr/ /app/model/
+COPY --from=fetch /artifacts/models/lightonai__mLateOn-fp32/ /app/model/
+COPY --from=fetch /artifacts/embeddings/late/lightonai__mLateOn/ /app/embeddings/
 COPY --from=fetch /artifacts/data/cards.parquet /artifacts/data/tags.parquet \
      /artifacts/data/rulings.parquet /artifacts/data/manifest.json /app/data/
-# the index must stay writable (next-plaid opens lock files); with --read-only the server
-# copies it to $TMPDIR (add --tmpfs /tmp)
-COPY --from=indexer --chown=app /index /app/index
 COPY src/mtg_search /app/src/mtg_search
 ENV MTG_SEARCH_DATA_DIR=/app/data \
-    MTG_SEARCH_NEXTPLAID_INDEX=/app/index \
+    MTG_SEARCH_BACKEND=exact \
+    MTG_SEARCH_EMBEDDINGS_DIR=/app/embeddings \
     MTG_SEARCH_MODEL_DIR=/app/model \
     MTG_SEARCH_LOG=WARNING
 USER app

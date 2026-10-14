@@ -43,7 +43,7 @@ if [[ "$SOURCE" == local ]]; then
            index/embeddings/late/lightonai__mLateOn/tokens.npy; do
     [[ -f "$ROOT/$f" ]] || { echo "missing $ROOT/$f" >&2; exit 1; }
   done
-  if [[ ! -f "$ROOT/index/models/lightonai__mLateOn-int8rr/model_int8.onnx" ]]; then
+  if [[ ! -f "$ROOT/index/models/lightonai__mLateOn-fp32/source.json" ]]; then
     echo "fetching query-encoder model into index/models/ ..." >&2
     (cd "$ROOT" && uv run python -m mtg_search.artifacts download --parts model --dest index)
   fi

@@ -1,12 +1,11 @@
 # allow-list: only what docker/Dockerfile copies
 *
 !src/mtg_search/**
-!docker/build_index.py
 !docker/requirements.txt
 !data/cards.parquet
 !data/tags.parquet
 !data/rulings.parquet
 !data/manifest.json
 !index/embeddings/late/lightonai__mLateOn/**
-!index/models/lightonai__mLateOn-int8rr/**
+!index/models/lightonai__mLateOn-fp32/**
 **/__pycache__

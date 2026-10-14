@@ -6,10 +6,12 @@ One image runs the whole MCP server over stdio:
 docker run -i --rm mtg-search
 ```
 
-Inside it, the Python MCP server (`python -m mtg_search.server`) starts `next-plaid-api`
-on `127.0.0.1:8080`. NextPlaid serves the late-interaction index (`lightonai/mLateOn`,
-34.6k cards) that was baked in at build time. stdout carries only MCP JSON-RPC, and all
-logs go to stderr.
+Inside it, the Python MCP server (`python -m mtg_search.server`) searches the 34.6k cards with
+**exact late interaction** (`lightonai/mLateOn`): it encodes queries with the model's published
+**fp32** ONNX export (onnxruntime) and computes exact MaxSim against every card's precomputed token
+vectors (numpy). Nothing is approximated or quantized, so what users get ranks identically to the
+reference used by every benchmark (EXP-012). stdout carries only MCP JSON-RPC, and all logs go to
+stderr.
 
 Tool output carries only deterministic rules and print facts: name, cost, mana value,
 colours, colour identity, type line, rarity, oracle text per face, P/T / loyalty / defense,
@@ -28,10 +30,10 @@ Build the image first, then:
 claude mcp add mtg-search -- docker run -i --rm mtg-search
 ```
 
-With a read-only root filesystem, the server copies the index to `/tmp` at startup:
+The image needs no writable filesystem, so `--read-only` works as is:
 
 ```
-claude mcp add mtg-search -- docker run -i --rm --read-only --tmpfs /tmp mtg-search
+claude mcp add mtg-search -- docker run -i --rm --read-only mtg-search
 ```
 
 ## Build
@@ -39,100 +41,105 @@ claude mcp add mtg-search -- docker run -i --rm --read-only --tmpfs /tmp mtg-sea
 ```
 docker/build.sh                    # from HF dataset kasper-cbx/mtg-search-index@main
 docker/build.sh --revision <tag>   # a pinned dataset revision (e.g. scryfall-<stamp>)
-docker/build.sh --local            # dev: from ./data + ./index/embeddings (+ ./index/models)
+docker/build.sh --local            # dev: from ./data + ./index/embeddings + ./index/models
 ```
 
 - **HF builds** read the token from `HF_TOKEN`, falling back to `hf auth token`. It is passed as
   a BuildKit secret (`--secret id=hf_token,env=HF_TOKEN`) and never stored in a layer.
   `build.sh` resolves the revision to a commit sha so Docker's cache follows the dataset.
-- **Local builds** download the query-encoder model into `./index/models/` if it is missing.
-  This needs the token once.
+- **Local builds** download the query encoder into `./index/models/lightonai__mLateOn-fp32/` if it
+  is missing. The encoder comes from the public `lightonai/mLateOn` repo, so it needs no token.
 
 Stages (see `Dockerfile`):
 
-1. **base**: `python:3.12-slim-bookworm` plus `next-plaid-api` and ONNX Runtime, copied from
-   `ghcr.io/lightonai/next-plaid:cpu-1.8.5`, plus the pinned `requirements.txt`.
-2. **fetch**: `python -m mtg_search.artifacts download` fetches:
-   - `data/*.parquet`
-   - `embeddings/late/lightonai__mLateOn/` (doc token embeddings, encoded on GPU with PyLate)
-   - `models/lightonai__mLateOn-int8rr/`
-3. **indexer**: `build_index.py` starts an embeddings-only NextPlaid. It pushes the precomputed
-   tokens through `POST /indices/cards/update` in batches of 500 docs (base64 f32, under the
-   100 MB body limit), about 3.5 min on 6 cores. It then writes:
-   - `doc_rows.npy`: NextPlaid doc id to `cards.parquet` row
-   - `mtg_search_index.json`: card digest and model revision, checked at server startup
-4. **final**: model, data, index and `src/mtg_search`, running as uid 1000.
+1. **base**: `python:3.12-slim-bookworm` plus the pinned `requirements.txt` (mcp, polars, numpy,
+   onnxruntime 1.30.0, tokenizers 0.23.2, ...).
+2. **fetch**: `python -m mtg_search.artifacts download --parts data,embeddings,model` fetches:
+   - `data/*.parquet` (private dataset);
+   - `embeddings/late/lightonai__mLateOn/` (doc token vectors, fp16, encoded on GPU; private
+     dataset);
+   - `models/lightonai__mLateOn-fp32/` (`model.onnx`, `tokenizer.json`, configs). These come from
+     the public `lightonai/mLateOn` at the same revision as the embeddings (`bbd883a`), are
+     sha256-verified, and are recorded in `source.json`.
+3. **final**: model, embeddings, data and `src/mtg_search`, running as uid 1000.
 
-Image size is about 2.0 GB on disk (728 MB compressed):
+At startup the server checks:
+- that the embeddings belong to this exact card table (`meta.json` `oracle_ids_sha256`, row order
+  matters);
+- that the encoder and the embeddings come from one model revision.
 
-| Component | Size |
+Size:
+
+| component | size |
 |---|---|
-| index | 363 MB |
-| int8 model + tokenizer | 347 MB |
-| Python deps (polars, mcp, ...) | 298 MB |
-| next-plaid + ORT | 64 MB |
+| fp32 query encoder (`model.onnx` + tokenizer) | 1.28 GB |
+| doc token vectors (2.18M × 128, fp16) | 558 MB |
+| Python deps (polars, onnxruntime, mcp, ...) | 397 MB |
+| base image | ~130 MB |
 | card data | 15 MB |
+| **total content** | **≈ 2.4 GB** |
 
-## Query encoder
+`docker images` reports 4.2 GB, because it counts compressed and unpacked layers.
 
-The query encoder is mLateOn int8, re-quantized with `--reduce-range`. The `model_int8.onnx`
-published in `lightonai/mLateOn` collapses embeddings on x86 CPUs without VNNI (see
-`spike/nextplaid.md`). The fp32 `model.onnx` would add ~0.9 GB to the image and 1.2 GB of RAM.
+## Search
 
-The re-quantized model was validated on all 363 eval queries. Each run went through NextPlaid
-with the same index and was compared with the exact in-process MaxSim reference
-(`LateInMemory`, `eval/.cache/late-mLateOn.json`):
+- **Query:** `[Q] ` + text → tokenizer (`<bos> [Q] … <eos>`, no truncation, no query expansion) →
+  fp32 ONNX → 128-dim token vectors, L2-normalised per token. This is identical to
+  sentence-transformers on PyTorch: per-token cosine 1.00000 on test queries.
+- **Score:** for every card, the sum over query tokens of the max dot product with the card's
+  token vectors (MaxSim). The vectors are held as fp32 in RAM. The work is split into ~530
+  card-aligned chunks of ~4k tokens, scored by a thread pool (`MTG_SEARCH_THREADS`, default
+  `min(8, cpu count)`; BLAS stays single-threaded). The search is bound by memory bandwidth.
+- **Multi-query `search_cards`:** the 2–4 queries share one pass over the vectors, then their
+  rankings are fused with RRF (k=60).
+- **Filters:** `mtg_search.filters` computes the allowed rows. Only those compete for the top-k,
+  so selective filters return the best *allowed* cards, never an empty post-filtered list. Ties
+  break by row, deterministically.
 
-| query encoder | nDCG@10 (all) | vs reference | top-10 overlap | top-50 overlap | RAM |
-|---|---|---|---|---|---|
-| reference (exact, PyTorch fp32) | 28.8 | — | — | — | — |
-| fp32 `model.onnx` | 29.2 | +0.4 | 82.5% | 84.9% | 2.3 GB |
-| **int8 reduce-range** (shipped) | 28.3 | −0.5 | 72.3% | 75.8% | 1.0 GB |
+Parity with the benchmark reference (`eval/experiments/exact_parity.py`, all 363 eval queries
+under their filters, vs `LateInMemory` on PyTorch fp32):
 
-Per set, int8-rr against the reference:
-
-| set | nDCG@10 change |
+| | value |
 |---|---|
-| tags | −0.4 |
-| handwritten | +0.2 |
-| paraphrase | −0.8 |
-| deckneeds | −0.0 |
+| top-1 agreement | 100% |
+| top-10 / top-50 / top-100 overlap | 100% / 99.99% / 100% |
+| max score difference | < 1e-5 |
+| nDCG@10 per set | identical (tags 60.55, handwritten 70.72, paraphrase 11.90, deckneeds 21.14) |
 
-The overlap below 100% for fp32 comes from PLAID's 4-bit residual compression. Raising
-`n_ivf_probe` or `n_full_scores` does not change it.
+Performance (i5-9600K, 6 cores):
 
-## Filtering
+| | exact (this image) | previous NextPlaid + int8 image |
+|---|---|---|
+| top-10 agreement with the benchmark ranker | **100%** | 72–85% |
+| warm `search_cards`, 1 query | 111–148 ms | 70–170 ms |
+| `search_cards`, 4 queries | ~375 ms | — |
+| `find_similar` (a card's full text as query) | ~250 ms | ~150 ms |
+| startup | ~7 s | ~2–3 s (plus background index warm-up) |
+| RAM after load | 2.68 GiB | 1.04 GiB |
 
-`mtg_search.filters` is the single source of truth. The server computes the allowed rows with
-`filters.allowed_indices(cards, **filters)`. It sends them as NextPlaid's `subset` (doc ids),
-and NextPlaid restricts IVF candidate generation to centroids that contain those docs, scaling
-`n_ivf_probe` for small subsets. This means:
+Holding the vectors as fp16 and converting per chunk would save 0.53 GB of RAM with bit-identical
+scores, but it doubles single-query latency (215 vs 106 ms), so the image keeps fp32.
 
-- selective filters (`color_identity="G", format="pauper", cmc_max=2`) return the best *allowed*
-  cards, never an empty post-filtered top-k;
-- new filters in `filters.py` (with a `FILTER_PARAMS` entry) appear in the MCP tool schemas
-  automatically. No metadata columns are mirrored into NextPlaid.
+### Legacy NextPlaid path
 
-## Dev without rebuilding the server layer
+`src/mtg_search/nextplaid.py` and `docker/build_index.py` (approximate PLAID index plus int8
+re-quantized encoder) remain in the repo. The server uses them with `MTG_SEARCH_BACKEND=nextplaid`,
+but this image does not build them. History of that path: `spike/nextplaid.md`, review M1 in
+`docs/review_2026-10-14.md`, EXP-012.
 
-Run only NextPlaid from the image, then the server from the checkout. It needs the same
-`data/cards.parquet`; docs are matched by oracle_id:
+## Dev without Docker
+
+From the checkout, with `./data`, `./index/embeddings` and `./index/models/lightonai__mLateOn-fp32`:
 
 ```
-docker run -d --rm --name mtgnp -p 8080:8080 --entrypoint next-plaid-api mtg-search \
-    --host 0.0.0.0 --port 8080 --index-dir /app/index --model /app/model --int8 --query-length 512
-NEXTPLAID_URL=http://127.0.0.1:8080 uv run mtg-search-mcp
+MTG_SEARCH_EMBEDDINGS_DIR=index/embeddings/late/lightonai__mLateOn \
+MTG_SEARCH_MODEL_DIR=index/models/lightonai__mLateOn-fp32 OPENBLAS_NUM_THREADS=1 uv run mtg-search-mcp
 ```
 
 ## Tests
 
 ```
-uv run pytest                    # unit tests (fake backend)
+uv run pytest                    # unit tests (fake/stub backends, incl. tests/test_exact.py)
 uv run pytest -m docker          # runs the image over stdio (initialize, tools/list, tools/call)
-python docker/mcp_smoke.py       # sample calls with output and latency
+python docker/mcp_smoke.py       # sample calls with output, latency, instructions/alwaysLoad check
 ```
-
-Warm latency on an i5-9600K is 70–170 ms per `search_cards` (short query plus `subset`) and
-about 150 ms for `find_similar` (the card's full text is the query). The first query after
-start takes about 2–3 s while the index loads; the server warms it up in the background
-after start.
