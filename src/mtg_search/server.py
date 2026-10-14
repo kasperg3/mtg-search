@@ -114,10 +114,15 @@ class CardService:
         order = sorted(range(len(names)), key=lambda i: funny[i])
         for i in order:
             for nm in [names[i], *(faces[i] or [])]:
-                k = _norm_name(nm)
-                keys.append(k)
+                keys.append(_norm_name(nm))
                 rows.append(i)
-                exact.setdefault(k, i)
+        # exact lookups: a card's full name beats another card's face name ("Lightning Bolt" is also a face of
+        # the MDFC "Emeritus of Conflict // Lightning Bolt"), then non-funny before funny
+        for i in order:
+            exact.setdefault(_norm_name(names[i]), i)
+        for i in order:
+            for nm in faces[i] or []:
+                exact.setdefault(_norm_name(nm), i)
         return keys, rows, exact
 
     def resolve_name(self, name: str) -> tuple[int | None, list[tuple[str, float]]]:
@@ -279,6 +284,88 @@ class CardService:
             out.append(f"scryfall: {c['scryfall_uri']}")
         return "\n".join(out)
 
+    def check_cards(self, cards: list[str], commander: list[str] | None = None, color_identity: str | None = None,
+                    format: str = "commander", decklist: list[str] | None = None, bracket: int | None = None) -> str:
+        """Rules-only validity of candidate cards for a deck (issue #4, EXP-010 prototype)."""
+        def fmt_ci(ci) -> str:
+            return "".join(c for c in "WUBRG" if c in (ci or [])) or "C"
+
+        def free(c: dict) -> bool:  # singleton exceptions: basic lands, "any number of cards named"
+            return "Basic" in (c.get("type_line") or "") or "any number of cards named" in (c.get("oracle_text") or "")
+
+        if not cards:
+            raise ValueError("pass at least one card name in `cards`")
+        if len(cards) > 40:
+            raise ValueError("at most 40 cards per call")
+        head, ci = [], None
+        if commander:
+            ci = set()
+            for nm in commander:
+                r = self._name_index[2].get(_norm_name(nm))
+                if r is None:
+                    raise ValueError(f'unknown commander "{nm}"; use the exact card name')
+                ci |= set(self.row(r).get("color_identity") or [])
+            head.append(f"commander {' + '.join(commander)} (identity {fmt_ci(ci)})")
+        elif color_identity:
+            ci = set(color_identity.upper().replace("C", ""))
+            head.append(f"identity {fmt_ci(ci)}")
+        head.append(f"format {format}")
+        limit = {1: 0, 2: 0, 3: 3}.get(bracket) if bracket else None
+        deck_rows: dict[int, int] = {}
+        gc = 0
+        if decklist:
+            unknown = []
+            for nm in decklist:
+                m = re.match(r"^\s*(\d+)\s*x?\s+(.*)$", nm)
+                n, nm2 = (int(m.group(1)), m.group(2)) if m else (1, nm)
+                r = self._name_index[2].get(_norm_name(nm2))
+                if r is None:
+                    unknown.append(nm2)
+                    continue
+                deck_rows[r] = deck_rows.get(r, 0) + n
+            gc = sum(1 for r in deck_rows if self.row(r).get("game_changer"))
+            head.append(f"deck: {sum(deck_rows.values())} cards, {gc} Game Changers"
+                        + (f", {len(unknown)} unrecognised names ignored" if unknown else ""))
+        if bracket:
+            head.append(f"bracket {bracket}" + (f" (Game Changer limit {limit})" if limit is not None else ""))
+        lines, seen, n_ok = [f"check: {len(cards)} cards · " + " · ".join(head)], set(), 0
+        for nm in cards:
+            r = self._name_index[2].get(_norm_name(nm))
+            if r is None:
+                best, alts = self.resolve_name(nm)
+                names = ([self.cards["name"][best]] if best is not None else []) + [n for n, _ in alts]
+                sugg = ", ".join(dict.fromkeys(names[:3])) or "none"
+                lines.append(f'- INVALID "{nm}": not an exact card name; closest: {sugg}')
+                continue
+            c, why = self.row(r), []
+            if ci is not None and not set(c.get("color_identity") or []) <= ci:
+                why.append(f"outside colour identity (card is {fmt_ci(c.get('color_identity'))})")
+            st = (c.get("legalities") or {}).get(format)
+            if st not in ("legal", "restricted"):
+                why.append(f"{(st or 'unknown').replace('_', ' ')} in {format}")
+            if r in deck_rows and not free(c):
+                why.append("already in the deck")
+            if r in seen and not free(c):
+                why.append("listed twice")
+            seen.add(r)
+            if c.get("game_changer") and not why:
+                gc_note = "Game Changer"
+                if limit is not None:
+                    gc += 1
+                    gc_note += f" ({gc} of {limit} allowed)" if gc <= limit else ""
+                    if gc > limit:
+                        why.append(f"over the Game Changer limit for bracket {bracket} ({gc} > {limit})")
+            else:
+                gc_note = "Game Changer" if c.get("game_changer") else ""
+            if why:
+                lines.append(f"- INVALID {c['name']}: " + "; ".join(why))
+            else:
+                n_ok += 1
+                lines.append(f"- ok {c['name']}" + (f" [{gc_note}]" if gc_note else ""))
+        lines.append(f"{n_ok} of {len(cards)} valid" + ("" if decklist else
+                     " (pass decklist to also check duplicates, cards already in the deck and the Game Changer count)"))
+        return "\n".join(lines)
+
     def list_tags(self, prefix: str | None = None, limit: int = 60) -> str:
         t = self.tags
         if t.height == 0:
@@ -391,6 +478,12 @@ INSTRUCTIONS = """Magic: The Gathering (MTG) card search and lookup over the ful
 Efficient use: one search_cards call per deck need, with color_identity (and format) set, returns candidates that are already in colour and legal; send 2-4 queries in that call for a broad need. get_card checks one card you named from memory or whose rulings matter. find_similar gives alternatives to a known card, e.g. for a swap. list_tags only helps find role vocabulary. Rankings use rules text only.
 Before you answer a deck-building request, use the tools: search for candidate cards and check exact card text, colour identity and legality of your picks."""
 
+CHECK_DOC = """Check candidate Magic: The Gathering cards against a Commander deck's rules in one call: exact card name, \
+commander colour identity, format legality and Game Changer status; with `decklist` also cards already in the deck, \
+duplicates and the Game Changer count for the bracket (bracket 1-2 allow 0, bracket 3 allows 3). Use it on your \
+final adds or swaps before you answer, especially for cards you named from memory. Returns one line per card \
+(ok / INVALID with the reason); about 30 tokens per card. Rules facts only."""
+
 # Claude Code defers MCP tool schemas behind ToolSearch by default; without alwaysLoad the agent rarely loads
 # them for a task it thinks it can answer from memory (EXP-009: 5% vs 45% of episodes with tool calls).
 ALWAYS_LOAD = {"anthropic/alwaysLoad": True}
@@ -426,6 +519,16 @@ def build_mcp(service: CardService, surface: dict[str, str] | None = None):
     for fn in (search, similar, get, tags):
         meta = ALWAYS_LOAD if fn in (search, get) else None
         mcp.add_tool(fn, structured_output=False, meta=meta)
+    if surface.get("_check_cards"):  # EXP-010 prototype (issue #4); not registered in the shipped server yet
+        check = _make_tool("check_cards", service.check_cards, [
+            _P("cards", Annotated[list[str], Field(min_length=1, max_length=40)], desc="Exact names of the cards to check."),
+            _P("commander", list[str] | None, None, "Commander name(s); their colour identity is used."),
+            _P("color_identity", str | None, None, 'Colour identity if no commander is given, e.g. "UR".'),
+            _P("format", str, "commander", "Format for the legality check."),
+            _P("decklist", list[str] | None, None, "Current deck card names (optional; enables deck-level checks)."),
+            _P("bracket", Annotated[int, Field(ge=1, le=5)] | None, None, "Commander bracket 1-5 (Game Changer limit).")],
+            surface.get("check_cards", CHECK_DOC))
+        mcp.add_tool(check, structured_output=False, meta=ALWAYS_LOAD)
     return mcp
 
 

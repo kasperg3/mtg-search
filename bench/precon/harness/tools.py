@@ -326,6 +326,26 @@ class LexicalToolset(Toolset):
         return out
 
 
+def slim_schema(s: Any) -> Any:
+    """Drop pydantic noise from a JSON schema (EXP-010 token-efficiency arm): per-property ``title`` and
+    ``anyOf [T, null]`` wrappers for optional parameters (the default already says null is allowed)."""
+    if isinstance(s, list):
+        return [slim_schema(x) for x in s]
+    if not isinstance(s, dict):
+        return s
+    out = {}
+    for k, v in s.items():
+        if k == "title" and isinstance(v, str):
+            continue
+        out[k] = slim_schema(v) if k != "properties" else {p: slim_schema(x) for p, x in v.items()}
+    any_of = out.get("anyOf")
+    if isinstance(any_of, list) and len(any_of) == 2 and {"type": "null"} in any_of:
+        inner = next(x for x in any_of if x != {"type": "null"})
+        out.pop("anyOf")
+        out = {**inner, **out}
+    return out
+
+
 class ShippedToolset(MCPToolset):
     """The shipped MCP server's own surface (instructions, tool names, descriptions, schemas and
     argument handling via ``build_mcp``) over the in-process eval service. ``surface`` selects the
@@ -347,10 +367,15 @@ class ShippedToolset(MCPToolset):
         self.surface = surface
         self.mcp = build_mcp(self.svc, SURFACES[surface])
         self.instructions = self.mcp.instructions
+        drop = set(filter(None, SURFACES[surface].get("_drop", "").split(",")))
+        listed = [t for t in anyio.run(self.mcp.list_tools) if t.name not in drop]
+        self.tool_names = tuple(t.name for t in listed)
         self._schemas = [_fn(t.name, t.description or "", t.input_schema.get("properties", {}),
-                             t.input_schema.get("required", [])) for t in anyio.run(self.mcp.list_tools)]
-        for sc, t in zip(self._schemas, anyio.run(self.mcp.list_tools)):
+                             t.input_schema.get("required", [])) for t in listed]
+        for sc, t in zip(self._schemas, listed):
             sc["function"]["parameters"] = dict(t.input_schema)  # keep $defs / constraints verbatim
+            if SURFACES[surface].get("_slim"):
+                sc["function"]["parameters"] = slim_schema(sc["function"]["parameters"])
         # MCP tool _meta (passed through by the Claude Code proxy only): frozen variants state "_always_load"
         # explicitly; "shipped" uses the server's own tool meta
         sv = SURFACES[surface]
@@ -360,7 +385,7 @@ class ShippedToolset(MCPToolset):
                 if sc["function"]["name"] in always:
                     sc["meta"] = {"anthropic/alwaysLoad": True}
         else:
-            for sc, t in zip(self._schemas, anyio.run(self.mcp.list_tools)):
+            for sc, t in zip(self._schemas, listed):
                 if t.meta:
                     sc["meta"] = dict(t.meta)
 

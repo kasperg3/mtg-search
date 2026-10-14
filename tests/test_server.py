@@ -419,3 +419,58 @@ def test_list_tags_examples_alphabetical(svc):
     body = line.split(": ", 1)[1]
     pos = [body.index(n) for n in shown]
     assert pos == sorted(pos)
+
+
+def test_full_name_beats_other_cards_face_name():
+    df = pl.DataFrame({"name": ["Emeritus of Conflict // Lightning Bolt", "Lightning Bolt"],
+                       "face_names": [["Emeritus of Conflict", "Lightning Bolt"], []],
+                       "is_funny": [False, False]})
+    svc = server.CardService(df, backend=None)
+    assert svc.resolve_name("Lightning Bolt")[0] == 1
+    assert svc.resolve_name("Emeritus of Conflict")[0] == 0
+
+
+def _check_svc():
+    df = pl.DataFrame({
+        "name": ["Counterspell", "Rhystic Study", "Llanowar Elves", "Mana Crypt", "Island", "Cyclonic Rift",
+                 "Mystic Remora", "Fierce Guardianship", "Rootha, Mercurial Artist"],
+        "face_names": [[] for _ in range(9)], "is_funny": [False] * 9,
+        "color_identity": [["U"], ["U"], ["G"], [], ["U"], ["U"], ["U"], ["U"], ["U", "R"]],
+        "type_line": ["Instant", "Enchantment", "Creature — Elf Druid", "Artifact", "Basic Land — Island", "Instant",
+                      "Enchantment", "Instant", "Legendary Creature — Human Wizard"],
+        "oracle_text": [""] * 9,
+        "legalities": [{"commander": "legal"}, {"commander": "legal"}, {"commander": "legal"}, {"commander": "banned"},
+                       {"commander": "legal"}, {"commander": "legal"}, {"commander": "legal"}, {"commander": "legal"},
+                       {"commander": "legal"}],
+        "game_changer": [False, True, False, False, False, True, True, True, False],
+    })
+    return server.CardService(df, backend=None)
+
+
+def test_check_cards_rules():
+    out = _check_svc().check_cards(
+        ["Counterspell", "Rhystic Study", "Llanowar Elves", "Mana Crypt", "Counterspell", "Island", "Island",
+         "Cyclonic Rift", "Mystic Remora", "Fierce Guardianship", "Counterspel"],
+        commander=["Rootha, Mercurial Artist"], decklist=["Rhystic Study", "2 Island"], bracket=3)
+    lines = out.splitlines()
+    assert "identity UR" in lines[0] and "1 Game Changers" in lines[0] and "limit 3" in lines[0]
+    assert lines[1] == "- ok Counterspell"
+    assert lines[2] == "- INVALID Rhystic Study: already in the deck"
+    assert "outside colour identity (card is G)" in lines[3]
+    assert "banned in commander" in lines[4]
+    assert lines[5] == "- INVALID Counterspell: listed twice"
+    assert lines[6] == lines[7] == "- ok Island"  # basics are exempt from singleton and in-deck checks
+    assert "(2 of 3 allowed)" in lines[8] and "(3 of 3 allowed)" in lines[9]
+    assert "over the Game Changer limit for bracket 3 (4 > 3)" in lines[10]
+    assert lines[11].startswith('- INVALID "Counterspel": not an exact card name; closest: Counterspell')
+    assert lines[-1] == "5 of 11 valid"
+    assert not re.search(r"edhrec|price|\$|popular|salt", out, re.I)
+
+
+def test_check_cards_tool_only_when_enabled():
+    svc = _check_svc()
+    assert "check_cards" not in {t.name for t in asyncio.run(server.build_mcp(svc).list_tools())}
+    tools = {t.name: t for t in asyncio.run(server.build_mcp(svc, {"_check_cards": True}).list_tools())}
+    assert tools["check_cards"].meta == {"anthropic/alwaysLoad": True}
+    with pytest.raises(ValueError, match="unknown commander"):
+        svc.check_cards(["Counterspell"], commander=["Nobody"])
