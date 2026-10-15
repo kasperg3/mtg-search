@@ -1,6 +1,6 @@
 # EXP-013: Search infrastructure vs none vs everything in context
 
-**Status: done 2026-10-15 (A and G on all 113 tasks; I on the pre-registered 12-task sample).** The design below was pre-registered in commit `1e04f45` before the main run.
+**Status: done 2026-10-15 (A and G on all 113 tasks; I on the pre-registered 12-task sample; the owner cancelled the full I run).** The design below was pre-registered in commit `1e04f45` before the main run.
 
 **Answer.**
 - **H1 (tokens): supported.** The agent with search infrastructure used the fewest tokens.
@@ -161,7 +161,7 @@ In context, the model sees every candidate. It does well when the request is cle
 ### Caveats
 
 - **Repeats.** 1 repeat, and Claude Code exposes no temperature, so run-to-run noise is unmeasured. EXP-010 saw swings of ~20 points in search rate between identical arms.
-- **I sample.** I ran on 12 tasks. The full I run (about 302M tokens, about $97 notional cold, much less with a warm cache) is still deferred to the owner.
+- **I sample.** I ran on 12 tasks. **The full I run is cancelled (owner, 2026-10-15)**: in-context retrieval will not be pursued further, so the I numbers stay a 12-task sample.
 - **I's design.** I splits the file into parts and merges. A model with a context large enough to hold the 3.1M-token file in one pass might rank differently. The token count would be about the same.
 - **Labels.** Still the original incomplete ones. Pooled judging (issue #2) would make the deck strata fairer to every arm.
 - **Grep echo.** G's tool output includes the matched line, which a coding agent's grep would also show. Without it, G would use about 20% fewer tool-output tokens, still more than A per episode, because it makes more calls.
