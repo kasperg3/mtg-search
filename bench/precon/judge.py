@@ -55,11 +55,21 @@ GC_LIMIT = 3
 N_CONTROLS = {"random": 6, "top_label": 6, "in_deck": 3}
 MAX_INVALID_ACCEPT = 0.15  # validity rule: random or in-deck controls graded >= 1 above this -> run invalid
 
-RUBRIC = """Grade each candidate for how well it would fit this deck if it were added:
+RUBRICS = {
+    # pre-registered; failed the dev validity rule (47% of random controls graded >= 1, mostly filler graded 1)
+    "v1": """Grade each candidate for how well it would fit this deck if it were added:
 2 = clearly fits: it works with the commander or the deck's evident plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction).
 1 = playable but a generic or weak fit: it does something useful for this deck, but neither supports its plan nor fills a clear gap.
 0 = poor fit: it works against the plan or does nothing for it; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.
-Judge only from the card text shown and the deck list. Do not reward a card for being widely played or for raw power on its own."""
+Judge only from the card text shown and the deck list. Do not reward a card for being widely played or for raw power on its own.""",
+    # the one dev-only revision the pre-registration allows: credit means the add improves the deck
+    "v2": """Grade each candidate for whether adding it would improve this deck. An added card takes the place of one of the deck's weakest cards, so it earns credit only if it is better for this deck than those.
+2 = clearly improves the deck: it works with the commander or the deck's evident plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction), and it is an upgrade over the deck's weakest cards.
+1 = a marginal improvement: a reasonable option for this deck, but generic or only slightly better than the deck's weakest cards.
+0 = would not improve the deck: filler, no better than what the deck already plays, works against the plan or does nothing for it; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.
+Judge only from the card text shown and the deck list. Do not reward a card for being widely played; judge what its text does for this deck.""",
+}
+RUBRIC = "v2"
 
 JUDGE_SYSTEM = """You are an expert Magic: The Gathering Commander deck builder grading candidate cards for one specific deck.
 
@@ -99,9 +109,10 @@ def deck_text(deck: Deck, rows: dict[str, dict], db: CardDB) -> str:
     return "\n".join(out)
 
 
-def judge_system(deck: Deck) -> str:
+def judge_system(deck: Deck, rubric: str = RUBRIC) -> str:
     ci = "".join(c for c in "WUBRG" if c in deck.color_identity) or "colourless"
-    return JUDGE_SYSTEM.format(rules=RULES.format(ci=ci, bracket=3, gc_limit=GC_LIMIT), rubric=RUBRIC.format(gc_limit=GC_LIMIT))
+    return JUDGE_SYSTEM.format(rules=RULES.format(ci=ci, bracket=3, gc_limit=GC_LIMIT),
+                               rubric=RUBRICS[rubric].format(gc_limit=GC_LIMIT))
 
 
 def judge_user(deck: Deck, oids: list[str], rows: dict[str, dict], db: CardDB) -> str:
@@ -255,7 +266,7 @@ def cmd_judge(args) -> None:
     prompts = {}
     for pid, p, k, oids in jobs:  # pre-flight every prompt before the first call
         deck = S.bench.decks[pid]
-        system, user = judge_system(deck), judge_user(deck, oids, S.rows, S.db)
+        system, user = judge_system(deck, args.rubric), judge_user(deck, oids, S.rows, S.db)
         S.checked(deck, system, user, oids)
         prompts[(pid, p, k)] = (system, user)
     calls_path = out / "calls.jsonl"
@@ -272,7 +283,7 @@ def cmd_judge(args) -> None:
     (out / "config.json").write_text(json.dumps({
         "experiment": "EXP-017", "runs": run_ids, "data": args.data, "model": args.model, "cli": cc.version, "git": git,
         "batch": BATCH, "rejudge": args.rejudge, "seed": args.seed, "n_controls": N_CONTROLS,
-        "system_template": JUDGE_SYSTEM, "rubric": RUBRIC}, indent=1))
+        "system_template": JUDGE_SYSTEM, "rubric": args.rubric, "rubric_text": RUBRICS[args.rubric]}, indent=1))
     lock = threading.Lock()
 
     def one(job):
@@ -483,7 +494,7 @@ def cmd_analyze(args) -> dict:
                    "kappa_ge1": kappa([g[0][k] >= 1 for k in both], [g[1][k] >= 1 for k in both])}
     n_items = sum(map(len, items.values()))
     summary = {"experiment": "EXP-017", "run_id": args.run, "created": datetime.now(UTC).isoformat(timespec="seconds"),
-               "config": json.loads((out / "config.json").read_text()) | {"system_template": None, "rubric": RUBRIC},
+               "config": json.loads((out / "config.json").read_text()) | {"system_template": None},
                "runs": run_ids, "n_precons": len(items), "n_cards": n_items, "n_graded_pass0": len(g[0]),
                "valid": valid, "validity_rule": f"random and in_deck controls graded >= 1 at most {MAX_INVALID_ACCEPT:.0%}",
                "arms": arms, "paired": {f"{a} - {b}": paired}, "agreement": agreement, "controls": ctrl,
@@ -526,6 +537,7 @@ def main(argv=None) -> None:
             sp.add_argument("--split", default="dev")
         if name == "judge":
             sp.add_argument("--rejudge", type=float, default=0.1)
+            sp.add_argument("--rubric", default=RUBRIC, choices=sorted(RUBRICS))
             sp.add_argument("--seed", default="exp017")
             sp.add_argument("--dry-run", action="store_true", help="build pool, controls and prompts, run pre-flight, no calls")
     args = ap.parse_args(argv)

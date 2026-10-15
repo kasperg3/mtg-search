@@ -124,3 +124,10 @@ Implementation: `bench/precon/judge.py` (`probe`, `judge`, `analyze`), tests in 
 3. **Primary on test: the EXP-011 pool**, `20261014_exp011-test_shipped` − `20261014_exp011-test_v1`, 14 precons × 3 reps. The rubric is whichever passed dev, and the validity rule applies again on test, independently.
 
 The test pool is judged once. Re-running it is allowed only after a crash, resuming the same run id; no rubric or prompt change is allowed after the test judgments start.
+
+## Dev calibration record (2026-10-15, before any test judgment)
+
+- **Recognition probe** (`20261015_exp017-probe-dev`, 15 dev decks, anonymised): the judge named the right deck for 12/15, the product for 11/15 and the commander for 10/15. It said it was confident on only 4. So the judge knows most of these products, and its grades may echo what it knows about them. This is reported as a limit, as planned; the run goes ahead.
+- **Rubric v1 failed the validity rule on dev** (`20261015_exp017-dev`): 42/90 random controls (46.7%) were graded ≥ 1 (4.4% graded 2), against the 15% limit. In-deck controls: 0/45. Most accepted random cards were filler that no Commander builder would add (Eager Construct, Clockwork Servant, Nim Abomination), graded 1 as "does something useful". No arm comparison is drawn from this run.
+- **The one allowed revision: rubric v2** (`RUBRICS["v2"]` in `bench/precon/judge.py`, committed with this record). A grade now means the add *improves* the deck, given that it replaces one of the deck's weakest cards. Filler and cards no better than what the deck already plays are 0. The ban on rewarding wide play stays, and "judge what its text does for this deck" replaces "raw power on its own". Everything else is unchanged: the prompt, the controls, the seeds and the batches.
+- **Next:** dev is re-judged with v2 as `20261015_exp017-dev-r2`. If v2 passes the validity rule there, the test pool is judged with v2. If it fails, the test pool is not judged, and the owner decides.
