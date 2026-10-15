@@ -1,0 +1,351 @@
+{
+ "experiment": "EXP-017",
+ "run_id": "20261015_exp017-dev-r3",
+ "created": "2026-10-15T09:08:36+00:00",
+ "config": {
+  "experiment": "EXP-017",
+  "runs": [
+   "20261015_exp014-dev_after3",
+   "20261015_exp014-dev_before"
+  ],
+  "data": "hf:kasper-cbx/mtg-precon-bench@d6bb8ba78f4d5d1d18e62d01fc7db795199586f6",
+  "model": "claude-sonnet-5-5",
+  "cli": "2.1.300 (Claude Code)",
+  "git": {
+   "sha": "63ca2a61b888167fbdc00d10912faeed4cd986a0",
+   "dirty_bench": false
+  },
+  "batch": 15,
+  "rejudge": 0.1,
+  "seed": "exp017",
+  "n_controls": {
+   "random": 6,
+   "top_label": 6,
+   "in_deck": 3
+  },
+  "system_template": null,
+  "rubric": "v3",
+  "rubric_text": "Grade each candidate for whether you would add it to this deck as an upgrade. An added card takes the place of one of the deck's weakest cards. Most legal cards would not improve a given Commander deck, so a card with no specific reason to be in this deck gets 0.\n2 = a clear upgrade: it directly supports the commander or the deck's plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction), and does so better than the deck's weakest cards.\n1 = a reasonable but low-priority upgrade: it has a specific reason to be in this deck (it supports the plan or fills a gap) and is about as good as the deck's weakest cards.\n0 = not an upgrade: no specific reason to be in this deck, filler, weaker than the cards it would replace, or works against the plan; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.\nJudge only from the card text shown and the deck list. Do not reward a card for being widely played; judge what its text does for this deck."
+ },
+ "runs": [
+  "20261015_exp014-dev_after3",
+  "20261015_exp014-dev_before"
+ ],
+ "n_precons": 15,
+ "n_cards": 900,
+ "n_graded_pass0": 900,
+ "valid": false,
+ "top_label_mostly_fit": true,
+ "validity_rule": "random and in_deck controls graded >= 1 at most 15%",
+ "arms": {
+  "20261015_exp014-dev_after3": {
+   "fit@20": {
+    "mean": 0.62,
+    "ci95": [
+     0.55,
+     0.6883333333333332
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "fit@10": {
+    "mean": 0.7100000000000001,
+    "ci95": [
+     0.6266666666666666,
+     0.7899999999999999
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "share2@20": {
+    "mean": 0.38333333333333336,
+    "ci95": [
+     0.29333333333333333,
+     0.4733333333333334
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@10": {
+    "mean": 0.1889107843058526,
+    "ci95": [
+     0.12384057551203997,
+     0.25487388146688367
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@20": {
+    "mean": 0.16776793484607527,
+    "ci95": [
+     0.11319968023250698,
+     0.2237376912743223
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.validity": {
+    "mean": 0.9766666666666667,
+    "ci95": [
+     0.9366666666666668,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.fit@10": {
+    "mean": 0.6233333333333333,
+    "ci95": [
+     0.5700000000000001,
+     0.6733333333333335
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.share2@10": {
+    "mean": 0.3466666666666667,
+    "ci95": [
+     0.2733333333333333,
+     0.41333333333333333
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.17589950889179698,
+    "ci95": [
+     0.09277438061816558,
+     0.2675623619141399
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.validity": {
+    "mean": 1.0,
+    "ci95": [
+     1.0,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "ungraded_slots": 0
+  },
+  "20261015_exp014-dev_before": {
+   "fit@20": {
+    "mean": 0.6216666666666666,
+    "ci95": [
+     0.5733333333333334,
+     0.6667083333333328
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "fit@10": {
+    "mean": 0.7133333333333333,
+    "ci95": [
+     0.6466666666666666,
+     0.7799999999999999
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "share2@20": {
+    "mean": 0.4033333333333333,
+    "ci95": [
+     0.33999999999999997,
+     0.4666666666666667
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@10": {
+    "mean": 0.2545212079974403,
+    "ci95": [
+     0.1814057623005645,
+     0.32885914669456834
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@20": {
+    "mean": 0.2212458308892374,
+    "ci95": [
+     0.16109774331436524,
+     0.2824161495748399
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.validity": {
+    "mean": 0.9766666666666667,
+    "ci95": [
+     0.9533333333333331,
+     0.9966666666666666
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.fit@10": {
+    "mean": 0.65,
+    "ci95": [
+     0.5533333333333333,
+     0.7333333333333333
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.share2@10": {
+    "mean": 0.44,
+    "ci95": [
+     0.33333333333333326,
+     0.5399999999999999
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.15500911644451412,
+    "ci95": [
+     0.09000696566936928,
+     0.22445844149134883
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.validity": {
+    "mean": 0.9933333333333334,
+    "ci95": [
+     0.98,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "ungraded_slots": 0
+  }
+ },
+ "paired": {
+  "20261015_exp014-dev_after3 - 20261015_exp014-dev_before": {
+   "fit@20": {
+    "n": 15,
+    "mean_diff": -0.001666666666666668,
+    "ci95": [
+     -0.08337500000000002,
+     0.08499999999999999
+    ],
+    "sign_test_p": 0.79052734375
+   },
+   "fit@10": {
+    "n": 15,
+    "mean_diff": -0.003333333333333336,
+    "ci95": [
+     -0.10666666666666667,
+     0.1033333333333333
+    ],
+    "sign_test_p": 0.79052734375
+   },
+   "share2@20": {
+    "n": 15,
+    "mean_diff": -0.02000000000000001,
+    "ci95": [
+     -0.1166666666666667,
+     0.07666666666666666
+    ],
+    "sign_test_p": 1.0
+   },
+   "add.ndcg@10": {
+    "n": 15,
+    "mean_diff": -0.06561042369158772,
+    "ci95": [
+     -0.10841519316418877,
+     -0.020091893523419852
+    ],
+    "sign_test_p": 0.266845703125
+   },
+   "swap.fit@10": {
+    "n": 15,
+    "mean_diff": -0.02666666666666666,
+    "ci95": [
+     -0.10666666666666665,
+     0.06000000000000002
+    ],
+    "sign_test_p": 0.3876953125
+   },
+   "swap.share2@10": {
+    "n": 15,
+    "mean_diff": -0.09333333333333332,
+    "ci95": [
+     -0.18666666666666668,
+     0.006666666666666651
+    ],
+    "sign_test_p": 0.14599609375
+   },
+   "swap.add.ndcg@10": {
+    "n": 15,
+    "mean_diff": 0.020890392447282878,
+    "ci95": [
+     -0.06968898233851717,
+     0.10990540851428902
+    ],
+    "sign_test_p": 1.0
+   }
+  }
+ },
+ "agreement": {
+  "n_pool_judged": 675,
+  "n_labelled": 145,
+  "labelled_judged_ge1": 0.9103448275862069,
+  "unlabelled_judged_ge1": 0.8471698113207548,
+  "labelled_judged_2": 0.6137931034482759,
+  "unlabelled_judged_2": 0.3169811320754717,
+  "kappa_label_vs_judged_ge1": 0.030196541858440007
+ },
+ "controls": {
+  "pool": {
+   "n": 675,
+   "ge1": 0.8607407407407407,
+   "eq2": 0.38074074074074077,
+   "mean_grade": 1.2414814814814814
+  },
+  "random": {
+   "n": 90,
+   "ge1": 0.15555555555555556,
+   "eq2": 0.0,
+   "mean_grade": 0.15555555555555556
+  },
+  "top_label": {
+   "n": 90,
+   "ge1": 0.7777777777777778,
+   "eq2": 0.4888888888888889,
+   "mean_grade": 1.2666666666666666
+  },
+  "in_deck": {
+   "n": 45,
+   "ge1": 0.022222222222222223,
+   "eq2": 0.0,
+   "mean_grade": 0.022222222222222223
+  }
+ },
+ "consistency": {
+  "n": 96,
+  "same_grade": 0.8229166666666666,
+  "same_ge1": 0.9166666666666666,
+  "kappa_ge1": 0.789010989010989
+ },
+ "cost": {
+  "calls": 75,
+  "asks": 75,
+  "tokens": {
+   "input": 150,
+   "cache_write": 257152,
+   "cache_read": 34235,
+   "output": 17922
+  },
+  "tokens_total": 309459,
+  "tokens_per_call": 4126.12,
+  "turns_per_call": 1.0,
+  "wall_s_per_call": 3.8640000000000003,
+  "wall_s_sum": 289.8
+ }
+}

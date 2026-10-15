@@ -146,3 +146,10 @@ The test pool is judged once. Re-running it is allowed only after a crash, resum
     - the pre-registered validity rule (random and in-deck controls graded ≥ 1 at most 15% each);
     - plus a guard against a judge that rejects everything: the top EDHREC adds not picked must stay "mostly fit", i.e. more than 50% graded ≥ 1.
   - If v3 fails the gate, the test pool is not judged.
+- **Rubric v3 missed the gate by one card on dev** (`20261015_exp017-dev-r3`).
+  - Random controls: 14/90 (15.6%) graded ≥ 1, against at most 13 allowed; 0/90 graded 2. In-deck controls: 1/45 (2.2%).
+  - Top EDHREC adds not picked: 78% graded ≥ 1, 49% graded 2. Pool picks: 86% and 38%.
+  - Consistency: same grade 82%, κ(≥ 1) 0.79.
+  - The accepted random cards are now mostly lands that fit the mana base (Coastal Tower, Captivating Cave, Mirrex, Hive of the Eye Tyrant) and strong cards (Casualties of War); the filler of v1 and v2 is gone.
+  - **Per the gate, the test pool is not judged; the owner decides.**
+- **Across the three dev runs, judged fit@20 of shipped-now − old surface is about 0:** +0.025, +0.005, −0.002, every CI spanning 0. On the same 15 decks, the community key gives −0.066 [−0.108, −0.020]. This is descriptive (dev, one repeat, and the rubric was tuned on these decks).
