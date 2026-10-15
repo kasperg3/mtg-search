@@ -1,6 +1,17 @@
 # EXP-013: Search infrastructure vs none vs everything in context
 
-**Status: pre-registered 2026-10-15, before the main run.** Smoke runs only so far (`eval/agentic/runs/cc-smoke/`).
+**Status: done 2026-10-15 (A and G on all 113 tasks; I on the pre-registered 12-task sample).** The design below was pre-registered in commit `1e04f45` before the main run.
+
+**Answer.**
+- **H1 (tokens): supported.** The agent with search infrastructure used the fewest tokens.
+  - Against grep, G took 1.46× A's tokens (median ratio over tasks; 96 of 113 tasks higher, sign p = 1.5e-14).
+  - Against reading everything in context, I took 283× A's tokens (12 of 12 tasks, p = 0.0005).
+- **Search vs grep quality: about level.**
+  - Known item (primary): found 97% vs 94% (p = 1).
+  - Deck needs: tied in both label strata.
+  - Attribute tasks: A ahead on nDCG@10 by −0.054 [−0.108, −0.008] for G, but the sign test is not significant (p = 0.45). On final R@20, A beat G 10 tasks to 2 (p = 0.04).
+- **What grep costs.** Grep's real costs are effort and speed: 36% more tool calls, 0.8 more turns and 2.4 s more per task.
+- **In context: best quality on the small sample, at a very high price.** Reading all ~3.1M tokens of card text gave the best quality on the 12-task sample (better than A on 5 tasks, worse on 1; not significant). It took about 300× the tokens and 6.5× the wall time.
 
 ## Question (owner)
 
@@ -76,3 +87,82 @@ There are 113 tasks: `eval/agentic/tasks.yaml` (65 deck, 15 attr, 25 known) plus
   | known item | 5 + merge | 3.11M | 48 s | target ranked first |
 
   The second unconstrained task read every part from the 1h cache: notional $0.34 instead of $12.46.
+
+## Results
+
+Run data:
+- `eval/agentic/runs/cc-main/` (A, G: 226 episodes, 0 failures, 0 retries);
+- `eval/agentic/runs/cc-main-I/` (I: 12 episodes, 0 failures);
+- metrics: `eval/agentic/results/cc_main.json` (`analyze_cc.py`).
+
+The model was `claude-sonnet-5-5[1m]` on Claude Code 2.1.300, 1 repeat. Labels are the original incomplete ones, so compare arms, not absolute levels.
+
+### Tokens, turns and time per episode (H1)
+
+| arm | episodes | total tokens, mean / median | output tokens | Claude Code turns | tool calls | wall s | tool output chars |
+|---|---|---|---|---|---|---|---|
+| **A** search | 113 | **12.1k / 11.1k** | 622 | **4.14** | **2.14** | **8.6** | 5.8k |
+| **G** grep | 113 | 20.9k / 16.6k | 836 | 4.90 | 2.90 | 10.9 | 10.1k |
+| **I** in context | 12 | 2.91M / 3.11M | 3,456 | 5.58 (5 parts + merge) | 0 | 53.6 | — |
+
+- **Total tokens** = input + cache writes + cache reads + output, summed over every session of an episode. Cache reads were 66% (A), 70% (G) and 98% (I) of the total.
+- **Paired tests.**
+  - **A vs G:**
+    - tokens G − A = +8.8k [+7.0k, +10.6k]; G higher on 96 of 113 tasks (sign p = 1.5e-14); median ratio 1.46;
+    - turns +0.76 (p = 1e-7);
+    - wall +2.4 s (p = 2e-7).
+  - **A vs I (12 tasks):** tokens higher on 12 of 12 (p = 0.0005), median ratio 283; wall 6.5×.
+  - **G vs I:** median ratio 195.
+- **Why grep costs more.** G makes 36% more calls (328 vs 242), because it has no ranking: it pages, or reformulates its regexes. Each call also returns about 28% more text (3.5k vs 2.7k characters), because grep echoes the matching line.
+- **Why I costs what it costs.**
+  - I's cost is fixed by the corpus: every task with no constraints reads the whole file, about 3.1M tokens.
+  - The prompt cache made the parts cheap to re-read: notional list price $6.88 for the 12 episodes, against $2.38 for all 113 A episodes and $3.58 for all 113 G episodes. In tokens, though, I uses roughly 300× more.
+  - All of this ran on the subscription, so the notional figures are list-price equivalents, not spend.
+
+### Quality, A vs G (all 113 tasks)
+
+| stratum (label source) | n | metric | A | G | G − A [95% CI] | tasks G better / A better | sign p |
+|---|---|---|---|---|---|---|---|
+| known + known-easy (**primary**) | 33 | found in final | 0.970 | 0.939 | −0.030 [−0.121, +0.061] | 1 / 2 | 1.0 |
+| known (chosen against BM25) | 25 | found in final | 0.960 | 0.960 | 0 | 1 / 1 | 1.0 |
+| known-easy | 8 | found in final | 1.000 | 0.875 | −0.125 | 0 / 1 | 1.0 |
+| attr (tag closure; **secondary**) | 15 | nDCG@10 | 0.923 | 0.870 | −0.054 [−0.108, −0.008] | 2 / 5 | 0.45 |
+| attr | 15 | final R@20 | 0.326 | 0.282 | −0.044 [−0.089, −0.007] | 2 / 10 | 0.04 |
+| deck / deckneeds (tags or regex) | 30 | nDCG@10 | 0.805 | 0.824 | +0.019 [−0.057, +0.104] | 11 / 12 | 1.0 |
+| deck / paraphrase (regex only) | 35 | nDCG@10 | 0.658 | 0.633 | −0.025 [−0.105, +0.051] | 10 / 12 | 0.83 |
+| deck / paraphrase (regex only) | 35 | final R@20 | 0.121 | 0.146 | +0.025 [−0.001, +0.054] | 16 / 14 | 0.86 |
+
+**Known-item misses:**
+- **A missed Guardian Augmenter.** Its three searches described the card correctly, but it stopped with a list of 6 other hexproof effects.
+- **G missed War Behemoth.** `^3/6$` matches 63 cards and the target is 56th in file order. G paged to offsets 15 and 30, then ran out of calls.
+- **G missed Shadow of Mortality.** Its patterns guessed wording the card does not use, such as "life you've lost" and a {15} cost. The card says "costs {X} less to cast, where X is the difference" and costs {13}{B}{B}.
+- **Agents rarely searched by card name:** A did in 2 of 33 known episodes, G in 1.
+
+### Quality, in context (I) on the 12-task sample
+
+The score below is nDCG@10, or found-in-final for known items. The sample happened to favour G over A (0.882 vs 0.794), whereas on all 113 tasks A and G are level, so treat these numbers as indicative.
+
+| | A | G | I |
+|---|---|---|---|
+| mean score, 12 tasks | 0.794 | 0.882 | **0.919** |
+| I better / worse than the arm | 5 / 1 | 5 / 1 | — |
+| known items found (4) | 3 | 4 | 4 |
+| attr nDCG@10 (4) | 0.804 | 0.785 | 0.888 |
+
+In context, the model sees every candidate. It does well when the request is clear, as with 1-mana dorks, counterspells and named-effect known items. Its only weakness is cost.
+
+### Reading
+
+1. **H1 holds.** For the same task and protocol, the infrastructure agent is the cheapest: 1.46× fewer tokens than grep and about 280× fewer than reading everything in context. It is also the fastest (8.6 s vs 10.9 s vs 54 s).
+2. **The value of the search infrastructure here is efficiency more than reach.** With a strong model, grep reaches about the same final quality on deck needs and known items, at about 1.5× the tokens and 25% more time. Its weak spot is tasks where the wording is generic and a ranking matters (attr R@20, the War Behemoth miss): without a ranking it must page through alphabetical matches.
+3. **Reading everything is the quality ceiling, not a practical design.** About 3.1M tokens and about 54 s per request is two orders of magnitude more than either tool.
+4. **Change from EXP-006.** There, a GLM agent with grep + BM25 appeared to beat mLateOn on final R@20. Here, with grep only and a stronger model, that advantage is gone, even on the regex-labelled tasks that favour grep (+0.025, p = 0.86).
+
+### Caveats
+
+- **Repeats.** 1 repeat, and Claude Code exposes no temperature, so run-to-run noise is unmeasured. EXP-010 saw swings of ~20 points in search rate between identical arms.
+- **I sample.** I ran on 12 tasks. The full I run (about 302M tokens, about $97 notional cold, much less with a warm cache) is still deferred to the owner.
+- **I's design.** I splits the file into parts and merges. A model with a context large enough to hold the 3.1M-token file in one pass might rank differently. The token count would be about the same.
+- **Labels.** Still the original incomplete ones. Pooled judging (issue #2) would make the deck strata fairer to every arm.
+- **Grep echo.** G's tool output includes the matched line, which a coding agent's grep would also show. Without it, G would use about 20% fewer tool-output tokens, still more than A per episode, because it makes more calls.
+

@@ -8,9 +8,10 @@ GLM-5.3 acts as a deck-building search assistant. It gets up to 5 search calls o
 | B | SparseUp | none |
 | C | SparseUp | per-result matched SparseUp terms (`*` = expansion term, not a query word), plus the aggregate line "Frequent terms in these results not in your query" |
 | D | mLateOn | the same aggregate line, computed with SparseUp over mLateOn's results |
-| F | lexical only | the tools are `grep(pattern)` and `bm25(query)` instead of `search` |
+| F | lexical only (legacy) | the tools are `grep(pattern)` and `bm25(query)` instead of `search` |
+| G | none: grep only (EXP-013) | one tool, `grep(pattern, offset?)`. It matches line by line over the plain card text and returns matches in file order (alphabetical), 15 per call. No BM25, no ranking, no filter parameters |
 
-Tool output never contains popularity, price or crowd signals. `Env.assert_no_leak` blocks `/edhrec|price|\$|rank|popular|salt/` in everything the harness writes. Card text is exempt, because card names can legitimately contain words such as "rank". grep orders its matches by the BM25 score of the pattern's literal words, with ties broken alphabetically.
+Tool output never contains popularity, price or crowd signals. `Env.assert_no_leak` blocks `/edhrec|price|\$|rank|popular|salt/` in everything the harness writes. Card text is exempt, because card names can legitimately contain words such as "rank". F's grep orders its matches by the BM25 score of the pattern's literal words, with ties broken alphabetically. G's grep has no ranking at all.
 
 ## Setup
 
@@ -35,6 +36,23 @@ Outputs go to `runs/<run>/`:
 - `config.json`
 - `episodes.jsonl`: one record per (task, condition, repeat). It holds every search's query, filters, result oracle ids and the term feedback. Terms are computed for every condition, even where they are not shown, so they serve as a counterfactual baseline for term uptake. It also holds the final list, token usage and cost.
 - `transcripts/<task>__<cond>__r<rep>.jsonl`: every request (as message deltas) and every raw response, including `reasoning_content`.
+
+## Claude Code runner (EXP-013)
+
+`cc_agent.py` runs the same tasks and protocol with headless Claude Code (`claude-sonnet-5-5[1m]`, on the subscription, isolated as in the precon bridge). It has three arms:
+- **A**: mLateOn `search`.
+- **G**: grep only.
+- **I**: no tools, all card text in context. The card file is read in parts of ≤1.8M characters, followed by a merge call.
+
+Every episode records turns, wall time and token components. Design and results: [`eval/experiments/infra_vs_none.md`](../experiments/infra_vs_none.md).
+
+```bash
+uv run --extra models python eval/agentic/cc_agent.py --run cc-main --conds A,G --workers 4
+uv run --extra models python eval/agentic/cc_agent.py --run cc-main-I --conds I --ids <task ids> --workers 1
+uv run python eval/agentic/analyze_cc.py --runs cc-main --runs cc-main-I --out eval/agentic/results/cc_main.json
+```
+
+`tasks_known_easy.yaml` (built with `build_tasks.py --known-easy`) holds the 8 known-item drafts that were dropped only because BM25 found them easily. EXP-013 reports them as a separate stratum.
 
 ## Files
 
