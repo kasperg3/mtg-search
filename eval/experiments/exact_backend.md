@@ -72,4 +72,4 @@ In-process, outside Docker: one query takes 101–106 ms; 4 batched queries take
 
 - **Every retrieval number in EXP-001…011 now describes what the shipped server returns.** Before this change, the benchmarks measured the exact ranker while the image served an approximation. This resolves review M1.
 - **Higher resource cost.** The server needs about 2.7 GiB of RAM; Claude Code starts it once per session.
-- **Kept for reference:** NextPlaid code, `docker/build_index.py`, `spike/nextplaid.md`.
+- **Kept for reference:** NextPlaid code, `docker/build_index.py`, `docs/spikes/nextplaid.md`.

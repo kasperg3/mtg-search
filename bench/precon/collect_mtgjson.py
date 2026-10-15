@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DIR = ROOT / "data" / "bench_raw" / "mtgjson"
 BASE = "https://mtgjson.com/api/v5/"
 FILES = ["Meta.json", "DeckList.json", "SetList.json", "AtomicCards.json.gz", "AllDeckFiles.tar.gz"]
-UA = "mtg-search research (kasper@colourbox.com)"
+UA = "mtg-search research (kaspergrontved@proton.me)"
 DECK_TYPES = ("Commander Deck", "MTGO Commander Deck")
 
 

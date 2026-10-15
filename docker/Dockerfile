@@ -6,13 +6,12 @@
 # (up to commit 61071da).
 #
 # Build with docker/build.sh (see docker/README.md). Directly:
-#   HF_TOKEN=... docker build -f docker/Dockerfile --secret id=hf_token,env=HF_TOKEN \
-#       --build-arg HF_REVISION=<commit|branch|tag> -t mtg-search .
+#   docker build -f docker/Dockerfile --build-arg HF_REVISION=<commit|branch|tag> -t mtg-search .
 #   docker build -f docker/Dockerfile --build-arg SOURCE=local -t mtg-search .   # ./data + ./index
 # Run:
 #   docker run -i --rm mtg-search
 
-# hf = fetch artifacts from the private HF dataset (+ the public query model); local = ./data and ./index
+# hf = fetch artifacts from the HF dataset kasper-cbx/mtg-search-index (+ the query model); local = ./data and ./index
 ARG SOURCE=hf
 
 # ---- runtime base ------------------------------------------------------------------------------
@@ -28,14 +27,13 @@ RUN --mount=from=ghcr.io/astral-sh/uv:0.11.0,source=/uv,target=/usr/local/bin/uv
     --mount=type=bind,source=docker/requirements.txt,target=/tmp/requirements.txt \
     uv pip install --system --no-cache -r /tmp/requirements.txt
 
-# ---- artifacts from the private HF dataset (token via BuildKit secret, never in a layer) ------
+# ---- artifacts from the HF dataset (public; an optional token goes in a BuildKit secret) --------
 FROM base AS fetch-hf
 # only the downloader (so server code edits do not invalidate the download layer)
 COPY src/mtg_search/__init__.py src/mtg_search/config.py src/mtg_search/artifacts.py /app/src/mtg_search/
 # build.sh passes the resolved commit sha so the layer cache follows the dataset
 ARG HF_REVISION=main
-RUN --mount=type=secret,id=hf_token,env=HF_TOKEN \
-    test -n "$HF_TOKEN" || { echo "HF_TOKEN secret missing: --secret id=hf_token,env=HF_TOKEN" >&2; exit 1; }; \
+RUN --mount=type=secret,id=hf_token,env=HF_TOKEN,required=false \
     python -m mtg_search.artifacts download --dest /artifacts --revision "${HF_REVISION}" \
         --parts data,embeddings,model \
     && rm -rf /artifacts/.cache /root/.cache
@@ -50,6 +48,9 @@ FROM fetch-${SOURCE} AS fetch
 
 # ---- final ------------------------------------------------------------------------------------
 FROM base
+LABEL org.opencontainers.image.title="mtg-search" \
+      org.opencontainers.image.description="MCP server: semantic search over every Magic: The Gathering card (Scryfall Oracle text, lightonai/mLateOn) for deck-building agents. Card text (c) Wizards of the Coast; data from Scryfall." \
+      org.opencontainers.image.url="https://www.grontved.xyz/blog/agent-search-vs-grep/"
 RUN useradd -m -u 1000 app
 COPY --from=fetch /artifacts/models/lightonai__mLateOn-fp32/ /app/model/
 COPY --from=fetch /artifacts/embeddings/late/lightonai__mLateOn/ /app/embeddings/

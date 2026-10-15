@@ -2,8 +2,8 @@
 
 Contract between the data side (`bench/precon/collect_*.py`, `build_dataset.py`) and the
 scorer / harness / baselines (`bench/precon/scorer.py`, `harness/`, `baselines/`).
-Spec: `docs/benchmark_precon_plan.md`. Built locally under
-`data/bench/precon/<snapshot_date>/` (gitignored) and uploaded to the **private** HF dataset
+Write-up: `eval/experiments/precon_benchmark.md`. Built locally under
+`data/bench/precon/<snapshot_date>/` (gitignored) and uploaded to the HF dataset
 `kasper-cbx/mtg-precon-bench`. Load with
 `load_dataset("kasper-cbx/mtg-precon-bench", "<config>")` or read the parquet files directly.
 
@@ -30,7 +30,7 @@ It deliberately carries **no product or deck name** (leakage control T2b). Same 
 
 No product name, deck name, set code, release date, prices, edhrec_rank, tags here.
 
-### `labels` (GOLD; PRIVATE; never shown to the agent) — `labels.parquet`, one row per (precon, card, kind)
+### `labels` (GOLD; never shown to the agent) — `labels.parquet`, one row per (precon, card, kind)
 | column | type | notes |
 |---|---|---|
 | precon_id | str | |

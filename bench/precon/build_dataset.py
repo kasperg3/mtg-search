@@ -516,9 +516,7 @@ def build(snapshot: str, cutoff: str):
                        "build_id": build_id, "user_agent": USER_AGENT, "min_interval_s": MIN_INTERVAL,
                        "requests": len(log), "status_counts": dict(statuses),
                        "first_fetch": ts[0] if ts else None, "last_fetch": ts[-1] if ts else None,
-                       "pages_missing_from_cache": missing,
-                       "permission_note": "Owner states EDHREC granted permission to collect precon cut/add data; "
-                                          "derived labels kept private, no redistribution."},
+                       "pages_missing_from_cache": missing},
             "scryfall_cards_parquet": {"scryfall_updated_at": cards_manifest.get("scryfall_updated_at"),
                                        "built_at": cards_manifest.get("built_at"),
                                        "card_count": cards_manifest.get("card_count")},

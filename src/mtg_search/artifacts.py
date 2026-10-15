@@ -1,4 +1,4 @@
-"""Artifacts from the private HF dataset ``kasper-cbx/mtg-search-index``.
+"""Artifacts from the HF dataset ``kasper-cbx/mtg-search-index``.
 
 Layout (same as the dataset repo)::
 
@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 
 from . import config
-from .mlateon import EMBEDDINGS_SUBDIR, MODEL_SUBDIR
+from .config import EMBEDDINGS_SUBDIR, MODEL_SUBDIR
 
 FP32_MODEL_DIR = MODEL_SUBDIR
 QUERY_MODEL_REPO = "lightonai/mLateOn"

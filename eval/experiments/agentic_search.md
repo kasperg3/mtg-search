@@ -110,7 +110,7 @@ Options within $25:
 
 ## Results
 
-Deck-need tasks only (47–51 per condition), GLM-5.3, 1 repeat. Labels are the original incomplete ones, so absolute recall is low by construction; compare conditions, not levels. Data: `eval/agentic/runs/main/`, `eval/agentic/results/main.json`, curve `agentic_recall_at_t.png`. The run was interrupted once by a machine OOM and resumed (57 episodes before, 192 after; same code except the leak-guard fix below). It was synced to the private HF dataset `kasper-cbx/mtg-search-experiments`.
+Deck-need tasks only (47–51 per condition), GLM-5.3, 1 repeat. Labels are the original incomplete ones, so absolute recall is low by construction; compare conditions, not levels. Data: `eval/agentic/runs/main/`, `eval/agentic/results/main.json`, curve `agentic_recall_at_t.png`. The run was interrupted once by a machine OOM and resumed (57 episodes before, 192 after; same code except the leak-guard fix below). It was synced to the HF dataset `kasper-cbx/mtg-search-experiments`.
 
 | cond | retriever / feedback | recall@1 | recall@3 | recall@5 | nDCG@10 | nDCG@20 | P@10 | new cards / search | term uptake | $/episode |
 |---|---|---|---|---|---|---|---|---|---|---|

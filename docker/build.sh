@@ -7,8 +7,8 @@
 #                                        # query-encoder model into ./index/models if missing
 #   docker/build.sh --tag myname [-- extra docker build args]
 #
-# The HF token (HF_TOKEN env, else `hf auth token` / ~/.cache/huggingface/token) is passed as a
-# BuildKit secret and never stored in an image layer.
+# The dataset is public, so no token is needed. If one is available (HF_TOKEN env, else `hf auth token` /
+# ~/.cache/huggingface/token), it is passed as a BuildKit secret and never stored in an image layer.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -48,14 +48,14 @@ if [[ "$SOURCE" == local ]]; then
     (cd "$ROOT" && uv run python -m mtg_search.artifacts download --parts model --dest index)
   fi
 else
-  [[ -n "$HF_TOKEN" ]] || { echo "no HF token: set HF_TOKEN or run 'hf auth login'" >&2; exit 1; }
   # resolve to a commit sha so Docker's layer cache is invalidated when the dataset changes
   SHA="$(cd "$ROOT" && uv run --quiet python -c "
 from huggingface_hub import HfApi
 print(HfApi().dataset_info('$REPO', revision='$REVISION').sha)" 2>/dev/null || true)"
   [[ -n "$SHA" ]] || SHA="$REVISION"
   echo "building from $REPO@$REVISION ($SHA)" >&2
-  ARGS+=(--secret id=hf_token,env=HF_TOKEN --build-arg "HF_REVISION=$SHA")
+  [[ -n "$HF_TOKEN" ]] && ARGS+=(--secret id=hf_token,env=HF_TOKEN)
+  ARGS+=(--build-arg "HF_REVISION=$SHA")
 fi
 
 DOCKER_BUILDKIT=1 docker build "${ARGS[@]}" "${EXTRA[@]}" "$ROOT"

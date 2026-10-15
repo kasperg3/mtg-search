@@ -1,7 +1,7 @@
 ---
-pretty_name: MTG Precon Cut/Add Benchmark (private)
+pretty_name: MTG Precon Cut/Add Benchmark
 license: other
-license_name: mixed-mtgjson-mit-edhrec-permission-private
+license_name: mixed-mtgjson-mit-edhrec
 language:
   - en
 tags:
@@ -41,16 +41,15 @@ configs:
 
 # MTG Precon Cut/Add Benchmark (EXP-007)
 
-> **Private dataset. Do not mirror, republish or make public.** The `labels` and `commanders`
-> configs are derived from EDHREC data that was collected with permission for private
-> evaluation only.
+> Decklists come from MTGJSON; the `labels` and `commanders` configs come from [EDHREC](https://edhrec.com)
+> precon pages. Card names are © Wizards of the Coast.
 
 This is a benchmark of deck-building judgement on Magic: The Gathering Commander preconstructed
 decks ("precons"). The agent sees a precon's 100 cards (as card text) and must pick the cards to
 **cut** and the cards to **add**. Its picks are graded against what thousands of players actually
 cut from and added to that precon, as aggregated by EDHREC.
 
-Spec: `docs/benchmark_precon_plan.md` in the `mtg-search` repo (GitHub issue #3). Schema contract:
+Write-up: `eval/experiments/precon_benchmark.md` in the [mtg-search repo](https://github.com/kasperg3/mtg-search). Schema contract:
 `bench/precon/schema.md`. Build code: `bench/precon/` (built from git `8c41e350c20f7eebeaa273319d30cbdcddf1421b`).
 
 - **Snapshot:** EDHREC labels 2026-10-14 (Next.js buildId `PdCFALsQSMQepvm3iBv87`); MTGJSON
@@ -72,7 +71,7 @@ Cite the tagged release `v1.0`:
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench}},
-  note         = {Revision v1.0 (EDHREC snapshot 2026-10-14). Private dataset: EDHREC-derived labels collected with permission for private evaluation only}
+  note         = {Revision v1.0 (EDHREC snapshot 2026-10-14). Add/cut rates from EDHREC; card names \textcopyright{} Wizards of the Coast}
 }
 ```
 
@@ -86,12 +85,12 @@ Magic: The Gathering card names and text are © Wizards of the Coast (Fan Conten
 | Source | Used for | Terms |
 |---|---|---|
 | [MTGJSON](https://mtgjson.com) `DeckList.json`, `AllDeckFiles`, `SetList.json`, `AtomicCards.json` | official precon decklists, release dates, set families, first printings | MIT licence |
-| [EDHREC](https://edhrec.com/precon) precon pages (`__NEXT_DATA__` JSON) | cut/add lists and rates, number of decks, commander counts | Collected **with permission from EDHREC** (owner's statement). Derived labels are kept **private** and are not redistributed; write-ups report aggregate scores only. |
+| [EDHREC](https://edhrec.com/precon) precon pages (`__NEXT_DATA__` JSON) | cut/add lists and rates, number of decks, commander counts | Collected once per snapshot, at one request every 5 s. |
 | [Scryfall](https://scryfall.com/docs/api/bulk-data) bulk `oracle_cards` (our `cards.parquet`) | `oracle_id` mapping, colour identity, legality, land/basic flags | Scryfall bulk-data terms; WotC Fan Content Policy |
 
 **EDHREC fetch policy (as run):** one pass over the `/precon` index plus each precon page (main
 commander only, 178 HTTP requests incl. `robots.txt`); at most 1 request per 5 s,
-single-threaded; User-Agent `mtg-search research benchmark (contact: kasper@colourbox.com; ...)`;
+single-threaded; User-Agent `mtg-search research benchmark (contact: kaspergrontved@proton.me; ...)`;
 robots.txt checked for every URL (`/precon/` is allowed); every response cached on disk and never
 re-fetched; exponential back-off on errors / 429 (no 429s occurred). Fetch log and stats are in
 `manifest.json`.

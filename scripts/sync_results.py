@@ -1,4 +1,4 @@
-"""Mirror experiment outputs to the private HF dataset kasper-cbx/mtg-search-experiments.
+"""Mirror experiment outputs to the HF dataset kasper-cbx/mtg-search-experiments.
 
     uv run python scripts/sync_results.py [-m "EXP-006 main run, partial"]
 
@@ -60,7 +60,7 @@ def main() -> None:
 
     sha = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()
     api = HfApi()
-    api.create_repo(REPO, repo_type="dataset", private=True, exist_ok=True)
+    api.create_repo(REPO, repo_type="dataset", exist_ok=True)
     for f in FOLDERS:
         p = ROOT / f
         if not p.exists():

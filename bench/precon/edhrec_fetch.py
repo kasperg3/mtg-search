@@ -1,6 +1,6 @@
 """Polite, cached fetcher for EDHREC precon pages (EXP-007 labels).
 
-Access policy (plan §2; owner states EDHREC granted permission):
+Access policy:
   * at most 1 request / 5 s (MIN_INTERVAL), single-threaded;
   * descriptive User-Agent with contact;
   * robots.txt checked before every URL;
@@ -21,7 +21,7 @@ from pathlib import Path
 import httpx
 
 BASE = "https://edhrec.com"
-USER_AGENT = "mtg-search research benchmark (contact: kasper@colourbox.com; EDHREC permission granted; 1 req/5s)"
+USER_AGENT = "mtg-search research benchmark (contact: kaspergrontved@proton.me; 1 req/5s)"
 MIN_INTERVAL = 5.0
 MAX_RETRIES = 4
 MAX_ERRORS = 10

@@ -1,6 +1,6 @@
 # Datasets
 
-The project's data lives in three private Hugging Face datasets. Their cards are kept here (`docs/datasets/*.md`, uploaded as each repo's `README.md`). Cite a tagged revision, so the data is fixed.
+The project's data lives in three public Hugging Face datasets. Their cards are kept here (`docs/datasets/*.md`, uploaded as each repo's `README.md`). Cite a tagged revision, so the data is fixed.
 
 | dataset | what | cite revision | commit |
 |---|---|---|---|
@@ -10,16 +10,16 @@ The project's data lives in three private Hugging Face datasets. Their cards are
 
 `mtg-search-bench` `v1.0` (`33e2c6b`) is kept; `v1.1` adds 3 grades and rescored qrels after a fix to the agent scorer's name matching (2026-10-15).
 
-Raw run outputs (episodes, transcripts) are mirrored to the private `kasper-cbx/mtg-search-experiments` by `scripts/sync_results.py`. That is a backup, not a dataset to cite.
+Raw run outputs (episodes, transcripts) are mirrored to `kasper-cbx/mtg-search-experiments` by `scripts/sync_results.py`. That is a backup, not a dataset to cite.
 
 **Rebuilding:**
 - `mtg-search-index` is rebuilt by `scripts/refresh.py`, weekly, which tags every new snapshot `scryfall-<stamp>`.
 - The two benchmark datasets are built by `scripts/publish_datasets.py` (`bench`, `precon-fit`; the base precon files by `bench/precon/build_dataset.py` and `bench/precon/upload_hf.py`).
 
-**Why private:**
-- **The card corpus:** Scryfall's API terms forbid republishing their data.
-- **The precon labels:** these were collected from EDHREC with permission for private evaluation only.
-- **The search benchmark:** it holds our own queries, tasks and grades, keyed by `oracle_id`, but its tag-based lists derive from Scryfall Tagger. Making it public is the owner's decision.
+**Sources and terms:**
+- **Card data** comes from [Scryfall](https://scryfall.com)'s bulk data. Card names and rules text are © Wizards of the Coast, used under the [Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). This project is not affiliated with Scryfall or Wizards of the Coast.
+- **Precon decklists** come from [MTGJSON](https://mtgjson.com) (MIT); the precon add/cut rates and commander counts come from [EDHREC](https://edhrec.com).
+- **The search benchmark** holds our own queries, tasks and grades, keyed by `oracle_id`; its tag-based lists derive from [Scryfall Tagger](https://tagger.scryfall.com).
 
 ## BibTeX
 
@@ -30,7 +30,7 @@ Raw run outputs (episodes, transcripts) are mirrored to the private `kasper-cbx/
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-index}},
-  note         = {Revision scryfall-20261014090155 (Scryfall oracle\_cards 2026-10-14). Private dataset; card data from Scryfall, \textcopyright{} Wizards of the Coast}
+  note         = {Revision scryfall-20261014090155 (Scryfall oracle\_cards 2026-10-14). Card data from Scryfall, \textcopyright{} Wizards of the Coast}
 }
 
 @misc{mtgsearch_bench_2026,
@@ -39,7 +39,7 @@ Raw run outputs (episodes, transcripts) are mirrored to the private `kasper-cbx/
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-bench}},
-  note         = {Revision v1.1; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155. Private dataset}
+  note         = {Revision v1.1; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155}
 }
 
 @misc{mtgsearch_preconbench_2026,
@@ -48,6 +48,6 @@ Raw run outputs (episodes, transcripts) are mirrored to the private `kasper-cbx/
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench}},
-  note         = {Revision v1.0 (EDHREC snapshot 2026-10-14). Private dataset: EDHREC-derived labels collected with permission for private evaluation only}
+  note         = {Revision v1.0 (EDHREC snapshot 2026-10-14). Add/cut rates from EDHREC; card names \textcopyright{} Wizards of the Coast}
 }
 ```

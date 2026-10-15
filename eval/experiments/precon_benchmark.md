@@ -96,4 +96,4 @@ From the independent review ([`docs/review_2026-10-14.md`](../../docs/review_202
   - formally pre-cutoff test set (see Leakage);
   - the `mcp-hint` prompt differs from the plan's prompt by one sentence.
 
-Run records: `bench/precon/runs/20261014_cc-sonnet55_{none,mcp,mcp-hint,probe,probe-guess}_{test,dev}.json`. Transcripts are on the private HF dataset `kasper-cbx/mtg-search-experiments` under `bench/precon/runs/`.
+Run records: `bench/precon/runs/20261014_cc-sonnet55_{none,mcp,mcp-hint,probe,probe-guess}_{test,dev}.json`. Transcripts are on the HF dataset `kasper-cbx/mtg-search-experiments` under `bench/precon/runs/`.

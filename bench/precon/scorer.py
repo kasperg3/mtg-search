@@ -375,7 +375,7 @@ def score_episode(task: str, output: EpisodeOutput | dict, deck: Deck, labels: S
 
 def picks_detail(task: str, output: EpisodeOutput | dict, deck: Deck, labels: Sequence[dict], db: CardDB,
                  cfg: ScoreConfig = ScoreConfig()) -> list[dict]:
-    """Per-pick validity + gain (for transcripts / qualitative review; contains gold -> private)."""
+    """Per-pick validity + gain (for transcripts / qualitative review; contains gold labels, never shown to the agent)."""
     if isinstance(output, dict):
         output = EpisodeOutput(**{k: output.get(k) or [] for k in ("cuts", "adds", "swaps")})
     cut_l = {lab["oracle_id"]: lab for lab in labels if lab["kind"].startswith("cut")}

@@ -31,9 +31,9 @@ from . import config
 log = logging.getLogger(__name__)
 
 QUERY_PREFIX = "[Q] "
-SLUG = "lightonai__mLateOn"
-EMBEDDINGS_SUBDIR = f"embeddings/late/{SLUG}"
-MODEL_SUBDIR = f"models/{SLUG}-fp32"
+SLUG = config.LATE_SLUG
+EMBEDDINGS_SUBDIR = config.EMBEDDINGS_SUBDIR
+MODEL_SUBDIR = config.MODEL_SUBDIR
 
 
 def oracle_ids_digest(oracle_ids) -> str:

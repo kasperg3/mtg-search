@@ -28,3 +28,7 @@ HF_REPO = "kasper-cbx/mtg-search-index"
 HF_REPO_TYPE = "dataset"
 
 LATE_MODEL = "lightonai/mLateOn"  # the only retriever (mlateon.py)
+# where its artifacts sit under an index root (here, so the Docker download stage needs only config + artifacts)
+LATE_SLUG = "lightonai__mLateOn"
+EMBEDDINGS_SUBDIR = f"embeddings/late/{LATE_SLUG}"
+MODEL_SUBDIR = f"models/{LATE_SLUG}-fp32"

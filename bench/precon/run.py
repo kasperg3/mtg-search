@@ -18,7 +18,7 @@ Systems: random | heuristic | popularity (reference) | agent (tools shipped|none
 Outputs:
   bench/precon/runs/<run_id>.json      TRACKED: git sha, dataset revision, config, aggregate
                                         metrics (macro mean, 95% bootstrap CI, repeat sd), slices,
-                                        cost. Aggregate scores only (labels stay private).
+                                        cost. Aggregate scores only (no per-card labels).
   bench/precon/runs/<run_id>/           gitignored: episodes.jsonl (per-precon outputs + metrics),
                                         transcripts/*.jsonl
 """

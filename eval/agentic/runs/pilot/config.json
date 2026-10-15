@@ -1,6 +1,6 @@
 {
  "run": "pilot",
- "tasks": "/home/karg/workspace/mtg-search/eval/agentic/tasks.yaml",
+ "tasks": "eval/agentic/tasks.yaml",
  "conds": "F",
  "limit": 10,
  "ids": null,

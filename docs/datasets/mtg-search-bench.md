@@ -46,8 +46,8 @@ Benchmarks for finding Magic: The Gathering cards from a description of what the
 
 The precon deck benchmark (player add/cut rates from EDHREC, and deck-fit grades) is a separate dataset, [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench).
 
-> **Private repo.** Card names are © Wizards of the Coast, and the tag-based lists are derived from Scryfall
-> Tagger data. Please don't mirror or republish it.
+> Card names are © Wizards of the Coast, and the tag-based lists derive from Scryfall Tagger data.
+> Not affiliated with Scryfall or Wizards of the Coast.
 
 ## Citation
 
@@ -60,7 +60,7 @@ Cite the tagged release `v1.1`. It adds 3 grades after a scoring fix (see `relev
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-bench}},
-  note         = {Revision v1.1; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155. Private dataset}
+  note         = {Revision v1.1; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155}
 }
 ```
 

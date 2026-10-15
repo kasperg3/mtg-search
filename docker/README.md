@@ -29,17 +29,20 @@ image at all**:
 
 ## Register with Claude Code
 
-Build the image first, then:
+The image is published as `ghcr.io/kasperg3/mtg-search`. Pull it first (about 1.8 GB), so the first
+start does not run into the client's connection timeout:
 
 ```
-claude mcp add mtg-search -- docker run -i --rm mtg-search
+docker pull ghcr.io/kasperg3/mtg-search && claude mcp add mtg-search -- docker run -i --rm ghcr.io/kasperg3/mtg-search
 ```
 
 The image needs no writable filesystem, so `--read-only` works as is:
 
 ```
-claude mcp add mtg-search -- docker run -i --rm --read-only mtg-search
+claude mcp add mtg-search -- docker run -i --rm --read-only ghcr.io/kasperg3/mtg-search
 ```
+
+For an image you built yourself, use its tag (`mtg-search`) instead.
 
 ## Build
 
@@ -49,8 +52,8 @@ docker/build.sh --revision <tag>   # a pinned dataset revision (e.g. scryfall-<s
 docker/build.sh --local            # dev: from ./data + ./index/embeddings + ./index/models
 ```
 
-- **HF builds** read the token from `HF_TOKEN`, falling back to `hf auth token`. It is passed as
-  a BuildKit secret (`--secret id=hf_token,env=HF_TOKEN`) and never stored in a layer.
+- **HF builds** need no token: the dataset is public. If `HF_TOKEN` is set (or `hf auth token` has
+  one), it is passed as a BuildKit secret (`--secret id=hf_token,env=HF_TOKEN`) and never stored in a layer.
   `build.sh` resolves the revision to a commit sha so Docker's cache follows the dataset.
 - **Local builds** download the query encoder into `./index/models/lightonai__mLateOn-fp32/` if it
   is missing. The encoder comes from the public `lightonai/mLateOn` repo, so it needs no token.
@@ -60,9 +63,8 @@ Stages (see `Dockerfile`):
 1. **base**: `python:3.12-slim-bookworm` plus the pinned `requirements.txt` (mcp, polars, numpy,
    onnxruntime 1.30.0, tokenizers 0.23.2, ...).
 2. **fetch**: `python -m mtg_search.artifacts download --parts data,embeddings,model` fetches:
-   - `data/*.parquet` (private dataset);
-   - `embeddings/late/lightonai__mLateOn/` (doc token vectors, fp16, encoded on GPU; private
-     dataset);
+   - `data/*.parquet`;
+   - `embeddings/late/lightonai__mLateOn/` (doc token vectors, fp16, encoded on GPU);
    - `models/lightonai__mLateOn-fp32/` (`model.onnx`, `tokenizer.json`, configs). These come from
      the public `lightonai/mLateOn` at the same revision as the embeddings (`bbd883a`), are
      sha256-verified, and are recorded in `source.json`.
@@ -126,7 +128,7 @@ Holding the vectors as fp16 and converting per chunk would save 0.53 GB of RAM w
 scores, but it doubles single-query latency (215 vs 106 ms), so the image keeps fp32.
 
 The earlier NextPlaid image (approximate PLAID index plus int8 encoder) was removed; its code is in git
-history up to commit 61071da. Background: `spike/nextplaid.md`, review M1 in `docs/review_2026-10-14.md`, EXP-012.
+history up to commit 61071da. Background: `docs/spikes/nextplaid.md`, review M1 in `docs/review_2026-10-14.md`, EXP-012.
 
 ## Dev without Docker
 

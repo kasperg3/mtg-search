@@ -1,4 +1,4 @@
-"""Build (and optionally upload) the citable benchmark datasets on Hugging Face (all private).
+"""Build (and optionally upload) the citable benchmark datasets on Hugging Face.
 
     uv run python scripts/publish_datasets.py bench        [--upload] [--tag v1.0]   # kasper-cbx/mtg-search-bench
     uv run python scripts/publish_datasets.py precon-fit   [--upload] [--tag v1.0]   # deck_fit config of kasper-cbx/mtg-precon-bench
@@ -120,7 +120,7 @@ def upload(repo: str, folder: Path, readme: Path | None, message: str, tag: str 
     from huggingface_hub import HfApi
 
     api = HfApi()
-    api.create_repo(repo, repo_type="dataset", private=True, exist_ok=True)
+    api.create_repo(repo, repo_type="dataset", exist_ok=True)
     if readme:
         (folder / "README.md").write_text(readme.read_text())
     c = api.upload_folder(repo_id=repo, repo_type="dataset", folder_path=str(folder), commit_message=message)

@@ -1,21 +1,21 @@
 # EXP-007: precon cut/add benchmark
 
-Spec: [`docs/benchmark_precon_plan.md`](../../docs/benchmark_precon_plan.md) (issue #3).
+Schema: [`schema.md`](schema.md). Write-up: [`eval/experiments/precon_benchmark.md`](../../eval/experiments/precon_benchmark.md).
 Schema contract: [`schema.md`](schema.md). Registry row: EXP-007 in
 [`eval/experiments/REGISTRY.md`](../../eval/experiments/REGISTRY.md).
 
 ## Data
 
-Private HF dataset: [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench)
+HF dataset: [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench)
 (configs `decks`, `labels`, `precons`, `commanders`, `splits`; card: [`dataset_card.md`](dataset_card.md)).
 
 | File | Role |
 |---|---|
 | `collect_mtgjson.py` | Downloads MTGJSON (MIT) `DeckList`, `SetList`, `AtomicCards`, `AllDeckFiles` into `data/bench_raw/mtgjson/` (cached) and extracts the Commander deck files. |
 | `edhrec_fetch.py` | Polite fetcher: robots.txt check per URL, 1 request / 5 s, identifying User-Agent with contact, on-disk cache under `data/bench_raw/edhrec/<snapshot>/` (never re-fetched), back-off on errors / 429, `fetch_log.jsonl`. |
-| `collect_edhrec.py` | One pass: the `/precon` index plus every precon page (main commander only, ~176 pages). Run only with EDHREC's permission (the owner states it was granted). |
+| `collect_edhrec.py` | One pass: the `/precon` index plus every precon page (main commander only, ~176 pages), at one request every 5 s. |
 | `build_dataset.py` | Offline: maps cards to `oracle_id`, joins MTGJSON decks with EDHREC pages, writes the parquet configs, splits, tag deny-list / audit and `manifest.json` to `data/bench/precon/<snapshot>/`. |
-| `upload_hf.py` | Creates the dataset repo **private**, refuses to upload to a public repo, uploads parquet + manifest + card. |
+| `upload_hf.py` | Creates the dataset repo if missing, uploads parquet + manifest + card. |
 
 Rebuild:
 

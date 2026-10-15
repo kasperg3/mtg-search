@@ -2,7 +2,7 @@
 
 The dataset contract is ``bench/precon/schema.md`` (configs ``decks``, ``labels``, ``precons``,
 ``commanders``, ``splits`` plus ``manifest.json`` / ``tag_denylist.json``). It is read either from a
-local build directory (``data/bench/precon/<snapshot_date>/``) or from the private HF dataset
+local build directory (``data/bench/precon/<snapshot_date>/``) or from the HF dataset
 ``kasper-cbx/mtg-precon-bench`` (``hf:<repo>[@revision]``).
 
 :class:`CardDB` is the oracle-level card lookup (``data/cards.parquet``) the scorer validates

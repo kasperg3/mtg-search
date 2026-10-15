@@ -1,8 +1,8 @@
-"""Upload a built EXP-007 snapshot to the PRIVATE HF dataset kasper-cbx/mtg-precon-bench.
+"""Upload a built EXP-007 snapshot to the HF dataset kasper-cbx/mtg-precon-bench.
 
     uv run python bench/precon/upload_hf.py --snapshot 2026-10-14
 
-Creates the repo with private=True if missing, refuses to upload unless the repo is private,
+Creates the repo if missing,
 writes the dataset card (bench/precon/dataset_card.md, counts filled from manifest.json) as
 README.md and uploads data/<config>.parquet + manifest.json + tag_denylist.json.
 """
@@ -52,10 +52,8 @@ def main():
     src = ROOT / "data" / "bench" / "precon" / a.snapshot
     m = json.loads((src / "manifest.json").read_text())
     api = HfApi()
-    api.create_repo(REPO, repo_type="dataset", private=True, exist_ok=True)
+    api.create_repo(REPO, repo_type="dataset", exist_ok=True)
     info = api.dataset_info(REPO)
-    if not info.private:
-        raise SystemExit(f"{REPO} is NOT private; refusing to upload")
     with tempfile.TemporaryDirectory() as td:
         t = Path(td)
         (t / "data").mkdir()

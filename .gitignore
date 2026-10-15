@@ -9,3 +9,7 @@ eval/.scryfall_cache/
 .ruff_cache/
 .env
 .env.*
+# per-call run transcripts stay local (mirrored to the HF experiments dataset by scripts/sync_results.py)
+eval/agentic/runs/*/transcripts/
+# local Claude Code state
+.claude/

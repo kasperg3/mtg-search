@@ -48,9 +48,9 @@ The card corpus and search index of **mtg-search**, an MCP server that gives an 
 - [`kasper-cbx/mtg-search-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-search-bench): the search benchmark (363 queries), the 113 agent search tasks, and graded relevance labels.
 - [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench): the precon deck benchmark (player add/cut rates from EDHREC, and deck-fit grades).
 
-> **Private repo.** This dataset contains card names and rules text derived from Scryfall
-> bulk data (© Wizards of the Coast). It is kept **private** on purpose. Please don't
-> mirror or republish it. See [Data sources and terms](#data-sources-and-terms).
+> This dataset contains card names and rules text derived from Scryfall bulk data
+> (© Wizards of the Coast), published as the search index of the mtg-search MCP server.
+> See [Data sources and terms](#data-sources-and-terms).
 
 ## Citation
 
@@ -63,7 +63,7 @@ Cite a tagged snapshot, so the cards and embeddings are fixed:
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-index}},
-  note         = {Revision scryfall-20261014090155 (Scryfall oracle\_cards 2026-10-14). Private dataset; card data from Scryfall, \textcopyright{} Wizards of the Coast}
+  note         = {Revision scryfall-20261014090155 (Scryfall oracle\_cards 2026-10-14). Card data from Scryfall, \textcopyright{} Wizards of the Coast}
 }
 ```
 
@@ -87,7 +87,7 @@ All card data comes from [Scryfall bulk data](https://scryfall.com/docs/api/bulk
 ### Terms, copyright and affiliation
 
 - **Card content.** Card names, rules text, mana costs and type lines are © **Wizards of the Coast LLC**. They are used under the [Wizards of the Coast Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). This is unofficial Fan Content, not approved or endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.
-- **Scryfall.** Use of Scryfall data follows the [Scryfall API terms](https://scryfall.com/docs/api). Those terms allow free use but forbid simply repackaging or republishing Scryfall's data. That is why this repo is **private** and exists only as the build input for the mtg-search tool. The `license: other` in the metadata reflects this: the dataset is derived data, not openly licensed.
+- **Scryfall.** Use of Scryfall data follows the [Scryfall API terms](https://scryfall.com/docs/api). This dataset is the search index of the mtg-search tool: the card tables ship together with the embeddings and tags they were built for. The `license: other` in the metadata reflects that it is derived data, not openly licensed.
 - **No affiliation.** This project is **not affiliated with, endorsed by, or sponsored by Scryfall or Wizards of the Coast**.
 - **Images.** Card images are not stored here. `image_uri` and `scryfall_uri` are links to Scryfall.
 
@@ -295,7 +295,7 @@ Every publishing refresh tags the new snapshot `scryfall-<YYYYMMDDHHMMSS>` (from
 
 ## Usage
 
-The repo is private: authenticate first (`hf auth login`, or `HF_TOKEN`).
+The repo is public, so no login is needed.
 
 ```python
 from datasets import load_dataset
@@ -335,7 +335,7 @@ The server has three read-only tools: `search_cards` (1–4 queries, filters for
 - **English Oracle text only.** No flavor text, art, artist or printing-specific text.
 - **Un-cards are present,** flagged with `is_funny`.
 - **Snapshot drift.** Card text and legality change with bans and errata: pin a `scryfall-…` tag, and check `oracle_ids_sha256` before mixing embeddings and tables from different revisions.
-- **Private, derived data.** Not for redistribution; see [Data sources and terms](#data-sources-and-terms).
+- **Derived data.** Card text is © Wizards of the Coast; see [Data sources and terms](#data-sources-and-terms).
 
 ## History
 

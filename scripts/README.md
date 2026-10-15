@@ -59,6 +59,6 @@ uv run python scripts/sync_results.py -m "EXP-00X done"
 ```
 
 Mirrors run outputs (`eval/experiments/runs`, `REGISTRY.md`, `eval/agentic/runs` + `results`,
-`bench/precon/runs`) to the private HF dataset `kasper-cbx/mtg-search-experiments`. This includes the
+`bench/precon/runs`) to the HF dataset `kasper-cbx/mtg-search-experiments`. This includes the
 gitignored per-episode outputs and transcripts. Run it after every experiment (and periodically
 during long runs), next to the git push. It refuses to upload if any file contains the GLM API key.
