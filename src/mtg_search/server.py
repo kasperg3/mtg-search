@@ -218,19 +218,21 @@ class CardService:
 
 
 # --------------------------------------------------------------------------- what the agent sees
-# Measured on the precon benchmark before shipping (EXP-009/011/014): the instructions name the situations
-# that call for the tools and end with the "before you answer" sentence that raised tool use from 0% to
-# 40% (ADD) and 86% (SWAP); search_cards and get_card load upfront in Claude Code (alwaysLoad).
+# Measured on the precon benchmark before shipping (EXP-009/011/014): the instructions name the situations that
+# call for the tools and end with the "before you answer" sentence that raised tool use from 0% to 40% (ADD) and
+# 86% (SWAP); the search_cards description opens with when to use it ("rather than listing cards from memory").
+# A rewrite without that opening searched less (EXP-014: 10/30 vs 19/30 dev episodes). search_cards and get_card
+# load upfront in Claude Code (alwaysLoad).
 
-INSTRUCTIONS = """Magic: The Gathering (MTG) card database: the current official rules text, colour identity, format legality and rulings of every card, including cards printed after your training data. Use these tools whenever a task involves choosing, suggesting or checking cards (building, upgrading or cutting a deck, "cards that do X", replacements, a card's exact wording or legality), even when you feel sure from memory: errata, new cards and colour-identity or legality slips are the usual errors.
-search_cards finds candidates; with color_identity and format set, every result is already in colour and legal. get_card shows one card in full. find_similar lists alternatives to a card you already have.
+INSTRUCTIONS = """Magic: The Gathering (MTG) card search and lookup over every card's current official rules text (Scryfall data, which can include cards printed after your training data). Use these tools whenever a task involves choosing, suggesting or checking cards: building, upgrading or cutting a Commander/EDH or other deck, "cards that do X", replacements for a card, or a card's exact text, rulings, colour identity or format legality. Use them even when you feel sure from memory: errata, new cards, and colour-identity or legality slips are the usual errors.
+Efficient use: one search_cards call per deck need, with color_identity (and format) set, returns candidates that are already in colour and legal; send 2-4 queries in that call for a broad need. get_card checks one card you named from memory or whose rulings matter. find_similar gives alternatives to a known card, e.g. for a swap. Rankings use rules text only.
 Before you answer a deck-building request, use the tools: search for candidate cards and check exact card text, colour identity and legality of your picks."""
 
-SEARCH_DOC = """Find Magic: The Gathering cards by what they do. Searches the rules text of every card and ranks cards only by how well their text matches your queries.
+SEARCH_DOC = """Search every Magic: The Gathering (MTG) card by what it does: semantic search over the rules text, with filters for Commander colour identity, format legality, card type and mana value. Use it to find candidates for a deck need (removal, ramp, card draw, sacrifice outlets, answers to fliers, ...) rather than listing cards from memory. With color_identity (and format="commander") set, every result is in colour and legal, so no separate check is needed.
 
 Write each query the way the rules text of a matching card reads, not the way a player describes the need: "Destroy target creature with flying." rather than "answers to fliers". For a broad need, send 2-4 queries that each describe a different way to meet it, e.g. ["Reach", "Destroy target creature with flying.", "Creatures you control gain reach until end of turn."]; their rankings are merged. Put colour, format, type and mana-value limits in the filters, not in the queries.
 
-Returns up to `limit` cards, best first: name, mana cost and mana value, colours, type line, power/toughness, rules text (long text is shortened; get_card shows the full card), roles (what the card does in a deck, e.g. removal, ramp) and legality. Filters apply before ranking, so even narrow filters return the best matching cards. 15 cards is about 2,000 tokens."""
+Returns up to `limit` cards, best first, ranked only by how well their text matches your queries: name, mana cost and mana value, colours, type line, power/toughness, rules text (long text is shortened; get_card shows the full card), roles (what the card does in a deck, e.g. removal, ramp) and legality. Filters apply before ranking, so even narrow filters return the best matching cards. 15 cards is about 2,000 tokens."""
 
 SIMILAR_DOC = """Find Magic: The Gathering cards that do what a given card does: replacements, upgrades or redundancy. The named card's rules text is the query and the card itself is left out. Use it for "more cards like X", an in-colour or format-legal stand-in for a card, or alternatives in a swap, e.g. card_name="Divination", color_identity="BR", format="commander". Same filters and output as search_cards."""
 

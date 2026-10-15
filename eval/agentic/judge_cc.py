@@ -54,14 +54,21 @@ def build_pool(run: str, task_ids: list[str]) -> dict[str, list[str]]:
 
 
 def parse_grades(text: str, n: int) -> dict[int, int]:
-    m = re.search(r"\{.*\}", text or "", re.S)
-    if not m:
-        return {}
-    try:
-        out = {int(g["i"]): int(g["g"]) for g in json.loads(m.group(0))["grades"]}
-    except (ValueError, KeyError, TypeError, json.JSONDecodeError):
-        return {}
-    return {i: g for i, g in out.items() if 1 <= i <= n and g in (0, 1, 2)}
+    """Grades from the first JSON object with a "grades" list; text before or after it (e.g. a note that
+    mentions {U}{U}) is ignored."""
+    dec = json.JSONDecoder()
+    for m in re.finditer(r"\{", text or ""):
+        try:
+            obj, _ = dec.raw_decode(text, m.start())
+        except json.JSONDecodeError:
+            continue
+        if isinstance(obj, dict) and isinstance(obj.get("grades"), list):
+            try:
+                out = {int(g["i"]): int(g["g"]) for g in obj["grades"]}
+            except (ValueError, KeyError, TypeError):
+                return {}
+            return {i: g for i, g in out.items() if 1 <= i <= n and g in (0, 1, 2)}
+    return {}
 
 
 def main() -> None:
