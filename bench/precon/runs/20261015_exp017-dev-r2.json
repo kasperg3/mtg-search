@@ -1,0 +1,350 @@
+{
+ "experiment": "EXP-017",
+ "run_id": "20261015_exp017-dev-r2",
+ "created": "2026-10-15T09:03:52+00:00",
+ "config": {
+  "experiment": "EXP-017",
+  "runs": [
+   "20261015_exp014-dev_after3",
+   "20261015_exp014-dev_before"
+  ],
+  "data": "hf:kasper-cbx/mtg-precon-bench@d6bb8ba78f4d5d1d18e62d01fc7db795199586f6",
+  "model": "claude-sonnet-5-5",
+  "cli": "2.1.300 (Claude Code)",
+  "git": {
+   "sha": "34da386d44b9471ca965e56dc0986ca21dbe1203",
+   "dirty_bench": false
+  },
+  "batch": 15,
+  "rejudge": 0.1,
+  "seed": "exp017",
+  "n_controls": {
+   "random": 6,
+   "top_label": 6,
+   "in_deck": 3
+  },
+  "system_template": null,
+  "rubric": "v2",
+  "rubric_text": "Grade each candidate for whether adding it would improve this deck. An added card takes the place of one of the deck's weakest cards, so it earns credit only if it is better for this deck than those.\n2 = clearly improves the deck: it works with the commander or the deck's evident plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction), and it is an upgrade over the deck's weakest cards.\n1 = a marginal improvement: a reasonable option for this deck, but generic or only slightly better than the deck's weakest cards.\n0 = would not improve the deck: filler, no better than what the deck already plays, works against the plan or does nothing for it; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.\nJudge only from the card text shown and the deck list. Do not reward a card for being widely played; judge what its text does for this deck."
+ },
+ "runs": [
+  "20261015_exp014-dev_after3",
+  "20261015_exp014-dev_before"
+ ],
+ "n_precons": 15,
+ "n_cards": 900,
+ "n_graded_pass0": 900,
+ "valid": false,
+ "validity_rule": "random and in_deck controls graded >= 1 at most 15%",
+ "arms": {
+  "20261015_exp014-dev_after3": {
+   "fit@20": {
+    "mean": 0.6549999999999999,
+    "ci95": [
+     0.5783333333333333,
+     0.72
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "fit@10": {
+    "mean": 0.7266666666666667,
+    "ci95": [
+     0.6333333333333333,
+     0.8099999999999999
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "share2@20": {
+    "mean": 0.4166666666666667,
+    "ci95": [
+     0.3266666666666666,
+     0.5066666666666667
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@10": {
+    "mean": 0.1889107843058526,
+    "ci95": [
+     0.12384057551203997,
+     0.25487388146688367
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@20": {
+    "mean": 0.16776793484607527,
+    "ci95": [
+     0.11319968023250698,
+     0.2237376912743223
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.validity": {
+    "mean": 0.9766666666666667,
+    "ci95": [
+     0.9366666666666668,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.fit@10": {
+    "mean": 0.69,
+    "ci95": [
+     0.6199999999999999,
+     0.7534166666666656
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.share2@10": {
+    "mean": 0.42,
+    "ci95": [
+     0.31333333333333335,
+     0.5266666666666667
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.17589950889179698,
+    "ci95": [
+     0.09277438061816558,
+     0.2675623619141399
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.validity": {
+    "mean": 1.0,
+    "ci95": [
+     1.0,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "ungraded_slots": 0
+  },
+  "20261015_exp014-dev_before": {
+   "fit@20": {
+    "mean": 0.65,
+    "ci95": [
+     0.5966666666666666,
+     0.7049999999999998
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "fit@10": {
+    "mean": 0.7233333333333333,
+    "ci95": [
+     0.6599166666666667,
+     0.7866666666666667
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "share2@20": {
+    "mean": 0.4066666666666666,
+    "ci95": [
+     0.33,
+     0.4800000000000001
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@10": {
+    "mean": 0.2545212079974403,
+    "ci95": [
+     0.1814057623005645,
+     0.32885914669456834
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@20": {
+    "mean": 0.2212458308892374,
+    "ci95": [
+     0.16109774331436524,
+     0.2824161495748399
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.validity": {
+    "mean": 0.9766666666666667,
+    "ci95": [
+     0.9533333333333331,
+     0.9966666666666666
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.fit@10": {
+    "mean": 0.6833333333333333,
+    "ci95": [
+     0.5966666666666666,
+     0.7633333333333335
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.share2@10": {
+    "mean": 0.46,
+    "ci95": [
+     0.3333333333333333,
+     0.58
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.15500911644451412,
+    "ci95": [
+     0.09000696566936928,
+     0.22445844149134883
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.validity": {
+    "mean": 0.9933333333333334,
+    "ci95": [
+     0.98,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "ungraded_slots": 0
+  }
+ },
+ "paired": {
+  "20261015_exp014-dev_after3 - 20261015_exp014-dev_before": {
+   "fit@20": {
+    "n": 15,
+    "mean_diff": 0.004999999999999982,
+    "ci95": [
+     -0.08833333333333335,
+     0.09499999999999997
+    ],
+    "sign_test_p": 0.79052734375
+   },
+   "fit@10": {
+    "n": 15,
+    "mean_diff": 0.0033333333333333288,
+    "ci95": [
+     -0.10000000000000003,
+     0.10333333333333333
+    ],
+    "sign_test_p": 1.0
+   },
+   "share2@20": {
+    "n": 15,
+    "mean_diff": 0.010000000000000004,
+    "ci95": [
+     -0.09666666666666665,
+     0.12000000000000001
+    ],
+    "sign_test_p": 1.0
+   },
+   "add.ndcg@10": {
+    "n": 15,
+    "mean_diff": -0.06561042369158772,
+    "ci95": [
+     -0.10841519316418877,
+     -0.020091893523419852
+    ],
+    "sign_test_p": 0.266845703125
+   },
+   "swap.fit@10": {
+    "n": 15,
+    "mean_diff": 0.0066666666666666576,
+    "ci95": [
+     -0.060000000000000026,
+     0.07666666666666667
+    ],
+    "sign_test_p": 1.0
+   },
+   "swap.share2@10": {
+    "n": 15,
+    "mean_diff": -0.039999999999999994,
+    "ci95": [
+     -0.14666666666666667,
+     0.06666666666666668
+    ],
+    "sign_test_p": 0.7744140625
+   },
+   "swap.add.ndcg@10": {
+    "n": 15,
+    "mean_diff": 0.020890392447282878,
+    "ci95": [
+     -0.06968898233851717,
+     0.10990540851428902
+    ],
+    "sign_test_p": 1.0
+   }
+  }
+ },
+ "agreement": {
+  "n_pool_judged": 675,
+  "n_labelled": 145,
+  "labelled_judged_ge1": 0.9586206896551724,
+  "unlabelled_judged_ge1": 0.8905660377358491,
+  "labelled_judged_2": 0.6,
+  "unlabelled_judged_2": 0.37735849056603776,
+  "kappa_label_vs_judged_ge1": 0.03140103869592627
+ },
+ "controls": {
+  "pool": {
+   "n": 675,
+   "ge1": 0.9051851851851852,
+   "eq2": 0.42518518518518517,
+   "mean_grade": 1.3303703703703704
+  },
+  "random": {
+   "n": 90,
+   "ge1": 0.2222222222222222,
+   "eq2": 0.0,
+   "mean_grade": 0.2222222222222222
+  },
+  "top_label": {
+   "n": 90,
+   "ge1": 0.8555555555555555,
+   "eq2": 0.5222222222222223,
+   "mean_grade": 1.3777777777777778
+  },
+  "in_deck": {
+   "n": 45,
+   "ge1": 0.0,
+   "eq2": 0.0,
+   "mean_grade": 0.0
+  }
+ },
+ "consistency": {
+  "n": 96,
+  "same_grade": 0.8645833333333334,
+  "same_ge1": 0.9375,
+  "kappa_ge1": 0.8105263157894738
+ },
+ "cost": {
+  "calls": 75,
+  "asks": 75,
+  "tokens": {
+   "input": 150,
+   "cache_write": 251752,
+   "cache_read": 34403,
+   "output": 14371
+  },
+  "tokens_total": 300676,
+  "tokens_per_call": 4009.0133333333333,
+  "turns_per_call": 1.0,
+  "wall_s_per_call": 3.965333333333333,
+  "wall_s_sum": 297.4
+ }
+}

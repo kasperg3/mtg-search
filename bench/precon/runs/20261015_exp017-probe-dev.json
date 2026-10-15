@@ -1,0 +1,41 @@
+{
+ "experiment": "EXP-017",
+ "run_id": "20261015_exp017-probe-dev",
+ "kind": "recognition probe",
+ "split": "dev",
+ "created": "2026-10-15T08:49:40+00:00",
+ "git": {
+  "sha": "ad23a0c8f64896f8d68888a4c01b6687e6052ef2",
+  "dirty_bench": false
+ },
+ "data": "hf:kasper-cbx/mtg-precon-bench@d6bb8ba78f4d5d1d18e62d01fc7db795199586f6",
+ "model": "claude-sonnet-5-5",
+ "cli": "2.1.300 (Claude Code)",
+ "n_decks": 15,
+ "recognised": {
+  "commander": 0.6666666666666666,
+  "deck_name": 0.8,
+  "product": 0.7333333333333333
+ },
+ "deck_or_product": 0.8,
+ "confidence": {
+  "high": 4,
+  "medium": 3,
+  "low": 8
+ },
+ "cost": {
+  "calls": 15,
+  "asks": 15,
+  "tokens": {
+   "input": 30,
+   "cache_write": 26026,
+   "cache_read": 0,
+   "output": 14994
+  },
+  "tokens_total": 41050,
+  "tokens_per_call": 2736.6666666666665,
+  "turns_per_call": 1.0,
+  "wall_s_per_call": 10.393333333333334,
+  "wall_s_sum": 155.9
+ }
+}

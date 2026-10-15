@@ -131,3 +131,9 @@ The test pool is judged once. Re-running it is allowed only after a crash, resum
 - **Rubric v1 failed the validity rule on dev** (`20261015_exp017-dev`): 42/90 random controls (46.7%) were graded ≥ 1 (4.4% graded 2), against the 15% limit. In-deck controls: 0/45. Most accepted random cards were filler that no Commander builder would add (Eager Construct, Clockwork Servant, Nim Abomination), graded 1 as "does something useful". No arm comparison is drawn from this run.
 - **The one allowed revision: rubric v2** (`RUBRICS["v2"]` in `bench/precon/judge.py`, committed with this record). A grade now means the add *improves* the deck, given that it replaces one of the deck's weakest cards. Filler and cards no better than what the deck already plays are 0. The ban on rewarding wide play stays, and "judge what its text does for this deck" replaces "raw power on its own". Everything else is unchanged: the prompt, the controls, the seeds and the batches.
 - **Next:** dev is re-judged with v2 as `20261015_exp017-dev-r2`. If v2 passes the validity rule there, the test pool is judged with v2. If it fails, the test pool is not judged, and the owner decides.
+- **Rubric v2 also failed on dev** (`20261015_exp017-dev-r2`).
+  - Random controls: 20/90 (22.2%) graded ≥ 1, 0/90 graded 2. In-deck controls: 0/45.
+  - Top EDHREC adds not picked: 86% graded ≥ 1, 52% graded 2. Pool picks: 90.5% and 42.5%.
+  - Re-judge consistency (96 cards): same grade 86%, κ(≥ 1) 0.81.
+  - The random cards accepted at grade 1 include some genuinely good ones (Casualties of War, Shadowspear, Archon of Sun's Grace, Hive of the Eye Tyrant) next to filler. Part of the 22% may therefore be the share of good cards among random legal cards, rather than leniency.
+  - **Per the rule above, the test pool is not judged; the owner decides.**

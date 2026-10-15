@@ -1,0 +1,350 @@
+{
+ "experiment": "EXP-017",
+ "run_id": "20261015_exp017-dev",
+ "created": "2026-10-15T09:01:43+00:00",
+ "config": {
+  "experiment": "EXP-017",
+  "runs": [
+   "20261015_exp014-dev_after3",
+   "20261015_exp014-dev_before"
+  ],
+  "data": "hf:kasper-cbx/mtg-precon-bench@d6bb8ba78f4d5d1d18e62d01fc7db795199586f6",
+  "model": "claude-sonnet-5-5",
+  "cli": "2.1.300 (Claude Code)",
+  "git": {
+   "sha": "ad23a0c8f64896f8d68888a4c01b6687e6052ef2",
+   "dirty_bench": false
+  },
+  "batch": 15,
+  "rejudge": 0.1,
+  "seed": "exp017",
+  "n_controls": {
+   "random": 6,
+   "top_label": 6,
+   "in_deck": 3
+  },
+  "system_template": null,
+  "rubric_text": "Grade each candidate for how well it would fit this deck if it were added:\n2 = clearly fits: it works with the commander or the deck's evident plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction).\n1 = playable but a generic or weak fit: it does something useful for this deck, but neither supports its plan nor fills a clear gap.\n0 = poor fit: it works against the plan or does nothing for it; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.\nJudge only from the card text shown and the deck list. Do not reward a card for being widely played or for raw power on its own.",
+  "rubric": "v1"
+ },
+ "runs": [
+  "20261015_exp014-dev_after3",
+  "20261015_exp014-dev_before"
+ ],
+ "n_precons": 15,
+ "n_cards": 900,
+ "n_graded_pass0": 900,
+ "valid": false,
+ "validity_rule": "random and in_deck controls graded >= 1 at most 15%",
+ "arms": {
+  "20261015_exp014-dev_after3": {
+   "fit@20": {
+    "mean": 0.7933333333333333,
+    "ci95": [
+     0.7233333333333334,
+     0.8483333333333334
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "fit@10": {
+    "mean": 0.8533333333333334,
+    "ci95": [
+     0.7866666666666666,
+     0.9133333333333334
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "share2@20": {
+    "mean": 0.6433333333333333,
+    "ci95": [
+     0.55,
+     0.7266666666666666
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@10": {
+    "mean": 0.1889107843058526,
+    "ci95": [
+     0.12384057551203997,
+     0.25487388146688367
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@20": {
+    "mean": 0.16776793484607527,
+    "ci95": [
+     0.11319968023250698,
+     0.2237376912743223
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.validity": {
+    "mean": 0.9766666666666667,
+    "ci95": [
+     0.9366666666666668,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.fit@10": {
+    "mean": 0.8200000000000001,
+    "ci95": [
+     0.7600000000000001,
+     0.8733333333333333
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.share2@10": {
+    "mean": 0.6666666666666666,
+    "ci95": [
+     0.56,
+     0.7666666666666667
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.17589950889179698,
+    "ci95": [
+     0.09277438061816558,
+     0.2675623619141399
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.validity": {
+    "mean": 1.0,
+    "ci95": [
+     1.0,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "ungraded_slots": 0
+  },
+  "20261015_exp014-dev_before": {
+   "fit@20": {
+    "mean": 0.7683333333333333,
+    "ci95": [
+     0.7116666666666668,
+     0.8233333333333334
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "fit@10": {
+    "mean": 0.84,
+    "ci95": [
+     0.7600000000000001,
+     0.91
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "share2@20": {
+    "mean": 0.6133333333333333,
+    "ci95": [
+     0.5233333333333333,
+     0.7
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@10": {
+    "mean": 0.2545212079974403,
+    "ci95": [
+     0.1814057623005645,
+     0.32885914669456834
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.ndcg@20": {
+    "mean": 0.2212458308892374,
+    "ci95": [
+     0.16109774331436524,
+     0.2824161495748399
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "add.validity": {
+    "mean": 0.9766666666666667,
+    "ci95": [
+     0.9533333333333331,
+     0.9966666666666666
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.fit@10": {
+    "mean": 0.8433333333333334,
+    "ci95": [
+     0.7666666666666667,
+     0.91
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.share2@10": {
+    "mean": 0.74,
+    "ci95": [
+     0.62,
+     0.8466666666666668
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.15500911644451412,
+    "ci95": [
+     0.09000696566936928,
+     0.22445844149134883
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "swap.add.validity": {
+    "mean": 0.9933333333333334,
+    "ci95": [
+     0.98,
+     1.0
+    ],
+    "n_precons": 15,
+    "repeat_sd": null
+   },
+   "ungraded_slots": 0
+  }
+ },
+ "paired": {
+  "20261015_exp014-dev_after3 - 20261015_exp014-dev_before": {
+   "fit@20": {
+    "n": 15,
+    "mean_diff": 0.024999999999999988,
+    "ci95": [
+     -0.0716666666666667,
+     0.11833333333333333
+    ],
+    "sign_test_p": 1.0
+   },
+   "fit@10": {
+    "n": 15,
+    "mean_diff": 0.013333333333333345,
+    "ci95": [
+     -0.09666666666666665,
+     0.1234166666666655
+    ],
+    "sign_test_p": 1.0
+   },
+   "share2@20": {
+    "n": 15,
+    "mean_diff": 0.03000000000000003,
+    "ci95": [
+     -0.10999999999999996,
+     0.17000000000000004
+    ],
+    "sign_test_p": 1.0
+   },
+   "add.ndcg@10": {
+    "n": 15,
+    "mean_diff": -0.06561042369158772,
+    "ci95": [
+     -0.10841519316418877,
+     -0.020091893523419852
+    ],
+    "sign_test_p": 0.266845703125
+   },
+   "swap.fit@10": {
+    "n": 15,
+    "mean_diff": -0.023333333333333338,
+    "ci95": [
+     -0.09666666666666668,
+     0.05008333333333212
+    ],
+    "sign_test_p": 0.75390625
+   },
+   "swap.share2@10": {
+    "n": 15,
+    "mean_diff": -0.07333333333333333,
+    "ci95": [
+     -0.18666666666666668,
+     0.04000000000000001
+    ],
+    "sign_test_p": 0.3876953125
+   },
+   "swap.add.ndcg@10": {
+    "n": 15,
+    "mean_diff": 0.020890392447282878,
+    "ci95": [
+     -0.06968898233851717,
+     0.10990540851428902
+    ],
+    "sign_test_p": 1.0
+   }
+  }
+ },
+ "agreement": {
+  "n_pool_judged": 675,
+  "n_labelled": 145,
+  "labelled_judged_ge1": 0.9793103448275862,
+  "unlabelled_judged_ge1": 0.9415094339622642,
+  "labelled_judged_2": 0.7517241379310344,
+  "unlabelled_judged_2": 0.6018867924528302,
+  "kappa_label_vs_judged_ge1": 0.01685719259560143
+ },
+ "controls": {
+  "pool": {
+   "n": 675,
+   "ge1": 0.9496296296296296,
+   "eq2": 0.6340740740740741,
+   "mean_grade": 1.5837037037037036
+  },
+  "random": {
+   "n": 90,
+   "ge1": 0.4666666666666667,
+   "eq2": 0.044444444444444446,
+   "mean_grade": 0.5111111111111111
+  },
+  "top_label": {
+   "n": 90,
+   "ge1": 0.9444444444444444,
+   "eq2": 0.6444444444444445,
+   "mean_grade": 1.5888888888888888
+  },
+  "in_deck": {
+   "n": 45,
+   "ge1": 0.0,
+   "eq2": 0.0,
+   "mean_grade": 0.0
+  }
+ },
+ "consistency": {
+  "n": 96,
+  "same_grade": 0.84375,
+  "same_ge1": 0.9375,
+  "kappa_ge1": 0.7145688800792863
+ },
+ "cost": {
+  "calls": 75,
+  "asks": 75,
+  "tokens": {
+   "input": 150,
+   "cache_write": 280441,
+   "cache_read": 0,
+   "output": 14466
+  },
+  "tokens_total": 295057,
+  "tokens_per_call": 3934.0933333333332,
+  "turns_per_call": 1.0,
+  "wall_s_per_call": 3.4826666666666664,
+  "wall_s_sum": 261.2
+ }
+}
