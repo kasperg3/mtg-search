@@ -68,8 +68,18 @@ Judge only from the card text shown and the deck list. Do not reward a card for 
 1 = a marginal improvement: a reasonable option for this deck, but generic or only slightly better than the deck's weakest cards.
 0 = would not improve the deck: filler, no better than what the deck already plays, works against the plan or does nothing for it; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.
 Judge only from the card text shown and the deck list. Do not reward a card for being widely played; judge what its text does for this deck.""",
+    # owner-approved third revision after v2 also failed on dev: a grade needs a specific reason for this deck
+    "v3": """Grade each candidate for whether you would add it to this deck as an upgrade. An added card takes the place of one of the deck's weakest cards. Most legal cards would not improve a given Commander deck, so a card with no specific reason to be in this deck gets 0.
+2 = a clear upgrade: it directly supports the commander or the deck's plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction), and does so better than the deck's weakest cards.
+1 = a reasonable but low-priority upgrade: it has a specific reason to be in this deck (it supports the plan or fills a gap) and is about as good as the deck's weakest cards.
+0 = not an upgrade: no specific reason to be in this deck, filler, weaker than the cards it would replace, or works against the plan; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.
+Judge only from the card text shown and the deck list. Do not reward a card for being widely played; judge what its text does for this deck.""",
 }
-RUBRIC = "v2"
+RUBRIC = "v3"
+GRADES_JSON = '"grades": [{{"i": <card number>, "g": <0|1|2>}}, ...]'
+REPLY = {"v1": f"{{{{{GRADES_JSON}}}}} with one entry per candidate.",
+         "v2": f"{{{{{GRADES_JSON}}}}} with one entry per candidate.",
+         "v3": f'{{{{"plan": "<one sentence: the deck\'s plan and what it is short of>", {GRADES_JSON}}}}} with one entry per candidate.'}
 
 JUDGE_SYSTEM = """You are an expert Magic: The Gathering Commander deck builder grading candidate cards for one specific deck.
 
@@ -77,7 +87,7 @@ JUDGE_SYSTEM = """You are an expert Magic: The Gathering Commander deck builder 
 
 {rubric}
 
-Reply with JSON only: {{"grades": [{{"i": <card number>, "g": <0|1|2>}}, ...]}} with one entry per candidate."""
+Reply with JSON only: {reply}"""
 
 PROBE_SYSTEM = "You are an expert on Magic: The Gathering Commander preconstructed decks."
 PROBE_USER = """{deck}
@@ -112,7 +122,7 @@ def deck_text(deck: Deck, rows: dict[str, dict], db: CardDB) -> str:
 def judge_system(deck: Deck, rubric: str = RUBRIC) -> str:
     ci = "".join(c for c in "WUBRG" if c in deck.color_identity) or "colourless"
     return JUDGE_SYSTEM.format(rules=RULES.format(ci=ci, bracket=3, gc_limit=GC_LIMIT),
-                               rubric=RUBRICS[rubric].format(gc_limit=GC_LIMIT))
+                               rubric=RUBRICS[rubric].format(gc_limit=GC_LIMIT), reply=REPLY[rubric].format())
 
 
 def judge_user(deck: Deck, oids: list[str], rows: dict[str, dict], db: CardDB) -> str:
@@ -488,6 +498,7 @@ def cmd_analyze(args) -> dict:
         ctrl[kd] = {"n": len(gs), "ge1": share([x >= 1 for x in gs]), "eq2": share([x == 2 for x in gs]),
                     "mean_grade": share(gs)}
     valid = ctrl["random"]["ge1"] <= MAX_INVALID_ACCEPT and ctrl["in_deck"]["ge1"] <= MAX_INVALID_ACCEPT
+    not_too_strict = ctrl["top_label"]["ge1"] > 0.5  # guard added with v3: top EDHREC adds stay "mostly fit"
     both = [k for k in g[1] if k in g[0]]
     consistency = {"n": len(both), "same_grade": share([g[0][k] == g[1][k] for k in both]),
                    "same_ge1": share([(g[0][k] >= 1) == (g[1][k] >= 1) for k in both]),
@@ -496,7 +507,7 @@ def cmd_analyze(args) -> dict:
     summary = {"experiment": "EXP-017", "run_id": args.run, "created": datetime.now(UTC).isoformat(timespec="seconds"),
                "config": json.loads((out / "config.json").read_text()) | {"system_template": None},
                "runs": run_ids, "n_precons": len(items), "n_cards": n_items, "n_graded_pass0": len(g[0]),
-               "valid": valid, "validity_rule": f"random and in_deck controls graded >= 1 at most {MAX_INVALID_ACCEPT:.0%}",
+               "valid": valid, "top_label_mostly_fit": not_too_strict, "validity_rule": f"random and in_deck controls graded >= 1 at most {MAX_INVALID_ACCEPT:.0%}",
                "arms": arms, "paired": {f"{a} - {b}": paired}, "agreement": agreement, "controls": ctrl,
                "consistency": consistency, "cost": _cost(calls)}
     (RUNS / f"{args.run}.json").write_text(json.dumps(summary, indent=1, default=str) + "\n")
@@ -505,7 +516,8 @@ def cmd_analyze(args) -> dict:
 
 
 def _print(s: dict) -> None:
-    print(f"== {s['run_id']}: {s['n_precons']} precons, {s['n_cards']} cards, valid={s['valid']}")
+    print(f"== {s['run_id']}: {s['n_precons']} precons, {s['n_cards']} cards, valid={s['valid']}, "
+          f"top_label_mostly_fit={s.get('top_label_mostly_fit')}")
     for r, m in s["arms"].items():
         print(f"  {r}: " + ", ".join(f"{k} {v['mean']:.3f}" for k, v in m.items() if isinstance(v, dict)))
     for pair, ms in s["paired"].items():

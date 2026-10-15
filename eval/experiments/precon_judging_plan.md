@@ -137,3 +137,12 @@ The test pool is judged once. Re-running it is allowed only after a crash, resum
   - Re-judge consistency (96 cards): same grade 86%, κ(≥ 1) 0.81.
   - The random cards accepted at grade 1 include some genuinely good ones (Casualties of War, Shadowspear, Archon of Sun's Grace, Hive of the Eye Tyrant) next to filler. Part of the 22% may therefore be the share of good cards among random legal cards, rather than leniency.
   - **Per the rule above, the test pool is not judged; the owner decides.**
+- **Owner's decision: try a third rubric on dev** (v3, `RUBRICS["v3"]`, committed with this record before the dev re-judge).
+  - **The question:** would you add this card as an upgrade, given that it replaces one of the deck's weakest cards? Most legal cards would not improve a deck, so a card with no specific reason to be in this one gets 0.
+  - **Grade 1** now needs such a reason: it supports the plan or fills a gap, and is about as good as the deck's weakest cards.
+  - **Reply format:** the judge first writes a one-sentence `plan` (the deck's plan and what it is short of), then the grades.
+  - **Unchanged:** the prompt, the controls, the seeds and the batches.
+  - **Gate for using v3 on test**, fixed before the dev re-judge (`20261015_exp017-dev-r3`):
+    - the pre-registered validity rule (random and in-deck controls graded ≥ 1 at most 15% each);
+    - plus a guard against a judge that rejects everything: the top EDHREC adds not picked must stay "mostly fit", i.e. more than 50% graded ≥ 1.
+  - If v3 fails the gate, the test pool is not judged.
