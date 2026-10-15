@@ -1,0 +1,439 @@
+{
+ "experiment": "EXP-017",
+ "run_id": "20261015_exp017-test",
+ "created": "2026-10-15T09:16:02+00:00",
+ "config": {
+  "experiment": "EXP-017",
+  "runs": [
+   "20261014_exp011-test_shipped",
+   "20261014_exp011-test_v1"
+  ],
+  "data": "hf:kasper-cbx/mtg-precon-bench@d6bb8ba78f4d5d1d18e62d01fc7db795199586f6",
+  "model": "claude-sonnet-5-5",
+  "cli": "2.1.300 (Claude Code)",
+  "git": {
+   "sha": "a9e972366fa0fddd986ca955db3809912045e344",
+   "dirty_bench": false
+  },
+  "batch": 15,
+  "rejudge": 0.1,
+  "seed": "exp017",
+  "n_controls": {
+   "random": 6,
+   "top_label": 6,
+   "in_deck": 3
+  },
+  "system_template": null,
+  "rubric": "v3",
+  "rubric_text": "Grade each candidate for whether you would add it to this deck as an upgrade. An added card takes the place of one of the deck's weakest cards. Most legal cards would not improve a given Commander deck, so a card with no specific reason to be in this deck gets 0.\n2 = a clear upgrade: it directly supports the commander or the deck's plan, or fills a role the list is short of (such as ramp, card draw, removal or interaction), and does so better than the deck's weakest cards.\n1 = a reasonable but low-priority upgrade: it has a specific reason to be in this deck (it supports the plan or fills a gap) and is about as good as the deck's weakest cards.\n0 = not an upgrade: no specific reason to be in this deck, filler, weaker than the cards it would replace, or works against the plan; or it breaks a deck-building rule: not legal in Commander, outside the colour identity, already in the deck, or a [Game Changer] when the deck already has {gc_limit} of them.\nJudge only from the card text shown and the deck list. Do not reward a card for being widely played; judge what its text does for this deck."
+ },
+ "runs": [
+  "20261014_exp011-test_shipped",
+  "20261014_exp011-test_v1"
+ ],
+ "n_precons": 14,
+ "n_cards": 1261,
+ "n_graded_pass0": 1261,
+ "valid": true,
+ "top_label_mostly_fit": true,
+ "validity_rule": "random and in_deck controls graded >= 1 at most 15%",
+ "arms": {
+  "20261014_exp011-test_shipped": {
+   "fit@20": {
+    "mean": 0.6505952380952381,
+    "ci95": [
+     0.594047619047619,
+     0.7053571428571429
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.043825857462380886
+   },
+   "fit@10": {
+    "mean": 0.7845238095238095,
+    "ci95": [
+     0.7261904761904762,
+     0.8392857142857143
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.03717260713332379
+   },
+   "share2@20": {
+    "mean": 0.45833333333333337,
+    "ci95": [
+     0.37976190476190474,
+     0.5357440476190473
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.06250850282297658
+   },
+   "add.ndcg@10": {
+    "mean": 0.26183828594216396,
+    "ci95": [
+     0.20285135933199394,
+     0.32424837021629793
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.018613057503053046
+   },
+   "add.ndcg@20": {
+    "mean": 0.22341851445749403,
+    "ci95": [
+     0.17491068682535313,
+     0.2746151264785686
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.01196454608328393
+   },
+   "add.validity": {
+    "mean": 0.9702380952380951,
+    "ci95": [
+     0.9547619047619047,
+     0.9857142857142857
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.016104463402938963
+   },
+   "swap.fit@10": {
+    "mean": 0.6988095238095238,
+    "ci95": [
+     0.644047619047619,
+     0.75
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.0459221464809188
+   },
+   "swap.share2@10": {
+    "mean": 0.5095238095238095,
+    "ci95": [
+     0.41904761904761906,
+     0.5928571428571429
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.07330859199209834
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.21715203860199103,
+    "ci95": [
+     0.169436724108602,
+     0.26642587929025385
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.02353043625281322
+   },
+   "swap.add.validity": {
+    "mean": 0.9904761904761905,
+    "ci95": [
+     0.9785714285714286,
+     1.0
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.0041239304942115975
+   },
+   "ungraded_slots": 0
+  },
+  "20261014_exp011-test_v1": {
+   "fit@20": {
+    "mean": 0.44702380952380955,
+    "ci95": [
+     0.38333333333333336,
+     0.5130952380952382
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.016203163796209768
+   },
+   "fit@10": {
+    "mean": 0.5059523809523809,
+    "ci95": [
+     0.42857142857142866,
+     0.588095238095238
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.008247860988423259
+   },
+   "share2@20": {
+    "mean": 0.2619047619047619,
+    "ci95": [
+     0.18809523809523812,
+     0.33690476190476193
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.0020619652471057987
+   },
+   "add.ndcg@10": {
+    "mean": 0.17447919866006437,
+    "ci95": [
+     0.10786255257928688,
+     0.24565476039417977
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.009570172762434239
+   },
+   "add.ndcg@20": {
+    "mean": 0.15754752044248202,
+    "ci95": [
+     0.10485144723643332,
+     0.21386378165012923
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.010345621026733432
+   },
+   "add.validity": {
+    "mean": 0.8678571428571429,
+    "ci95": [
+     0.8166369047619048,
+     0.9119047619047619
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.0071428571428571175
+   },
+   "swap.fit@10": {
+    "mean": 0.6238095238095237,
+    "ci95": [
+     0.5559523809523809,
+     0.6880952380952381
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.01486904285332959
+   },
+   "swap.share2@10": {
+    "mean": 0.3904761904761905,
+    "ci95": [
+     0.29761904761904756,
+     0.4833333333333332
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.027042420694287018
+   },
+   "swap.add.ndcg@10": {
+    "mean": 0.21925591282242604,
+    "ci95": [
+     0.15401952593309348,
+     0.28656241378267916
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.009253832414734302
+   },
+   "swap.add.validity": {
+    "mean": 0.9500000000000001,
+    "ci95": [
+     0.9142857142857145,
+     0.9785714285714286
+    ],
+    "n_precons": 14,
+    "repeat_sd": 0.012371791482634857
+   },
+   "ungraded_slots": 0
+  }
+ },
+ "paired": {
+  "20261014_exp011-test_shipped - 20261014_exp011-test_v1": {
+   "fit@20": {
+    "n": 14,
+    "mean_diff": 0.20357142857142857,
+    "ci95": [
+     0.11724702380952379,
+     0.2976190476190476
+    ],
+    "sign_test_p": 0.0018310546875
+   },
+   "fit@10": {
+    "n": 14,
+    "mean_diff": 0.2785714285714286,
+    "ci95": [
+     0.18333333333333338,
+     0.3750297619047615
+    ],
+    "sign_test_p": 0.0018310546875
+   },
+   "share2@20": {
+    "n": 14,
+    "mean_diff": 0.19642857142857142,
+    "ci95": [
+     0.09285714285714286,
+     0.3154761904761905
+    ],
+    "sign_test_p": 0.0018310546875
+   },
+   "add.ndcg@10": {
+    "n": 14,
+    "mean_diff": 0.08735908728209961,
+    "ci95": [
+     0.01495081368763858,
+     0.16790961858533837
+    ],
+    "sign_test_p": 0.057373046875
+   },
+   "swap.fit@10": {
+    "n": 14,
+    "mean_diff": 0.075,
+    "ci95": [
+     -0.007172619047619041,
+     0.1654761904761905
+    ],
+    "sign_test_p": 1.0
+   },
+   "swap.share2@10": {
+    "n": 14,
+    "mean_diff": 0.11904761904761907,
+    "ci95": [
+     -0.009523809523809514,
+     0.25238095238095243
+    ],
+    "sign_test_p": 0.79052734375
+   },
+   "swap.add.ndcg@10": {
+    "n": 14,
+    "mean_diff": -0.0021038742204349853,
+    "ci95": [
+     -0.0851645324227589,
+     0.08478854728704811
+    ],
+    "sign_test_p": 0.4239501953125
+   }
+  }
+ },
+ "agreement": {
+  "n_pool_judged": 1051,
+  "n_labelled": 173,
+  "labelled_judged_ge1": 0.9190751445086706,
+  "unlabelled_judged_ge1": 0.7425968109339408,
+  "labelled_judged_2": 0.6011560693641619,
+  "unlabelled_judged_2": 0.296127562642369,
+  "kappa_label_vs_judged_ge1": 0.07114326585967223
+ },
+ "controls": {
+  "pool": {
+   "n": 1051,
+   "ge1": 0.7716460513796385,
+   "eq2": 0.346336822074215,
+   "mean_grade": 1.1179828734538535
+  },
+  "random": {
+   "n": 84,
+   "ge1": 0.11904761904761904,
+   "eq2": 0.011904761904761904,
+   "mean_grade": 0.13095238095238096
+  },
+  "top_label": {
+   "n": 84,
+   "ge1": 0.8690476190476191,
+   "eq2": 0.5238095238095238,
+   "mean_grade": 1.3928571428571428
+  },
+  "in_deck": {
+   "n": 42,
+   "ge1": 0.0,
+   "eq2": 0.0,
+   "mean_grade": 0.0
+  }
+ },
+ "consistency": {
+  "n": 128,
+  "same_grade": 0.7890625,
+  "same_ge1": 0.921875,
+  "kappa_ge1": 0.8036207425590672
+ },
+ "exploratory": {
+  "add": {
+   "fit_valid": {
+    "20261014_exp011-test_shipped": 0.6692910790047012,
+    "20261014_exp011-test_v1": 0.5186298449981555
+   },
+   "fit_valid_paired": {
+    "n": 14,
+    "mean_diff": 0.1506612340065458,
+    "ci95": [
+     0.06641133611538715,
+     0.24605982886780234
+    ],
+    "sign_test_p": 0.012939453125
+   },
+   "valid_grade_mix_0_1_2": {
+    "20261014_exp011-test_shipped": [
+     0.1312883435582822,
+     0.39631901840490796,
+     0.4723926380368098
+    ],
+    "20261014_exp011-test_v1": [
+     0.2716049382716049,
+     0.42661179698216734,
+     0.3017832647462277
+    ]
+   },
+   "20261014_exp011-test_shipped_episodes_by_search": {
+    "searched": {
+     "n": 17,
+     "fit_valid": 0.7554953560371517
+    },
+    "no_search": {
+     "n": 25,
+     "fit_valid": 0.610672170622635
+    }
+   }
+  },
+  "swap": {
+   "fit_valid": {
+    "20261014_exp011-test_shipped": 0.7055555555555556,
+    "20261014_exp011-test_v1": 0.6537084278155706
+   },
+   "fit_valid_paired": {
+    "n": 14,
+    "mean_diff": 0.051847127739984865,
+    "ci95": [
+     -0.026555059523809554,
+     0.13714580971277396
+    ],
+    "sign_test_p": 1.0
+   },
+   "valid_grade_mix_0_1_2": {
+    "20261014_exp011-test_shipped": [
+     0.10336538461538461,
+     0.38221153846153844,
+     0.5144230769230769
+    ],
+    "20261014_exp011-test_v1": [
+     0.09774436090225563,
+     0.49122807017543857,
+     0.41102756892230574
+    ]
+   },
+   "20261014_exp011-test_shipped_episodes_by_search": {
+    "searched": {
+     "n": 36,
+     "fit_valid": 0.7199074074074074
+    },
+    "no_search": {
+     "n": 6,
+     "fit_valid": 0.6194444444444445
+    }
+   }
+  },
+  "popularity": {
+   "spearman_log10_rank_vs_grade": 0.14447473053515555,
+   "median_log10_rank_by_grade": {
+    "0": 3.1806897527417717,
+    "1": 3.17666993266815,
+    "2": 3.6196150057428063
+   },
+   "add_pop_drift": {
+    "20261014_exp011-test_shipped": 3.012885629246134,
+    "20261014_exp011-test_v1": 2.4760035351417637
+   }
+  }
+ },
+ "cost": {
+  "calls": 98,
+  "asks": 98,
+  "tokens": {
+   "input": 196,
+   "cache_write": 333820,
+   "cache_read": 51968,
+   "output": 24591
+  },
+  "tokens_total": 410575,
+  "tokens_per_call": 4189.540816326531,
+  "turns_per_call": 1.0,
+  "wall_s_per_call": 3.954081632653061,
+  "wall_s_sum": 387.5
+ }
+}

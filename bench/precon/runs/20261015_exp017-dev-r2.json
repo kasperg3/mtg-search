@@ -1,7 +1,7 @@
 {
  "experiment": "EXP-017",
  "run_id": "20261015_exp017-dev-r2",
- "created": "2026-10-15T09:03:52+00:00",
+ "created": "2026-10-15T09:16:06+00:00",
  "config": {
   "experiment": "EXP-017",
   "runs": [
@@ -35,6 +35,7 @@
  "n_cards": 900,
  "n_graded_pass0": 900,
  "valid": false,
+ "top_label_mostly_fit": true,
  "validity_rule": "random and in_deck controls graded >= 1 at most 15%",
  "arms": {
   "20261015_exp014-dev_after3": {
@@ -331,6 +332,94 @@
   "same_grade": 0.8645833333333334,
   "same_ge1": 0.9375,
   "kappa_ge1": 0.8105263157894738
+ },
+ "exploratory": {
+  "add": {
+   "fit_valid": {
+    "20261015_exp014-dev_after3": 0.6649999999999999,
+    "20261015_exp014-dev_before": 0.6640809540190346
+   },
+   "fit_valid_paired": {
+    "n": 15,
+    "mean_diff": 0.0009190459809654642,
+    "ci95": [
+     -0.07581080151358795,
+     0.07579258399266135
+    ],
+    "sign_test_p": 1.0
+   },
+   "valid_grade_mix_0_1_2": {
+    "20261015_exp014-dev_after3": [
+     0.08532423208191127,
+     0.4880546075085324,
+     0.42662116040955633
+    ],
+    "20261015_exp014-dev_before": [
+     0.08532423208191127,
+     0.49829351535836175,
+     0.41638225255972694
+    ]
+   },
+   "20261015_exp014-dev_after3_episodes_by_search": {
+    "searched": {
+     "n": 11,
+     "fit_valid": 0.6931818181818182
+    },
+    "no_search": {
+     "n": 4,
+     "fit_valid": 0.5875
+    }
+   }
+  },
+  "swap": {
+   "fit_valid": {
+    "20261015_exp014-dev_after3": 0.69,
+    "20261015_exp014-dev_before": 0.687037037037037
+   },
+   "fit_valid_paired": {
+    "n": 15,
+    "mean_diff": 0.0029629629629629524,
+    "ci95": [
+     -0.06333333333333335,
+     0.07222222222222223
+    ],
+    "sign_test_p": 1.0
+   },
+   "valid_grade_mix_0_1_2": {
+    "20261015_exp014-dev_after3": [
+     0.04,
+     0.54,
+     0.42
+    ],
+    "20261015_exp014-dev_before": [
+     0.087248322147651,
+     0.44966442953020136,
+     0.46308724832214765
+    ]
+   },
+   "20261015_exp014-dev_after3_episodes_by_search": {
+    "searched": {
+     "n": 14,
+     "fit_valid": 0.6964285714285714
+    },
+    "no_search": {
+     "n": 1,
+     "fit_valid": 0.6
+    }
+   }
+  },
+  "popularity": {
+   "spearman_log10_rank_vs_grade": -0.03418328431193286,
+   "median_log10_rank_by_grade": {
+    "0": 3.6775778158347885,
+    "1": 3.5978476184720605,
+    "2": 3.5146805441249818
+   },
+   "add_pop_drift": {
+    "20261015_exp014-dev_after3": 3.3225116972801487,
+    "20261015_exp014-dev_before": 2.826714002153955
+   }
+  }
  },
  "cost": {
   "calls": 75,

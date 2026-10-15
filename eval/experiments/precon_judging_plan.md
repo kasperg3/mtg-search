@@ -1,6 +1,6 @@
 # Plan: judged labels for the precon deck tasks (EXP-017, pre-registered)
 
-**Status: pre-registered 2026-10-15.** The owner approved the plan ("run the precon deck aware judging plan"). This file is frozen as committed before the first judge call; the details fixed at implementation are in [Pre-registration addendum](#pre-registration-addendum-fixed-before-any-judge-call) at the end. Results go in `precon_judging.md`.
+**Status: pre-registered 2026-10-15; done, results in [precon_judging.md](precon_judging.md).** The owner approved the plan ("run the precon deck aware judging plan"). This file is frozen as committed before the first judge call; the details fixed at implementation are in [Pre-registration addendum](#pre-registration-addendum-fixed-before-any-judge-call) at the end. Results go in `precon_judging.md`.
 
 ## Why
 

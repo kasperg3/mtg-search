@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import random
 import re
 import sys
@@ -399,9 +400,9 @@ def kappa(a: list[bool], b: list[bool]) -> float | None:
     return (po - pe) / (1 - pe) if pe < 1 else None
 
 
-def slot_grades(e: dict, deck: Deck, db: CardDB, grades: dict[str, int]) -> list[int | None]:
+def slot_grades(e: dict, deck: Deck, db: CardDB, grades: dict[str, int], valid_only: bool = False) -> list[int | None]:
     """Judged grade per add slot of one episode; invalid picks (scorer rules, Game Changer limit in rank
-    order) are 0 and valid picks the judge did not grade are None."""
+    order) are 0 (or left out with ``valid_only``) and valid picks the judge did not grade are None."""
     out = e.get("output") or {}
     if e["task"] == "add":
         picks = scorer.validate_adds(list(out.get("adds") or [])[:20], deck, db, gc_limit=GC_LIMIT)
@@ -409,6 +410,8 @@ def slot_grades(e: dict, deck: Deck, db: CardDB, grades: dict[str, int]) -> list
         swaps = [s for s in list(out.get("swaps") or [])[:10] if isinstance(s, dict)]
         removed = [p.oid for p in scorer.validate_cuts([s.get("cut") for s in swaps], deck, db) if p.valid]
         picks = scorer.validate_adds([s.get("add") for s in swaps], deck, db, gc_limit=GC_LIMIT, removed=removed)
+    if valid_only:
+        return [grades.get(p.oid) for p in picks if p.valid]
     return [grades.get(p.oid) if p.valid else 0 for p in picks]
 
 
@@ -422,10 +425,26 @@ def fit(gs: list[int | None], k: int, two: bool = False) -> float | None:
 
 def episode_metrics(e: dict, deck: Deck, db: CardDB, grades: dict[str, int]) -> dict:
     gs = slot_grades(e, deck, db, grades)
+    vg = [g for g in slot_grades(e, deck, db, grades, valid_only=True) if g is not None]
+    extra = {"fit_valid": sum(g / 2 for g in vg) / len(vg) if vg else None,  # exploratory: valid picks only
+             **{f"n_grade{k}": sum(g == k for g in vg) for k in (0, 1, 2)}, "ungraded": sum(g is None for g in gs)}
     if e["task"] == "add":
-        return {"fit@20": fit(gs, 20), "fit@10": fit(gs, 10), "share2@20": fit(gs, 20, True),
-                "ungraded": sum(g is None for g in gs)}
-    return {"swap.fit@10": fit(gs, 10), "swap.share2@10": fit(gs, 10, True), "ungraded": sum(g is None for g in gs)}
+        return {"fit@20": fit(gs, 20), "fit@10": fit(gs, 10), "share2@20": fit(gs, 20, True), **extra}
+    return {"swap.fit@10": fit(gs, 10), "swap.share2@10": fit(gs, 10, True), **extra}
+
+
+def _median(xs: list[float]) -> float | None:
+    xs = sorted(xs)
+    return (xs[(len(xs) - 1) // 2] + xs[len(xs) // 2]) / 2 if xs else None
+
+
+def _spearman(x: list[float], y: list[float]) -> float | None:
+    import numpy as np
+    import polars as pl
+
+    if len(x) < 3:
+        return None
+    return float(np.corrcoef(pl.Series(x).rank().to_numpy(), pl.Series(y).rank().to_numpy())[0, 1])
 
 
 def _cost(rows: list[dict]) -> dict:
@@ -457,7 +476,8 @@ def cmd_analyze(args) -> dict:
         rows = [{"precon_id": e["precon_id"], "rep": e["rep"], "task": e["task"],
                  "metrics": {**episode_metrics(e, S.bench.decks[e["precon_id"]], S.db, by_pid.get(e["precon_id"], {})),
                              **{m: e["metrics"].get(m) for m in ("add.ndcg@10", "add.ndcg@20", "swap.add.ndcg@10",
-                                                                 "add.validity", "swap.add.validity")}}}
+                                                                 "add.validity", "swap.add.validity", "add.pop_drift")}},
+                 "searched": any(t.get("tool") in ("search_cards", "find_similar") for t in e["run"].get("tool_calls") or [])}
                 for e in es if e["task"] in ("add", "swap")]
         per[r] = rows
         add, swap = [x for x in rows if x["task"] == "add"], [x for x in rows if x["task"] == "swap"]
@@ -503,13 +523,34 @@ def cmd_analyze(args) -> dict:
     consistency = {"n": len(both), "same_grade": share([g[0][k] == g[1][k] for k in both]),
                    "same_ge1": share([(g[0][k] >= 1) == (g[1][k] >= 1) for k in both]),
                    "kappa_ge1": kappa([g[0][k] >= 1 for k in both], [g[1][k] >= 1 for k in both])}
+    explore = {}  # exploratory, not pre-registered
+    for task in ("add", "swap"):
+        pa = scorer.per_precon([x for x in per[a] if x["task"] == task], "fit_valid")
+        pb = scorer.per_precon([x for x in per[b] if x["task"] == task], "fit_valid")
+        mix = {r: [sum(x["metrics"][f"n_grade{k}"] for x in per[r] if x["task"] == task) for k in (0, 1, 2)] for r in run_ids}
+        by_search = {}
+        for flag in (True, False):
+            v = [x["metrics"]["fit_valid"] for x in per[a] if x["task"] == task and x["searched"] == flag
+                 and x["metrics"]["fit_valid"] is not None]
+            by_search["searched" if flag else "no_search"] = {"n": len(v), "fit_valid": share(v)}
+        explore[task] = {"fit_valid": {r: share(list(scorer.per_precon([x for x in per[r] if x["task"] == task], "fit_valid").values()))
+                                       for r in run_ids},
+                         "fit_valid_paired": scorer.paired_bootstrap(pa, pb, 10_000),
+                         "valid_grade_mix_0_1_2": {r: [n / sum(m) for n in m] for r, m in mix.items()},
+                         f"{a}_episodes_by_search": by_search}
+    pop = [(math.log10(S.db[o].edhrec_rank), gr) for (pid, o), gr in pool_j if S.db[o].edhrec_rank]
+    explore["popularity"] = {
+        "spearman_log10_rank_vs_grade": _spearman([x for x, _ in pop], [y for _, y in pop]),
+        "median_log10_rank_by_grade": {k: _median([x for x, y in pop if y == k]) for k in (0, 1, 2)},
+        "add_pop_drift": {r: share(list(scorer.per_precon([x for x in per[r] if x["task"] == "add"], "add.pop_drift").values()))
+                          for r in run_ids}}
     n_items = sum(map(len, items.values()))
     summary = {"experiment": "EXP-017", "run_id": args.run, "created": datetime.now(UTC).isoformat(timespec="seconds"),
                "config": json.loads((out / "config.json").read_text()) | {"system_template": None},
                "runs": run_ids, "n_precons": len(items), "n_cards": n_items, "n_graded_pass0": len(g[0]),
                "valid": valid, "top_label_mostly_fit": not_too_strict, "validity_rule": f"random and in_deck controls graded >= 1 at most {MAX_INVALID_ACCEPT:.0%}",
                "arms": arms, "paired": {f"{a} - {b}": paired}, "agreement": agreement, "controls": ctrl,
-               "consistency": consistency, "cost": _cost(calls)}
+               "consistency": consistency, "exploratory": explore, "cost": _cost(calls)}
     (RUNS / f"{args.run}.json").write_text(json.dumps(summary, indent=1, default=str) + "\n")
     _print(summary)
     return summary
@@ -528,6 +569,7 @@ def _print(s: dict) -> None:
     print("  controls:", {k: (v["n"], round(v["ge1"] or 0, 3), round(v["eq2"] or 0, 3)) for k, v in s["controls"].items()})
     print("  agreement:", {k: (round(v, 3) if isinstance(v, float) else v) for k, v in s["agreement"].items()})
     print("  consistency:", s["consistency"])
+    print("  exploratory:", json.dumps(s["exploratory"], default=str))
     print("  cost:", s["cost"])
 
 
