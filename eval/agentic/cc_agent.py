@@ -17,6 +17,9 @@ session is checked.
   A0 / G0  (EXP-018, prompt ablation) A and G with identical minimal prompts: the task protocol only, no
      search advice, tool descriptions limited to mechanics (no examples, no file layout), and G0's grep
      matched truly line by line.
+  G1  (EXP-019) EXP-013's grep tool unchanged (same matching, same tool description) with the minimal prompt:
+     G1 differs from G only in the prompt (no layout example, no per-line note, no strategy paragraph, no
+     example pattern).
   I  no tools, everything in context: the plain card text of every card the task allows, in the
      system prompt. All cards are ~2.2M tokens, more than one 1M context, so the file is read in
      alphabetical parts of at most SHARD_CHARS; each part returns up to 20 candidates and, with more
@@ -60,7 +63,7 @@ from bench.precon.harness.claude_code import ClaudeCode  # noqa: E402
 MODEL = "claude-sonnet-5-5[1m]"
 SERVER = "cards"
 SHARD_CHARS = 1_800_000  # ~0.5M tokens per part; the whole card file is ~7.5M characters
-CC_CONDS = ("A", "G", "I", "A0", "G0")
+CC_CONDS = ("A", "G", "I", "A0", "G0", "G1")
 TASK_FILES = ("tasks.yaml", "tasks_known_easy.yaml")
 SHARD_DIR = HERE / ".cache" / "cc_shards"  # I's system prompts (card-file parts), git-ignored and not synced
 
@@ -118,8 +121,17 @@ TOOLS_GREP_MIN = [
             "required": ["pattern"]}}},
     TOOLS[1],
 ]
-SYSTEMS = {"A": SYSTEM, "G": SYSTEM_GREP, "A0": SYSTEM_MIN.format(tool="search"), "G0": SYSTEM_MIN.format(tool="grep")}
-TOOLSETS = {"A": TOOLS, "G": TOOLS_GREP, "A0": TOOLS_MIN, "G0": TOOLS_GREP_MIN}
+# EXP-019: EXP-013's grep tool as it was, minus the example pattern in its parameter description
+TOOLS_GREP_G1 = [
+    {"type": "function", "function": {**TOOLS_GREP[0]["function"], "parameters": {
+        **TOOLS_GREP[0]["function"]["parameters"], "properties": {
+            **TOOLS_GREP[0]["function"]["parameters"]["properties"],
+            "pattern": {"type": "string", "description": "Python regular expression."}}}}},
+    TOOLS[1],
+]
+SYSTEMS = {"A": SYSTEM, "G": SYSTEM_GREP, "A0": SYSTEM_MIN.format(tool="search"), "G0": SYSTEM_MIN.format(tool="grep"),
+           "G1": SYSTEM_MIN.format(tool="grep")}
+TOOLSETS = {"A": TOOLS, "G": TOOLS_GREP, "A0": TOOLS_MIN, "G0": TOOLS_GREP_MIN, "G1": TOOLS_GREP_G1}
 
 
 def load_tasks(files=TASK_FILES) -> list[dict]:
@@ -212,7 +224,7 @@ class Service:
             rec = {"tool": "search", "query": q, "filters": filt}
             content = format_results(env, q, n, rows, tool="search", last_note=False)
             snippets = []
-        elif cond in ("G", "G0") and name == "grep":
+        elif cond in ("G", "G0", "G1") and name == "grep":
             q = str(args.get("pattern") or "")
             if not q.strip():
                 raise ValueError("empty pattern")
@@ -440,8 +452,8 @@ def main() -> None:
                                "shard_chars": SHARD_CHARS, "conds": sorted(set(prev.get("conds", [])) | set(conds)),
                                "system": SYSTEM, "system_grep": SYSTEM_GREP, "system_in_context": SYSTEM_I,
                                "system_in_context_merge": SYSTEM_I_MERGE,
-                               **({"systems_min": {c: SYSTEMS[c] for c in ("A0", "G0")},
-                                   "tools_min": {c: TOOLSETS[c] for c in ("A0", "G0")}} if {"A0", "G0"} & set(conds) else {})},
+                               **({"systems_min": {c: SYSTEMS[c] for c in ("A0", "G0", "G1")},
+                                   "tools_min": {c: TOOLSETS[c] for c in ("A0", "G0", "G1")}} if {"A0", "G0", "G1"} & set(conds) else {})},
                               indent=1))
     runner = Runner(env, tasks, run_dir, args.model)
     try:
