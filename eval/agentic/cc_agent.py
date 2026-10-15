@@ -362,7 +362,13 @@ def main() -> None:
     ap.add_argument("--repeats", type=int, default=1)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--model", default=MODEL)
+    ap.add_argument("--allow-dirty", action="store_true", help="run with uncommitted harness changes (recorded)")
     args = ap.parse_args()
+    from env import git_state
+
+    git = git_state()
+    if git["dirty"] and not args.allow_dirty:
+        sys.exit("uncommitted changes in eval/agentic, src or bench/precon/harness: commit first (or --allow-dirty)")
     conds = args.conds.split(",")
     assert set(conds) <= set(CC_CONDS), conds
     tasks = load_tasks()
@@ -389,7 +395,7 @@ def main() -> None:
     run_dir.mkdir(parents=True, exist_ok=True)
     cfg = run_dir / "config.json"
     prev = json.loads(cfg.read_text()) if cfg.exists() else {}
-    cfg.write_text(json.dumps({**prev, "experiment": "EXP-013", "model": args.model, "max_calls": MAX_SEARCHES,
+    cfg.write_text(json.dumps({**prev, "experiment": "EXP-013", "git": git, "model": args.model, "max_calls": MAX_SEARCHES,
                                "shard_chars": SHARD_CHARS, "conds": sorted(set(prev.get("conds", [])) | set(conds)),
                                "system": SYSTEM, "system_grep": SYSTEM_GREP, "system_in_context": SYSTEM_I,
                                "system_in_context_merge": SYSTEM_I_MERGE}, indent=1))

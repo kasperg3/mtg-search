@@ -65,7 +65,7 @@
     }
    },
    "paired": {
-    "AvsG:ndcg@10": {
+    "G-A:ndcg@10": {
      "n": 30,
      "mean_a": 0.8051921299714289,
      "mean_b": 0.8244933780508211,
@@ -79,7 +79,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:p@10": {
+    "G-A:p@10": {
      "n": 30,
      "mean_a": 0.7933333333333332,
      "mean_b": 0.8233333333333334,
@@ -93,7 +93,7 @@
      "p_sign": 0.6636238098144531,
      "median_ratio_b_over_a": null
     },
-    "AvsG:recall@20_final": {
+    "G-A:recall@20_final": {
      "n": 30,
      "mean_a": 0.07845413381925716,
      "mean_b": 0.08641094217228443,
@@ -107,7 +107,7 @@
      "p_sign": 0.7011080384254456,
      "median_ratio_b_over_a": null
     },
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 30,
      "mean_a": 13692.6,
      "mean_b": 24607.1,
@@ -121,7 +121,7 @@
      "p_sign": 5.774199962615967e-08,
      "median_ratio_b_over_a": 1.7455711234511146
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 30,
      "mean_a": 4.633333333333334,
      "mean_b": 5.033333333333333,
@@ -135,7 +135,7 @@
      "p_sign": 0.049041748046875,
      "median_ratio_b_over_a": 1.0
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 30,
      "mean_a": 9.736666666666666,
      "mean_b": 12.639999999999997,
@@ -149,7 +149,7 @@
      "p_sign": 5.947612226009369e-05,
      "median_ratio_b_over_a": 1.2625
     },
-    "AvsI:ndcg@10": {
+    "I-A:ndcg@10": {
      "n": 2,
      "mean_a": 0.8876683119885542,
      "mean_b": 1.0,
@@ -163,7 +163,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:p@10": {
+    "I-A:p@10": {
      "n": 2,
      "mean_a": 0.85,
      "mean_b": 1.0,
@@ -177,7 +177,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:recall@20_final": {
+    "I-A:recall@20_final": {
      "n": 2,
      "mean_a": 0.04989406779661017,
      "mean_b": 0.11256053268765134,
@@ -191,7 +191,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": null
     },
-    "AvsI:total_tokens": {
+    "I-A:total_tokens": {
      "n": 2,
      "mean_a": 16440.0,
      "mean_b": 1904688.0,
@@ -205,7 +205,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 134.46939337954953
     },
-    "AvsI:turns": {
+    "I-A:turns": {
      "n": 2,
      "mean_a": 5.5,
      "mean_b": 3.5,
@@ -219,7 +219,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": 0.6833333333333333
     },
-    "AvsI:wall_s": {
+    "I-A:wall_s": {
      "n": 2,
      "mean_a": 16.1,
      "mean_b": 39.4,
@@ -233,7 +233,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 2.1782738095238097
     },
-    "GvsI:ndcg@10": {
+    "I-G:ndcg@10": {
      "n": 2,
      "mean_a": 0.9574284411791896,
      "mean_b": 1.0,
@@ -247,7 +247,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:p@10": {
+    "I-G:p@10": {
      "n": 2,
      "mean_a": 0.95,
      "mean_b": 1.0,
@@ -261,7 +261,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:recall@20_final": {
+    "I-G:recall@20_final": {
      "n": 2,
      "mean_a": 0.08730326876513317,
      "mean_b": 0.11256053268765134,
@@ -275,7 +275,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": null
     },
-    "GvsI:total_tokens": {
+    "I-G:total_tokens": {
      "n": 2,
      "mean_a": 27261.0,
      "mean_b": 1904688.0,
@@ -289,7 +289,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 142.8739329380639
     },
-    "GvsI:turns": {
+    "I-G:turns": {
      "n": 2,
      "mean_a": 5.5,
      "mean_b": 3.5,
@@ -303,7 +303,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": 0.8214285714285714
     },
-    "GvsI:wall_s": {
+    "I-G:wall_s": {
      "n": 2,
      "mean_a": 12.25,
      "mean_b": 39.4,
@@ -374,7 +374,7 @@
     }
    },
    "paired": {
-    "AvsG:ndcg@10": {
+    "G-A:ndcg@10": {
      "n": 35,
      "mean_a": 0.6575187720420905,
      "mean_b": 0.632530665000318,
@@ -388,7 +388,7 @@
      "p_sign": 0.8318119049072266,
      "median_ratio_b_over_a": null
     },
-    "AvsG:p@10": {
+    "G-A:p@10": {
      "n": 35,
      "mean_a": 0.6514285714285714,
      "mean_b": 0.6314285714285715,
@@ -402,7 +402,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:recall@20_final": {
+    "G-A:recall@20_final": {
      "n": 35,
      "mean_a": 0.121153456568082,
      "mean_b": 0.14582737161874335,
@@ -416,7 +416,7 @@
      "p_sign": 0.855535551905632,
      "median_ratio_b_over_a": null
     },
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 35,
      "mean_a": 14094.6,
      "mean_b": 22933.77142857143,
@@ -430,7 +430,7 @@
      "p_sign": 2.0954757928848267e-09,
      "median_ratio_b_over_a": 1.4514766250846918
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 35,
      "mean_a": 4.742857142857143,
      "mean_b": 5.171428571428572,
@@ -444,7 +444,7 @@
      "p_sign": 0.237884521484375,
      "median_ratio_b_over_a": 1.0
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 35,
      "mean_a": 9.542857142857143,
      "mean_b": 11.765714285714285,
@@ -458,7 +458,7 @@
      "p_sign": 0.0008213953115046024,
      "median_ratio_b_over_a": 1.182795698924731
     },
-    "AvsI:ndcg@10": {
+    "I-A:ndcg@10": {
      "n": 2,
      "mean_a": 0.7662210841373505,
      "mean_b": 0.7392107586439636,
@@ -472,7 +472,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:p@10": {
+    "I-A:p@10": {
      "n": 2,
      "mean_a": 0.7,
      "mean_b": 0.7,
@@ -486,7 +486,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:recall@20_final": {
+    "I-A:recall@20_final": {
      "n": 2,
      "mean_a": 0.1510462074978204,
      "mean_b": 0.2506538796861377,
@@ -500,7 +500,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": null
     },
-    "AvsI:total_tokens": {
+    "I-A:total_tokens": {
      "n": 2,
      "mean_a": 12051.5,
      "mean_b": 3115397.5,
@@ -514,7 +514,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 260.59506210945386
     },
-    "AvsI:turns": {
+    "I-A:turns": {
      "n": 2,
      "mean_a": 4.5,
      "mean_b": 6.0,
@@ -528,7 +528,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 1.35
     },
-    "AvsI:wall_s": {
+    "I-A:wall_s": {
      "n": 2,
      "mean_a": 9.2,
      "mean_b": 60.15,
@@ -542,7 +542,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 6.546217494089834
     },
-    "GvsI:ndcg@10": {
+    "I-G:ndcg@10": {
      "n": 2,
      "mean_a": 0.7663104407598132,
      "mean_b": 0.7392107586439636,
@@ -556,7 +556,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:p@10": {
+    "I-G:p@10": {
      "n": 2,
      "mean_a": 0.7,
      "mean_b": 0.7,
@@ -570,7 +570,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:recall@20_final": {
+    "I-G:recall@20_final": {
      "n": 2,
      "mean_a": 0.23997384481255452,
      "mean_b": 0.2506538796861377,
@@ -584,7 +584,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:total_tokens": {
+    "I-G:total_tokens": {
      "n": 2,
      "mean_a": 13606.5,
      "mean_b": 3115397.5,
@@ -598,7 +598,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 234.60996670393865
     },
-    "GvsI:turns": {
+    "I-G:turns": {
      "n": 2,
      "mean_a": 4.5,
      "mean_b": 6.0,
@@ -612,7 +612,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 1.35
     },
-    "GvsI:wall_s": {
+    "I-G:wall_s": {
      "n": 2,
      "mean_a": 9.6,
      "mean_b": 60.15,
@@ -683,7 +683,7 @@
     }
    },
    "paired": {
-    "AvsG:ndcg@10": {
+    "G-A:ndcg@10": {
      "n": 15,
      "mean_a": 0.9232815816083402,
      "mean_b": 0.8697125532143588,
@@ -697,7 +697,7 @@
      "p_sign": 0.453125,
      "median_ratio_b_over_a": null
     },
-    "AvsG:p@10": {
+    "G-A:p@10": {
      "n": 15,
      "mean_a": 0.9199999999999999,
      "mean_b": 0.8466666666666668,
@@ -711,7 +711,7 @@
      "p_sign": 0.21875,
      "median_ratio_b_over_a": null
     },
-    "AvsG:recall@20_final": {
+    "G-A:recall@20_final": {
      "n": 15,
      "mean_a": 0.32576938692169066,
      "mean_b": 0.2816543276996398,
@@ -725,7 +725,7 @@
      "p_sign": 0.03857421875,
      "median_ratio_b_over_a": null
     },
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 15,
      "mean_a": 11212.866666666667,
      "mean_b": 26808.8,
@@ -739,7 +739,7 @@
      "p_sign": 0.0009765625,
      "median_ratio_b_over_a": 2.1941597369947785
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 15,
      "mean_a": 4.133333333333334,
      "mean_b": 5.466666666666667,
@@ -753,7 +753,7 @@
      "p_sign": 0.001953125,
      "median_ratio_b_over_a": 1.25
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 15,
      "mean_a": 8.420000000000002,
      "mean_b": 12.026666666666667,
@@ -767,7 +767,7 @@
      "p_sign": 0.3017578125,
      "median_ratio_b_over_a": 1.28
     },
-    "AvsI:ndcg@10": {
+    "I-A:ndcg@10": {
      "n": 4,
      "mean_a": 0.8038457448192468,
      "mean_b": 0.8879463598468218,
@@ -781,7 +781,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": null
     },
-    "AvsI:p@10": {
+    "I-A:p@10": {
      "n": 4,
      "mean_a": 0.825,
      "mean_b": 0.875,
@@ -795,7 +795,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": null
     },
-    "AvsI:recall@20_final": {
+    "I-A:recall@20_final": {
      "n": 4,
      "mean_a": 0.39405970582212824,
      "mean_b": 0.4245571974609242,
@@ -809,7 +809,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:total_tokens": {
+    "I-A:total_tokens": {
      "n": 4,
      "mean_a": 10982.75,
      "mean_b": 3111543.75,
@@ -823,7 +823,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 294.8262439318818
     },
-    "AvsI:turns": {
+    "I-A:turns": {
      "n": 4,
      "mean_a": 4.25,
      "mean_b": 6.0,
@@ -837,7 +837,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 1.5
     },
-    "AvsI:wall_s": {
+    "I-A:wall_s": {
      "n": 4,
      "mean_a": 7.975,
      "mean_b": 70.6,
@@ -851,7 +851,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 9.47112098427888
     },
-    "GvsI:ndcg@10": {
+    "I-G:ndcg@10": {
      "n": 4,
      "mean_a": 0.7848800645953177,
      "mean_b": 0.8879463598468218,
@@ -865,7 +865,7 @@
      "p_sign": 0.25,
      "median_ratio_b_over_a": null
     },
-    "GvsI:p@10": {
+    "I-G:p@10": {
      "n": 4,
      "mean_a": 0.7999999999999999,
      "mean_b": 0.875,
@@ -879,7 +879,7 @@
      "p_sign": 0.25,
      "median_ratio_b_over_a": null
     },
-    "GvsI:recall@20_final": {
+    "I-G:recall@20_final": {
      "n": 4,
      "mean_a": 0.3441955753873456,
      "mean_b": 0.4245571974609242,
@@ -893,7 +893,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:total_tokens": {
+    "I-G:total_tokens": {
      "n": 4,
      "mean_a": 26302.5,
      "mean_b": 3111543.75,
@@ -907,7 +907,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 107.7845161999223
     },
-    "GvsI:turns": {
+    "I-G:turns": {
      "n": 4,
      "mean_a": 5.25,
      "mean_b": 6.0,
@@ -921,7 +921,7 @@
      "p_sign": 0.5,
      "median_ratio_b_over_a": 1.1
     },
-    "GvsI:wall_s": {
+    "I-G:wall_s": {
      "n": 4,
      "mean_a": 12.2,
      "mean_b": 70.6,
@@ -989,7 +989,7 @@
     }
    },
    "paired": {
-    "AvsG:found_in_final": {
+    "G-A:found_in_final": {
      "n": 25,
      "mean_a": 0.96,
      "mean_b": 0.96,
@@ -1003,7 +1003,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:rr": {
+    "G-A:rr": {
      "n": 25,
      "mean_a": 0.96,
      "mean_b": 0.96,
@@ -1017,7 +1017,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 25,
      "mean_a": 9220.84,
      "mean_b": 12470.76,
@@ -1031,7 +1031,7 @@
      "p_sign": 0.42435622215270996,
      "median_ratio_b_over_a": 1.2108534544585225
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 25,
      "mean_a": 3.08,
      "mean_b": 4.28,
@@ -1045,7 +1045,7 @@
      "p_sign": 0.002349853515625,
      "median_ratio_b_over_a": 1.3333333333333333
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 25,
      "mean_a": 6.547999999999999,
      "mean_b": 7.784,
@@ -1059,7 +1059,7 @@
      "p_sign": 0.30745625495910645,
      "median_ratio_b_over_a": 1.0714285714285714
     },
-    "AvsI:found_in_final": {
+    "I-A:found_in_final": {
      "n": 4,
      "mean_a": 0.75,
      "mean_b": 1.0,
@@ -1073,7 +1073,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:rr": {
+    "I-A:rr": {
      "n": 4,
      "mean_a": 0.75,
      "mean_b": 1.0,
@@ -1087,7 +1087,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:total_tokens": {
+    "I-A:total_tokens": {
      "n": 4,
      "mean_a": 12384.25,
      "mean_b": 3108143.5,
@@ -1101,7 +1101,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 346.3016328185341
     },
-    "AvsI:turns": {
+    "I-A:turns": {
      "n": 4,
      "mean_a": 3.5,
      "mean_b": 6.0,
@@ -1115,7 +1115,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 2.0
     },
-    "AvsI:wall_s": {
+    "I-A:wall_s": {
      "n": 4,
      "mean_a": 7.875,
      "mean_b": 40.325,
@@ -1129,7 +1129,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 6.463262910798122
     },
-    "GvsI:found_in_final": {
+    "I-G:found_in_final": {
      "n": 4,
      "mean_a": 1.0,
      "mean_b": 1.0,
@@ -1143,7 +1143,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:rr": {
+    "I-G:rr": {
      "n": 4,
      "mean_a": 1.0,
      "mean_b": 1.0,
@@ -1157,7 +1157,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:total_tokens": {
+    "I-G:total_tokens": {
      "n": 4,
      "mean_a": 14670.0,
      "mean_b": 3108143.5,
@@ -1171,7 +1171,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 317.85018075313525
     },
-    "GvsI:turns": {
+    "I-G:turns": {
      "n": 4,
      "mean_a": 5.25,
      "mean_b": 6.0,
@@ -1185,7 +1185,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": 1.1785714285714286
     },
-    "GvsI:wall_s": {
+    "I-G:wall_s": {
      "n": 4,
      "mean_a": 9.05,
      "mean_b": 40.325,
@@ -1237,7 +1237,7 @@
     }
    },
    "paired": {
-    "AvsG:found_in_final": {
+    "G-A:found_in_final": {
      "n": 8,
      "mean_a": 1.0,
      "mean_b": 0.875,
@@ -1251,7 +1251,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:rr": {
+    "G-A:rr": {
      "n": 8,
      "mean_a": 1.0,
      "mean_b": 0.875,
@@ -1265,7 +1265,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 8,
      "mean_a": 8749.5,
      "mean_b": 13585.875,
@@ -1279,7 +1279,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": 0.9931542052243841
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 8,
      "mean_a": 3.0,
      "mean_b": 4.125,
@@ -1293,7 +1293,7 @@
      "p_sign": 0.0625,
      "median_ratio_b_over_a": 1.3333333333333333
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 8,
      "mean_a": 6.3125,
      "mean_b": 8.2875,
@@ -1361,7 +1361,7 @@
     }
    },
    "paired": {
-    "AvsG:found_in_final": {
+    "G-A:found_in_final": {
      "n": 33,
      "mean_a": 0.9696969696969697,
      "mean_b": 0.9393939393939394,
@@ -1375,7 +1375,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:rr": {
+    "G-A:rr": {
      "n": 33,
      "mean_a": 0.9696969696969697,
      "mean_b": 0.9393939393939394,
@@ -1389,7 +1389,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 33,
      "mean_a": 9106.575757575758,
      "mean_b": 12741.09090909091,
@@ -1403,7 +1403,7 @@
      "p_sign": 0.48685024166479707,
      "median_ratio_b_over_a": 1.2086891009542944
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 33,
      "mean_a": 3.0606060606060606,
      "mean_b": 4.242424242424242,
@@ -1417,7 +1417,7 @@
      "p_sign": 0.00012111663818359375,
      "median_ratio_b_over_a": 1.3333333333333333
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 33,
      "mean_a": 6.49090909090909,
      "mean_b": 7.906060606060605,
@@ -1431,7 +1431,7 @@
      "p_sign": 0.21532714972272515,
      "median_ratio_b_over_a": 1.0714285714285714
     },
-    "AvsI:found_in_final": {
+    "I-A:found_in_final": {
      "n": 4,
      "mean_a": 0.75,
      "mean_b": 1.0,
@@ -1445,7 +1445,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:rr": {
+    "I-A:rr": {
      "n": 4,
      "mean_a": 0.75,
      "mean_b": 1.0,
@@ -1459,7 +1459,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "AvsI:total_tokens": {
+    "I-A:total_tokens": {
      "n": 4,
      "mean_a": 12384.25,
      "mean_b": 3108143.5,
@@ -1473,7 +1473,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 346.3016328185341
     },
-    "AvsI:turns": {
+    "I-A:turns": {
      "n": 4,
      "mean_a": 3.5,
      "mean_b": 6.0,
@@ -1487,7 +1487,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 2.0
     },
-    "AvsI:wall_s": {
+    "I-A:wall_s": {
      "n": 4,
      "mean_a": 7.875,
      "mean_b": 40.325,
@@ -1501,7 +1501,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 6.463262910798122
     },
-    "GvsI:found_in_final": {
+    "I-G:found_in_final": {
      "n": 4,
      "mean_a": 1.0,
      "mean_b": 1.0,
@@ -1515,7 +1515,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:rr": {
+    "I-G:rr": {
      "n": 4,
      "mean_a": 1.0,
      "mean_b": 1.0,
@@ -1529,7 +1529,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": null
     },
-    "GvsI:total_tokens": {
+    "I-G:total_tokens": {
      "n": 4,
      "mean_a": 14670.0,
      "mean_b": 3108143.5,
@@ -1543,7 +1543,7 @@
      "p_sign": 0.125,
      "median_ratio_b_over_a": 317.85018075313525
     },
-    "GvsI:turns": {
+    "I-G:turns": {
      "n": 4,
      "mean_a": 5.25,
      "mean_b": 6.0,
@@ -1557,7 +1557,7 @@
      "p_sign": 1.0,
      "median_ratio_b_over_a": 1.1785714285714286
     },
-    "GvsI:wall_s": {
+    "I-G:wall_s": {
      "n": 4,
      "mean_a": 9.05,
      "mean_b": 40.325,
@@ -1619,7 +1619,7 @@
     }
    },
    "paired": {
-    "AvsG:total_tokens": {
+    "G-A:total_tokens": {
      "n": 113,
      "mean_a": 12148.663716814159,
      "mean_b": 20915.778761061945,
@@ -1633,7 +1633,7 @@
      "p_sign": 1.4727515742257347e-14,
      "median_ratio_b_over_a": 1.463209114645146
     },
-    "AvsG:turns": {
+    "G-A:turns": {
      "n": 113,
      "mean_a": 4.1415929203539825,
      "mean_b": 4.902654867256637,
@@ -1647,7 +1647,7 @@
      "p_sign": 1.0273195443541005e-07,
      "median_ratio_b_over_a": 1.0
     },
-    "AvsG:wall_s": {
+    "G-A:wall_s": {
      "n": 113,
      "mean_a": 8.553982300884957,
      "mean_b": 10.905309734513274,
@@ -1661,7 +1661,7 @@
      "p_sign": 1.6752020995667599e-07,
      "median_ratio_b_over_a": 1.207317073170732
     },
-    "AvsI:total_tokens": {
+    "I-A:total_tokens": {
      "n": 12,
      "mean_a": 12537.583333333334,
      "mean_b": 2909910.0,
@@ -1675,7 +1675,7 @@
      "p_sign": 0.00048828125,
      "median_ratio_b_over_a": 282.629989014603
     },
-    "AvsI:turns": {
+    "I-A:turns": {
      "n": 12,
      "mean_a": 4.25,
      "mean_b": 5.583333333333333,
@@ -1689,7 +1689,7 @@
      "p_sign": 0.00634765625,
      "median_ratio_b_over_a": 1.5
     },
-    "AvsI:wall_s": {
+    "I-A:wall_s": {
      "n": 12,
      "mean_a": 9.5,
      "mean_b": 53.566666666666656,
@@ -1703,7 +1703,7 @@
      "p_sign": 0.00048828125,
      "median_ratio_b_over_a": 6.463262910798122
     },
-    "GvsI:total_tokens": {
+    "I-G:total_tokens": {
      "n": 12,
      "mean_a": 20468.75,
      "mean_b": 2909910.0,
@@ -1717,7 +1717,7 @@
      "p_sign": 0.00048828125,
      "median_ratio_b_over_a": 195.3961607942528
     },
-    "GvsI:turns": {
+    "I-G:turns": {
      "n": 12,
      "mean_a": 5.166666666666667,
      "mean_b": 5.583333333333333,
@@ -1731,7 +1731,7 @@
      "p_sign": 0.34375,
      "median_ratio_b_over_a": 1.2
     },
-    "GvsI:wall_s": {
+    "I-G:wall_s": {
      "n": 12,
      "mean_a": 10.725,
      "mean_b": 53.566666666666656,

@@ -139,6 +139,11 @@ def cache_path(system: str) -> Path:
     return CACHE_DIR / f"{system}.json"
 
 
+def card_oracle_ids() -> list[str]:
+    """cards.parquet ids in row order; embedding retrievers check their alignment against it (review m6)."""
+    return pl.read_parquet(CARDS, columns=["oracle_id"])["oracle_id"].to_list()
+
+
 def load_cache(system: str) -> dict:
     p = cache_path(system)
     return json.loads(p.read_text()) if p.exists() else {}
@@ -155,10 +160,10 @@ def run_base(system: str, queries: dict[str, list[dict]], masks: Masks, refresh:
     if kind == "sparseup":
         from mtg_search.retrievers.sparseup import SparseUpRetriever
 
-        r = SparseUpRetriever.from_dir(INDEX_DIR, model_id)
+        r = SparseUpRetriever.from_dir(INDEX_DIR, model_id, oracle_ids=card_oracle_ids())
     else:
         r = __import__("mtg_search.retrievers", fromlist=["load_retriever"]).load_retriever(
-            kind, model_id, index_dir=INDEX_DIR, cards_parquet=CARDS
+            kind, model_id, index_dir=INDEX_DIR, cards_parquet=CARDS, oracle_ids=card_oracle_ids()
         )
     print(f"[{system}] loaded in {time.perf_counter() - t0:.1f}s; {len(todo)} queries to run")
     # Warm-up: first calls pay for lazy init / allocator growth.

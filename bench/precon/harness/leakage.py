@@ -7,7 +7,10 @@
   * any precon's product name, deck name, set code or EDHREC slug appears anywhere in the prompt
     (T2b; strings that are also names of cards in this deck are exempt),
   * a popularity / price string appears anywhere in the prompt (T1/T6),
-  * a tool outside the allow-list is offered (T9: no web/fetch tool).
+  * a tool outside the allow-list is offered (T9: no web/fetch tool),
+  * the model-facing tool text (server instructions, tool names, descriptions and every string in
+    the parameter schemas) names a dev/test gold card, a precon identifier or a popularity / price
+    string (review m1: the shipped ``find_similar`` example named a dev gold card).
 """
 
 from __future__ import annotations
@@ -22,6 +25,26 @@ ALLOWED_TOOLS = {"search_cards", "find_similar", "get_card", "list_tags", "check
 
 class PromptLeak(AssertionError):
     pass
+
+
+def tool_text(schemas: list[dict], instructions: str | None = None) -> str:
+    """Everything a toolset shows the model: server instructions plus every string (keys and values)
+    in the tool schemas: names, descriptions, parameter descriptions, enums, examples."""
+    out = [instructions or ""]
+
+    def walk(o) -> None:
+        if isinstance(o, str):
+            out.append(o)
+        elif isinstance(o, dict):
+            for k, v in o.items():
+                out.append(str(k))
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+
+    walk(schemas)
+    return "\n".join(out)
 
 
 def _contains(text_lc: str, needle: str) -> bool:
@@ -44,7 +67,7 @@ def identifying_strings(precons: dict[str, dict]) -> set[str]:
 
 def preflight(system: str, user: str, *, deck_names: Iterable[str], forbidden_gold: Iterable[str],
               identifying: Iterable[str], few_shots: Iterable[str] = (), few_shot_splits: Iterable[str] = (),
-              tool_names: Iterable[str] = ()) -> None:
+              tool_names: Iterable[str] = (), tool_text: str = "") -> None:  # noqa: F811 - kwarg named like the helper
     deck_lc = {n.lower() for n in deck_names}
     sys_fs = "\n".join([system, *few_shots]).lower()
     for name in forbidden_gold:
@@ -65,3 +88,20 @@ def preflight(system: str, user: str, *, deck_names: Iterable[str], forbidden_go
     extra = set(tool_names) - ALLOWED_TOOLS
     if extra:
         raise PromptLeak(f"tool outside allow-list: {sorted(extra)}")
+    check_tool_text(tool_text, forbidden_gold=forbidden_gold, identifying=identifying)
+
+
+def check_tool_text(text: str, *, forbidden_gold: Iterable[str], identifying: Iterable[str]) -> None:
+    """Static tool text is the same for every deck, so there is no deck exemption here."""
+    if not text:
+        return
+    lc = text.lower()
+    hits = sorted(n for n in forbidden_gold if _contains(lc, n))
+    if hits:
+        raise PromptLeak(f"dev/test gold card in tool text: {hits}")
+    ids = sorted(s for s in identifying if _contains(lc, s))
+    if ids:
+        raise PromptLeak(f"product/deck identifier in tool text: {ids}")
+    m = LEAK.search(text)
+    if m:
+        raise PromptLeak(f"popularity/price string in tool text: {m.group(0)!r}")

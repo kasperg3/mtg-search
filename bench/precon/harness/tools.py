@@ -142,7 +142,8 @@ class MCPToolset(Toolset):
             if backend == "late":
                 from mtg_search.retrievers.late import LateInMemory
 
-                retriever = LateInMemory.from_dir(ROOT / "index" / "embeddings", "lightonai/mLateOn")
+                retriever = LateInMemory.from_dir(ROOT / "index" / "embeddings", "lightonai/mLateOn",
+                                                  oracle_ids=cards["oracle_id"].to_list())
             elif backend == "bm25":  # cheap stand-in for tests / dry runs; NOT the shipped ranking
                 from mtg_search.retrievers.bm25 import BM25Retriever
 

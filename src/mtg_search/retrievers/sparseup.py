@@ -49,12 +49,12 @@ class SparseUpRetriever:
         self.doc_texts = doc_texts
 
     @classmethod
-    def from_dir(cls, root: str | Path, model_id: str = MODEL_ID, **kw) -> SparseUpRetriever:
+    def from_dir(cls, root: str | Path, model_id: str = MODEL_ID, *, oracle_ids=None, **kw) -> SparseUpRetriever:
         import scipy.sparse as sp
 
         root = Path(root) / "sparse"
         slug = model_slug(model_id)
-        return cls(model_id, sp.load_npz(root / f"{slug}.npz"), load_meta(root / f"{slug}.json"), **kw)
+        return cls(model_id, sp.load_npz(root / f"{slug}.npz"), load_meta(root / f"{slug}.json", oracle_ids), **kw)
 
     # ------------------------------------------------------------------ encoding
 

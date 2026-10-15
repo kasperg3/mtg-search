@@ -339,7 +339,13 @@ def main() -> None:
     ap.add_argument("--temperature", type=float, default=0.6)
     ap.add_argument("--effort", default="low")
     ap.add_argument("--budget", type=float, default=None, help="USD cap on this run dir's total spend")
+    ap.add_argument("--allow-dirty", action="store_true", help="run with uncommitted harness changes (recorded)")
     args = ap.parse_args()
+    from env import git_state
+
+    git = git_state()
+    if git["dirty"] and not args.allow_dirty:
+        sys.exit("uncommitted changes in eval/agentic, src or bench/precon/harness: commit first (or --allow-dirty)")
 
     tasks = yaml.safe_load(Path(args.tasks).read_text())
     if args.ids:
@@ -367,7 +373,7 @@ def main() -> None:
     env = Env(retr)
     run_dir = HERE / "runs" / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
-    (run_dir / "config.json").write_text(json.dumps({**vars(args), "model": MODEL, "max_searches": MAX_SEARCHES,
+    (run_dir / "config.json").write_text(json.dumps({**vars(args), "git": git, "model": MODEL, "max_searches": MAX_SEARCHES,
                                                      "system": SYSTEM, "system_lexical": SYSTEM_LEXICAL, "system_grep": SYSTEM_GREP,
                                                      "conditions": CONDITIONS}, indent=1))
     total = Runner(env, run_dir, args.temperature, args.effort).run(tasks, conds, args.repeats, args.workers, args.budget)

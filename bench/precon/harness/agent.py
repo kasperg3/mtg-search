@@ -34,6 +34,7 @@ class EpisodeResult:
     output: dict
     stop: str
     tool_calls: list = field(default_factory=list)
+    n_over_budget: int = 0  # tool calls attempted after the cap (answered "budget exhausted"; review m5)
     llm_calls: int = 0
     usage: dict = field(default_factory=lambda: {"prompt": 0, "cached": 0, "completion": 0, "reasoning": 0})
     cost_usd: float = 0.0
@@ -207,6 +208,7 @@ def run_episode(llm, toolset: Toolset, task: str, system: str, user: str, *, bud
                 elif name == "final_answer":
                     content = "Already received."
                 elif n_tools >= calls_cap:
+                    res.n_over_budget += 1
                     content = "Tool budget exhausted. Call final_answer now."
                 else:
                     n_tools += 1

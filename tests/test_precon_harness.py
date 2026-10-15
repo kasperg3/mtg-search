@@ -66,6 +66,40 @@ def test_preflight_rules():
         preflight("s", "u", **{**ok, "tool_names": ["web_fetch"]})
 
 
+def test_preflight_tool_text():
+    """Review m1: the model-facing tool text is checked too, with no deck exemption (it is static)."""
+    from bench.precon.harness.leakage import tool_text
+
+    ok = dict(deck_names=["Sol Ring"], forbidden_gold={"Rhystic Study", "Sol Ring"},
+              identifying={"Avengers Assemble"}, tool_names=["find_similar", "final_answer"])
+    schemas = [{"type": "function", "function": {"name": "find_similar", "description": "Cards like a given card.",
+                                                  "parameters": {"properties": {"card_name": {"description": "e.g. {}"}}}}}]
+
+    def text(example: str, instructions: str = "") -> str:
+        sc = [{**schemas[0], "function": {**schemas[0]["function"], "parameters": {
+            "properties": {"card_name": {"description": f"e.g. {example}"}}}}}]
+        return tool_text(sc, instructions)
+
+    preflight("s", "u", **ok, tool_text=text("Divination"))
+    with pytest.raises(PromptLeak, match="tool text"):  # nested parameter description
+        preflight("s", "u", **ok, tool_text=text("Rhystic Study"))
+    with pytest.raises(PromptLeak, match="tool text"):  # a deck card is not exempt in static tool text
+        preflight("s", "deck with Sol Ring", **ok, tool_text=text("Sol Ring"))
+    with pytest.raises(PromptLeak, match="tool text"):
+        preflight("s", "u", **ok, tool_text=text("Divination", "Sorted by EDHREC rank"))
+
+
+def test_shipped_surfaces_pass_tool_text_preflight():
+    """Every shipped/frozen surface's text is free of card names from a gold-like set (here: the old example)."""
+    from bench.precon.harness.leakage import check_tool_text
+    from bench.precon.harness.surfaces import SURFACES
+    from mtg_search.server import SIMILAR_DOC
+
+    texts = [SIMILAR_DOC] + [v for s in SURFACES.values() for v in s.values() if isinstance(v, str)]
+    for t in texts:
+        check_tool_text(t, forbidden_gold={"Rhystic Study"}, identifying=set())
+
+
 def test_identifying_strings_skip_short():
     ids = identifying_strings({"p": {"deck_name": "Aura of Courage", "product": "X", "set_code": "AFC",
                                      "edhrec_slug": "aura-of-courage"}})

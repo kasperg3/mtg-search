@@ -49,10 +49,10 @@ class DenseRetriever:
         self.truncate_dim = self.meta.get("truncate_dim")
 
     @classmethod
-    def from_dir(cls, root: str | Path, model_id: str, **kw) -> DenseRetriever:
+    def from_dir(cls, root: str | Path, model_id: str, *, oracle_ids=None, **kw) -> DenseRetriever:
         root = Path(root) / "dense"
         slug = model_slug(model_id)
-        meta = load_meta(root / f"{slug}.json")
+        meta = load_meta(root / f"{slug}.json", oracle_ids)
         mat = np.load(root / f"{slug}.npy", mmap_mode="r")
         return cls(model_id, mat, meta, **kw)
 

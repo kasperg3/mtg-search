@@ -44,6 +44,7 @@ from eval.lexical_overlap import content_tokens  # noqa: E402
 from eval.queries import SETS as QFILES  # noqa: E402
 from eval.queries import load_queries  # noqa: E402
 from eval.run import (  # noqa: E402
+    card_oracle_ids,
     BASE, CARDS, DEPTH, INDEX_DIR, N_BOOT, SEED, Masks, clusters_for, paired_stats, per_query_metrics, query_key,
 )
 from mtg_search.fusion import rrf  # noqa: E402
@@ -93,7 +94,7 @@ def load_base(system: str):
         torch.set_num_threads(2)
         from mtg_search.retrievers.sparseup import SparseUpRetriever
 
-        return SparseUpRetriever.from_dir(INDEX_DIR, BASE["sparseup"][1])
+        return SparseUpRetriever.from_dir(INDEX_DIR, BASE["sparseup"][1], oracle_ids=card_oracle_ids())
     from mtg_search.retrievers import load_retriever
 
     return load_retriever("bm25", None, index_dir=INDEX_DIR, cards_parquet=CARDS)

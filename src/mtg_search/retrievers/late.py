@@ -108,9 +108,9 @@ class LateInMemory:
         self.buckets = build_buckets(tok, self.offsets, dtype=self.dtype)
 
     @classmethod
-    def from_dir(cls, root: str | Path, model_id: str, **kw) -> LateInMemory:
+    def from_dir(cls, root: str | Path, model_id: str, *, oracle_ids=None, **kw) -> LateInMemory:
         d = Path(root) / "late" / model_slug(model_id)
-        meta = load_meta(d / "meta.json")
+        meta = load_meta(d / "meta.json", oracle_ids)
         return cls(model_id, np.load(d / "tokens.npy", mmap_mode="r"), np.load(d / "offsets.npy"), meta, **kw)
 
     def encode_query(self, query: str) -> np.ndarray:

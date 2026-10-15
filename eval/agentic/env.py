@@ -84,7 +84,7 @@ class Env:
         """SparseUp term feedback (conditions C/D; logged for A/B/F as a chance baseline)."""
         from mtg_search.retrievers.sparseup import MODEL_ID, SparseUpRetriever
 
-        self.sparseup = SparseUpRetriever.from_dir(INDEX_DIR, MODEL_ID, doc_texts=self.cards["doc_text"].to_list())
+        self.sparseup = SparseUpRetriever.from_dir(INDEX_DIR, MODEL_ID, oracle_ids=self.oids, doc_texts=self.cards["doc_text"].to_list())
         # memoize query encodings: the same query is encoded for search and for term feedback
         _enc, _memo = self.sparseup.encode_query, {}
 
@@ -130,7 +130,7 @@ class Env:
         if name == "mlateon":
             from mtg_search.retrievers.late import LateInMemory
 
-            return LateInMemory.from_dir(INDEX_DIR, "lightonai/mLateOn")
+            return LateInMemory.from_dir(INDEX_DIR, "lightonai/mLateOn", oracle_ids=self.oids)
         raise ValueError(name)
 
     # ------------------------------------------------------------------ rendering
@@ -305,3 +305,17 @@ class Env:
                 continue
             out.append((word, int(dfr[t])))
         return out
+
+def git_state(paths=("eval/agentic", "src", "bench/precon/harness")) -> dict:
+    """Commit and whether the harness has uncommitted changes (recorded in config.json; review m4)."""
+    import subprocess
+
+    root = Path(__file__).resolve().parents[2]
+
+    def g(*a):
+        try:
+            return subprocess.run(["git", *a], cwd=root, capture_output=True, text=True, check=True).stdout.strip()
+        except Exception:
+            return None
+
+    return {"sha": g("rev-parse", "HEAD"), "dirty": bool(g("status", "--porcelain", "--", *paths))}

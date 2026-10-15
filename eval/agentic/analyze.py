@@ -238,7 +238,8 @@ def main() -> None:
                     for mt in (known_metrics if isk else ["recall@5", "ndcg@10", "ndcg@20", "condensed_ndcg@10", "p@10", "recall@20_final"]) + ["novel_per_iter", "result_jaccard", "term_uptake_agg"]:
                         bs = paired_bootstrap(rows, mt, a, b, kinds)
                         if bs:
-                            res[g]["bootstrap"][f"{a}vs{b}:{mt}"] = bs
+                            # key "<b>-<a>:<metric>" holds b - a (review m10: the old "<a>vs<b>" read backwards)
+                            res[g]["bootstrap"][f"{b}-{a}:{mt}"] = bs
         result["labels"][lname] = res
         if lname == "orig":
             result["episodes"] = rows

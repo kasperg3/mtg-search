@@ -41,8 +41,26 @@ def oracle_ids_digest(oracle_ids) -> str:
     return h.hexdigest()
 
 
-def load_meta(path: Path) -> dict:
-    return json.loads(Path(path).read_text())
+def load_meta(path: Path, oracle_ids=None) -> dict:
+    """Read an embedding meta file; with ``oracle_ids`` (the loaded card table's ids, in row order) also
+    verify that the embeddings were built for exactly that table (review m6)."""
+    meta = json.loads(Path(path).read_text())
+    if oracle_ids is not None:
+        check_alignment(meta, oracle_ids, str(path))
+    return meta
+
+
+def check_alignment(meta: dict, oracle_ids, where: str = "embeddings") -> None:
+    """Embedding rows are matched to cards.parquet rows by position, so a refreshed card table with stale
+    embeddings would silently misalign every result. Refuse that instead."""
+    ids = list(oracle_ids)
+    want = meta.get("oracle_ids_sha256")
+    if want is None:
+        raise RuntimeError(f"{where}: no oracle_ids_sha256 in the meta, cannot verify row alignment with the card table")
+    if meta.get("card_count", len(ids)) != len(ids) or want != oracle_ids_digest(ids):
+        raise RuntimeError(f"{where}: embeddings were built for a different card table ({meta.get('card_count')} cards, "
+                           f"digest {want[:12]}) than the one loaded ({len(ids)} cards, digest {oracle_ids_digest(ids)[:12]}); "
+                           "re-encode or use the matching cards.parquet")
 
 
 def top_k(scores: np.ndarray, k: int, allowed: np.ndarray | None = None) -> list[tuple[int, float]]:

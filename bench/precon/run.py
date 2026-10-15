@@ -101,7 +101,7 @@ def build_system(args, bench, db):
         if args.backend == "late":
             from mtg_search.retrievers.late import LateInMemory
 
-            r = LateInMemory.from_dir(ROOT / "index" / "embeddings", "lightonai/mLateOn")
+            r = LateInMemory.from_dir(ROOT / "index" / "embeddings", "lightonai/mLateOn", oracle_ids=cards["oracle_id"].to_list())
         else:
             from mtg_search.retrievers.bm25 import BM25Retriever
 
@@ -161,8 +161,8 @@ class AgentSystem:
 
     def run(self, task: str, deck, rep: int) -> dict:
         from bench.precon.harness.agent import run_episode
-        from bench.precon.harness.leakage import preflight
-        from bench.precon.harness.prompts import prompt_hash, render_deck, system_prompt, user_prompt
+        from bench.precon.harness.leakage import preflight, tool_text
+        from bench.precon.harness.prompts import final_answer_tool, prompt_hash, render_deck, system_prompt, user_prompt
 
         tpath = self.tdir / f"{deck.precon_id}__{task}__r{rep}.jsonl"
         if self.args.system == "probe":
@@ -177,9 +177,11 @@ class AgentSystem:
         system = system_prompt(task, self.args.tools, ci, gc_limit=self.args.gc_limit, tool_hint=self.args.tool_hint)
         user = user_prompt(task, render_deck(deck, self.rows, self.args.anonymise_commander))
         deck_names = [self.rows[c["oracle_id"]]["name"] for c in deck.cards if c["oracle_id"] in self.rows]
-        tool_names = [t["function"]["name"] for t in self.toolset.schemas()]
+        schemas = self.toolset.schemas()
+        tool_names = [t["function"]["name"] for t in schemas]
+        ttext = tool_text(schemas + [final_answer_tool(task)], getattr(self.toolset, "instructions", None))
         preflight(system, user, deck_names=deck_names, forbidden_gold=self.forbidden, identifying=self.identifying,
-                  tool_names=tool_names)
+                  tool_names=tool_names, tool_text=ttext)
         if self.args.llm == "claude-code":
             d = self.llm.episode(task, system, user, tool_url=self.service.url if self.service else None,
                                  transcript_path=tpath, server_name="mtg-search" if self.args.tools == "shipped" else "deck")
@@ -194,6 +196,9 @@ class AgentSystem:
 
 def run(args) -> Path:
     t0 = time.time()
+    if args.allow_llm and not args.allow_dirty and git_info()["dirty_bench"]:
+        # review m4: a model run must be reproducible from its recorded commit
+        sys.exit("uncommitted changes under bench/precon or src: commit before a model run (or pass --allow-dirty)")
     bench = load_bench(args.data)
     db = CardDB.from_parquet()
     pids = bench.precon_ids(args.split, scored_only=not args.include_unscored)
@@ -283,6 +288,8 @@ def cost_summary(episodes: list[dict]) -> dict | None:
             "usd_per_episode": round(sum(r["cost_usd"] for r in uniq) / n, 5),
             "llm_calls_per_episode": sum(r["llm_calls"] for r in uniq) / n,
             "tool_calls_per_episode": sum(len(r.get("tool_calls") or []) for r in uniq) / n,
+            # attempts refused at the cap; None for runs recorded before this was counted (review m5)
+            "over_budget_attempts": sum(r.get("n_over_budget") or 0 for r in uniq) if all("n_over_budget" in r for r in uniq) else None,
             "tokens_per_episode": {k: v / n for k, v in tot.items()},
             "wall_s_per_episode": sum(r.get("wall_s", 0) for r in uniq) / n,
             "stops": {s: sum(1 for r in uniq if r.get("stop") == s) for s in {r.get("stop") for r in uniq}},
@@ -467,6 +474,8 @@ def main(argv=None) -> None:
     ap.add_argument("--anonymise-commander", action="store_true")
     ap.add_argument("--tool-hint", action="store_true", help="tell the agent to use its tools before answering")
     ap.add_argument("--experiment", default="EXP-007", help="registry id written into the run record")
+    ap.add_argument("--allow-dirty", action="store_true",
+                    help="allow a model run with uncommitted changes under bench/precon or src (recorded as dirty_bench)")
     run(ap.parse_args(argv))
 
 

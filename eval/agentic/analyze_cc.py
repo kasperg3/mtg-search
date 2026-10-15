@@ -125,7 +125,7 @@ def main() -> None:
             for m in qmets + ["total_tokens", "turns", "wall_s"]:
                 p = paired(rows, m, a, b, pred, tasks)
                 if p:
-                    s["paired"][f"{a}vs{b}:{m}"] = p
+                    s["paired"][f"{b}-{a}:{m}"] = p  # holds b - a
         res["strata"][sname] = s
     res["episodes"] = rows
     if args.out:

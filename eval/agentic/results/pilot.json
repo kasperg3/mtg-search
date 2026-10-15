@@ -92,7 +92,7 @@
      }
     },
     "bootstrap": {
-     "AvsC:recall@5": {
+     "C-A:recall@5": {
       "a": "A",
       "b": "C",
       "metric": "recall@5",
@@ -106,7 +106,7 @@
       ],
       "p": 0.0216
      },
-     "AvsC:ndcg@10": {
+     "C-A:ndcg@10": {
       "a": "A",
       "b": "C",
       "metric": "ndcg@10",
@@ -120,7 +120,7 @@
       ],
       "p": 0.407
      },
-     "AvsC:ndcg@20": {
+     "C-A:ndcg@20": {
       "a": "A",
       "b": "C",
       "metric": "ndcg@20",
@@ -134,7 +134,7 @@
       ],
       "p": 0.9138
      },
-     "AvsC:condensed_ndcg@10": {
+     "C-A:condensed_ndcg@10": {
       "a": "A",
       "b": "C",
       "metric": "condensed_ndcg@10",
@@ -148,7 +148,7 @@
       ],
       "p": 0.407
      },
-     "AvsC:p@10": {
+     "C-A:p@10": {
       "a": "A",
       "b": "C",
       "metric": "p@10",
@@ -162,7 +162,7 @@
       ],
       "p": 0.681
      },
-     "AvsC:recall@20_final": {
+     "C-A:recall@20_final": {
       "a": "A",
       "b": "C",
       "metric": "recall@20_final",
@@ -176,7 +176,7 @@
       ],
       "p": 0.5672
      },
-     "AvsC:novel_per_iter": {
+     "C-A:novel_per_iter": {
       "a": "A",
       "b": "C",
       "metric": "novel_per_iter",
@@ -190,7 +190,7 @@
       ],
       "p": 0.4644
      },
-     "AvsC:result_jaccard": {
+     "C-A:result_jaccard": {
       "a": "A",
       "b": "C",
       "metric": "result_jaccard",
@@ -204,7 +204,7 @@
       ],
       "p": 0.341
      },
-     "AvsC:term_uptake_agg": {
+     "C-A:term_uptake_agg": {
       "a": "A",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -218,7 +218,7 @@
       ],
       "p": 0.0294
      },
-     "FvsC:recall@5": {
+     "C-F:recall@5": {
       "a": "F",
       "b": "C",
       "metric": "recall@5",
@@ -232,7 +232,7 @@
       ],
       "p": 0.4408
      },
-     "FvsC:ndcg@10": {
+     "C-F:ndcg@10": {
       "a": "F",
       "b": "C",
       "metric": "ndcg@10",
@@ -246,7 +246,7 @@
       ],
       "p": 0.999
      },
-     "FvsC:ndcg@20": {
+     "C-F:ndcg@20": {
       "a": "F",
       "b": "C",
       "metric": "ndcg@20",
@@ -260,7 +260,7 @@
       ],
       "p": 0.2612
      },
-     "FvsC:condensed_ndcg@10": {
+     "C-F:condensed_ndcg@10": {
       "a": "F",
       "b": "C",
       "metric": "condensed_ndcg@10",
@@ -274,7 +274,7 @@
       ],
       "p": 0.999
      },
-     "FvsC:p@10": {
+     "C-F:p@10": {
       "a": "F",
       "b": "C",
       "metric": "p@10",
@@ -288,7 +288,7 @@
       ],
       "p": 0.4494
      },
-     "FvsC:recall@20_final": {
+     "C-F:recall@20_final": {
       "a": "F",
       "b": "C",
       "metric": "recall@20_final",
@@ -302,7 +302,7 @@
       ],
       "p": 0.0002
      },
-     "FvsC:novel_per_iter": {
+     "C-F:novel_per_iter": {
       "a": "F",
       "b": "C",
       "metric": "novel_per_iter",
@@ -316,7 +316,7 @@
       ],
       "p": 0.233
      },
-     "FvsC:result_jaccard": {
+     "C-F:result_jaccard": {
       "a": "F",
       "b": "C",
       "metric": "result_jaccard",
@@ -330,7 +330,7 @@
       ],
       "p": 0.1252
      },
-     "FvsC:term_uptake_agg": {
+     "C-F:term_uptake_agg": {
       "a": "F",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -344,7 +344,7 @@
       ],
       "p": 0.7472
      },
-     "FvsA:recall@5": {
+     "A-F:recall@5": {
       "a": "F",
       "b": "A",
       "metric": "recall@5",
@@ -358,7 +358,7 @@
       ],
       "p": 0.0238
      },
-     "FvsA:ndcg@10": {
+     "A-F:ndcg@10": {
       "a": "F",
       "b": "A",
       "metric": "ndcg@10",
@@ -372,7 +372,7 @@
       ],
       "p": 0.401
      },
-     "FvsA:ndcg@20": {
+     "A-F:ndcg@20": {
       "a": "F",
       "b": "A",
       "metric": "ndcg@20",
@@ -386,7 +386,7 @@
       ],
       "p": 0.507
      },
-     "FvsA:condensed_ndcg@10": {
+     "A-F:condensed_ndcg@10": {
       "a": "F",
       "b": "A",
       "metric": "condensed_ndcg@10",
@@ -400,7 +400,7 @@
       ],
       "p": 0.401
      },
-     "FvsA:p@10": {
+     "A-F:p@10": {
       "a": "F",
       "b": "A",
       "metric": "p@10",
@@ -414,7 +414,7 @@
       ],
       "p": 0.9194
      },
-     "FvsA:recall@20_final": {
+     "A-F:recall@20_final": {
       "a": "F",
       "b": "A",
       "metric": "recall@20_final",
@@ -428,7 +428,7 @@
       ],
       "p": 0.0626
      },
-     "FvsA:novel_per_iter": {
+     "A-F:novel_per_iter": {
       "a": "F",
       "b": "A",
       "metric": "novel_per_iter",
@@ -442,7 +442,7 @@
       ],
       "p": 0.1822
      },
-     "FvsA:result_jaccard": {
+     "A-F:result_jaccard": {
       "a": "F",
       "b": "A",
       "metric": "result_jaccard",
@@ -456,7 +456,7 @@
       ],
       "p": 0.0066
      },
-     "FvsA:term_uptake_agg": {
+     "A-F:term_uptake_agg": {
       "a": "F",
       "b": "A",
       "metric": "term_uptake_agg",
@@ -580,7 +580,7 @@
      }
     },
     "bootstrap": {
-     "AvsC:recall@5": {
+     "C-A:recall@5": {
       "a": "A",
       "b": "C",
       "metric": "recall@5",
@@ -594,7 +594,7 @@
       ],
       "p": 0.0846
      },
-     "AvsC:ndcg@10": {
+     "C-A:ndcg@10": {
       "a": "A",
       "b": "C",
       "metric": "ndcg@10",
@@ -608,7 +608,7 @@
       ],
       "p": 0.116
      },
-     "AvsC:ndcg@20": {
+     "C-A:ndcg@20": {
       "a": "A",
       "b": "C",
       "metric": "ndcg@20",
@@ -622,7 +622,7 @@
       ],
       "p": 0.7152
      },
-     "AvsC:condensed_ndcg@10": {
+     "C-A:condensed_ndcg@10": {
       "a": "A",
       "b": "C",
       "metric": "condensed_ndcg@10",
@@ -636,7 +636,7 @@
       ],
       "p": 0.116
      },
-     "AvsC:p@10": {
+     "C-A:p@10": {
       "a": "A",
       "b": "C",
       "metric": "p@10",
@@ -650,7 +650,7 @@
       ],
       "p": 0.6304
      },
-     "AvsC:recall@20_final": {
+     "C-A:recall@20_final": {
       "a": "A",
       "b": "C",
       "metric": "recall@20_final",
@@ -664,7 +664,7 @@
       ],
       "p": 0.5508
      },
-     "AvsC:novel_per_iter": {
+     "C-A:novel_per_iter": {
       "a": "A",
       "b": "C",
       "metric": "novel_per_iter",
@@ -678,7 +678,7 @@
       ],
       "p": 0.372
      },
-     "AvsC:result_jaccard": {
+     "C-A:result_jaccard": {
       "a": "A",
       "b": "C",
       "metric": "result_jaccard",
@@ -692,7 +692,7 @@
       ],
       "p": 0.1276
      },
-     "AvsC:term_uptake_agg": {
+     "C-A:term_uptake_agg": {
       "a": "A",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -706,7 +706,7 @@
       ],
       "p": 0.1214
      },
-     "FvsC:recall@5": {
+     "C-F:recall@5": {
       "a": "F",
       "b": "C",
       "metric": "recall@5",
@@ -720,7 +720,7 @@
       ],
       "p": 0.155
      },
-     "FvsC:ndcg@10": {
+     "C-F:ndcg@10": {
       "a": "F",
       "b": "C",
       "metric": "ndcg@10",
@@ -734,7 +734,7 @@
       ],
       "p": 0.9542
      },
-     "FvsC:ndcg@20": {
+     "C-F:ndcg@20": {
       "a": "F",
       "b": "C",
       "metric": "ndcg@20",
@@ -748,7 +748,7 @@
       ],
       "p": 0.9116
      },
-     "FvsC:condensed_ndcg@10": {
+     "C-F:condensed_ndcg@10": {
       "a": "F",
       "b": "C",
       "metric": "condensed_ndcg@10",
@@ -762,7 +762,7 @@
       ],
       "p": 0.9542
      },
-     "FvsC:p@10": {
+     "C-F:p@10": {
       "a": "F",
       "b": "C",
       "metric": "p@10",
@@ -776,7 +776,7 @@
       ],
       "p": 0.4058
      },
-     "FvsC:recall@20_final": {
+     "C-F:recall@20_final": {
       "a": "F",
       "b": "C",
       "metric": "recall@20_final",
@@ -790,7 +790,7 @@
       ],
       "p": 0.0072
      },
-     "FvsC:novel_per_iter": {
+     "C-F:novel_per_iter": {
       "a": "F",
       "b": "C",
       "metric": "novel_per_iter",
@@ -804,7 +804,7 @@
       ],
       "p": 0.0
      },
-     "FvsC:result_jaccard": {
+     "C-F:result_jaccard": {
       "a": "F",
       "b": "C",
       "metric": "result_jaccard",
@@ -818,7 +818,7 @@
       ],
       "p": 0.0424
      },
-     "FvsC:term_uptake_agg": {
+     "C-F:term_uptake_agg": {
       "a": "F",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -832,7 +832,7 @@
       ],
       "p": 0.0
      },
-     "FvsA:recall@5": {
+     "A-F:recall@5": {
       "a": "F",
       "b": "A",
       "metric": "recall@5",
@@ -846,7 +846,7 @@
       ],
       "p": 0.353
      },
-     "FvsA:ndcg@10": {
+     "A-F:ndcg@10": {
       "a": "F",
       "b": "A",
       "metric": "ndcg@10",
@@ -860,7 +860,7 @@
       ],
       "p": 0.2764
      },
-     "FvsA:ndcg@20": {
+     "A-F:ndcg@20": {
       "a": "F",
       "b": "A",
       "metric": "ndcg@20",
@@ -874,7 +874,7 @@
       ],
       "p": 0.5008
      },
-     "FvsA:condensed_ndcg@10": {
+     "A-F:condensed_ndcg@10": {
       "a": "F",
       "b": "A",
       "metric": "condensed_ndcg@10",
@@ -888,7 +888,7 @@
       ],
       "p": 0.2764
      },
-     "FvsA:p@10": {
+     "A-F:p@10": {
       "a": "F",
       "b": "A",
       "metric": "p@10",
@@ -902,7 +902,7 @@
       ],
       "p": 0.9944
      },
-     "FvsA:recall@20_final": {
+     "A-F:recall@20_final": {
       "a": "F",
       "b": "A",
       "metric": "recall@20_final",
@@ -916,7 +916,7 @@
       ],
       "p": 0.0946
      },
-     "FvsA:novel_per_iter": {
+     "A-F:novel_per_iter": {
       "a": "F",
       "b": "A",
       "metric": "novel_per_iter",
@@ -930,7 +930,7 @@
       ],
       "p": 0.0358
      },
-     "FvsA:result_jaccard": {
+     "A-F:result_jaccard": {
       "a": "F",
       "b": "A",
       "metric": "result_jaccard",
@@ -944,7 +944,7 @@
       ],
       "p": 0.1172
      },
-     "FvsA:term_uptake_agg": {
+     "A-F:term_uptake_agg": {
       "a": "F",
       "b": "A",
       "metric": "term_uptake_agg",
@@ -1068,7 +1068,7 @@
      }
     },
     "bootstrap": {
-     "AvsC:recall@5": {
+     "C-A:recall@5": {
       "a": "A",
       "b": "C",
       "metric": "recall@5",
@@ -1082,7 +1082,7 @@
       ],
       "p": 0.5828
      },
-     "AvsC:ndcg@10": {
+     "C-A:ndcg@10": {
       "a": "A",
       "b": "C",
       "metric": "ndcg@10",
@@ -1096,7 +1096,7 @@
       ],
       "p": 0.591
      },
-     "AvsC:ndcg@20": {
+     "C-A:ndcg@20": {
       "a": "A",
       "b": "C",
       "metric": "ndcg@20",
@@ -1110,7 +1110,7 @@
       ],
       "p": 0.5128
      },
-     "AvsC:condensed_ndcg@10": {
+     "C-A:condensed_ndcg@10": {
       "a": "A",
       "b": "C",
       "metric": "condensed_ndcg@10",
@@ -1124,7 +1124,7 @@
       ],
       "p": 0.591
      },
-     "AvsC:p@10": {
+     "C-A:p@10": {
       "a": "A",
       "b": "C",
       "metric": "p@10",
@@ -1138,7 +1138,7 @@
       ],
       "p": 0.591
      },
-     "AvsC:recall@20_final": {
+     "C-A:recall@20_final": {
       "a": "A",
       "b": "C",
       "metric": "recall@20_final",
@@ -1152,7 +1152,7 @@
       ],
       "p": 0.508
      },
-     "AvsC:novel_per_iter": {
+     "C-A:novel_per_iter": {
       "a": "A",
       "b": "C",
       "metric": "novel_per_iter",
@@ -1166,7 +1166,7 @@
       ],
       "p": 0.0
      },
-     "AvsC:result_jaccard": {
+     "C-A:result_jaccard": {
       "a": "A",
       "b": "C",
       "metric": "result_jaccard",
@@ -1180,7 +1180,7 @@
       ],
       "p": 0.0
      },
-     "AvsC:term_uptake_agg": {
+     "C-A:term_uptake_agg": {
       "a": "A",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -1194,7 +1194,7 @@
       ],
       "p": 0.4898
      },
-     "FvsC:recall@5": {
+     "C-F:recall@5": {
       "a": "F",
       "b": "C",
       "metric": "recall@5",
@@ -1208,7 +1208,7 @@
       ],
       "p": 0.0782
      },
-     "FvsC:ndcg@10": {
+     "C-F:ndcg@10": {
       "a": "F",
       "b": "C",
       "metric": "ndcg@10",
@@ -1222,7 +1222,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:ndcg@20": {
+     "C-F:ndcg@20": {
       "a": "F",
       "b": "C",
       "metric": "ndcg@20",
@@ -1236,7 +1236,7 @@
       ],
       "p": 0.0
      },
-     "FvsC:condensed_ndcg@10": {
+     "C-F:condensed_ndcg@10": {
       "a": "F",
       "b": "C",
       "metric": "condensed_ndcg@10",
@@ -1250,7 +1250,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:p@10": {
+     "C-F:p@10": {
       "a": "F",
       "b": "C",
       "metric": "p@10",
@@ -1264,7 +1264,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:recall@20_final": {
+     "C-F:recall@20_final": {
       "a": "F",
       "b": "C",
       "metric": "recall@20_final",
@@ -1278,7 +1278,7 @@
       ],
       "p": 0.0
      },
-     "FvsC:novel_per_iter": {
+     "C-F:novel_per_iter": {
       "a": "F",
       "b": "C",
       "metric": "novel_per_iter",
@@ -1292,7 +1292,7 @@
       ],
       "p": 0.5828
      },
-     "FvsC:result_jaccard": {
+     "C-F:result_jaccard": {
       "a": "F",
       "b": "C",
       "metric": "result_jaccard",
@@ -1306,7 +1306,7 @@
       ],
       "p": 0.0782
      },
-     "FvsC:term_uptake_agg": {
+     "C-F:term_uptake_agg": {
       "a": "F",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -1320,7 +1320,7 @@
       ],
       "p": 0.0782
      },
-     "FvsA:recall@5": {
+     "A-F:recall@5": {
       "a": "F",
       "b": "A",
       "metric": "recall@5",
@@ -1334,7 +1334,7 @@
       ],
       "p": 0.0
      },
-     "FvsA:ndcg@10": {
+     "A-F:ndcg@10": {
       "a": "F",
       "b": "A",
       "metric": "ndcg@10",
@@ -1348,7 +1348,7 @@
       ],
       "p": 0.591
      },
-     "FvsA:ndcg@20": {
+     "A-F:ndcg@20": {
       "a": "F",
       "b": "A",
       "metric": "ndcg@20",
@@ -1362,7 +1362,7 @@
       ],
       "p": 0.291
      },
-     "FvsA:condensed_ndcg@10": {
+     "A-F:condensed_ndcg@10": {
       "a": "F",
       "b": "A",
       "metric": "condensed_ndcg@10",
@@ -1376,7 +1376,7 @@
       ],
       "p": 0.591
      },
-     "FvsA:p@10": {
+     "A-F:p@10": {
       "a": "F",
       "b": "A",
       "metric": "p@10",
@@ -1390,7 +1390,7 @@
       ],
       "p": 0.591
      },
-     "FvsA:recall@20_final": {
+     "A-F:recall@20_final": {
       "a": "F",
       "b": "A",
       "metric": "recall@20_final",
@@ -1404,7 +1404,7 @@
       ],
       "p": 0.0746
      },
-     "FvsA:novel_per_iter": {
+     "A-F:novel_per_iter": {
       "a": "F",
       "b": "A",
       "metric": "novel_per_iter",
@@ -1418,7 +1418,7 @@
       ],
       "p": 0.5828
      },
-     "FvsA:result_jaccard": {
+     "A-F:result_jaccard": {
       "a": "F",
       "b": "A",
       "metric": "result_jaccard",
@@ -1432,7 +1432,7 @@
       ],
       "p": 0.0
      },
-     "FvsA:term_uptake_agg": {
+     "A-F:term_uptake_agg": {
       "a": "F",
       "b": "A",
       "metric": "term_uptake_agg",
@@ -1542,7 +1542,7 @@
      }
     },
     "bootstrap": {
-     "AvsC:success@1": {
+     "C-A:success@1": {
       "a": "A",
       "b": "C",
       "metric": "success@1",
@@ -1556,7 +1556,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:success@2": {
+     "C-A:success@2": {
       "a": "A",
       "b": "C",
       "metric": "success@2",
@@ -1570,7 +1570,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:success@3": {
+     "C-A:success@3": {
       "a": "A",
       "b": "C",
       "metric": "success@3",
@@ -1584,7 +1584,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:success@4": {
+     "C-A:success@4": {
       "a": "A",
       "b": "C",
       "metric": "success@4",
@@ -1598,7 +1598,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:success@5": {
+     "C-A:success@5": {
       "a": "A",
       "b": "C",
       "metric": "success@5",
@@ -1612,7 +1612,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:rr": {
+     "C-A:rr": {
       "a": "A",
       "b": "C",
       "metric": "rr",
@@ -1626,7 +1626,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:found_in_final": {
+     "C-A:found_in_final": {
       "a": "A",
       "b": "C",
       "metric": "found_in_final",
@@ -1640,7 +1640,7 @@
       ],
       "p": 1.0
      },
-     "AvsC:novel_per_iter": {
+     "C-A:novel_per_iter": {
       "a": "A",
       "b": "C",
       "metric": "novel_per_iter",
@@ -1654,7 +1654,7 @@
       ],
       "p": 0.5828
      },
-     "AvsC:result_jaccard": {
+     "C-A:result_jaccard": {
       "a": "A",
       "b": "C",
       "metric": "result_jaccard",
@@ -1668,7 +1668,7 @@
       ],
       "p": 0.4864
      },
-     "AvsC:term_uptake_agg": {
+     "C-A:term_uptake_agg": {
       "a": "A",
       "b": "C",
       "metric": "term_uptake_agg",
@@ -1682,7 +1682,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:success@1": {
+     "C-F:success@1": {
       "a": "F",
       "b": "C",
       "metric": "success@1",
@@ -1696,7 +1696,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:success@2": {
+     "C-F:success@2": {
       "a": "F",
       "b": "C",
       "metric": "success@2",
@@ -1710,7 +1710,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:success@3": {
+     "C-F:success@3": {
       "a": "F",
       "b": "C",
       "metric": "success@3",
@@ -1724,7 +1724,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:success@4": {
+     "C-F:success@4": {
       "a": "F",
       "b": "C",
       "metric": "success@4",
@@ -1738,7 +1738,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:success@5": {
+     "C-F:success@5": {
       "a": "F",
       "b": "C",
       "metric": "success@5",
@@ -1752,7 +1752,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:rr": {
+     "C-F:rr": {
       "a": "F",
       "b": "C",
       "metric": "rr",
@@ -1766,7 +1766,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:found_in_final": {
+     "C-F:found_in_final": {
       "a": "F",
       "b": "C",
       "metric": "found_in_final",
@@ -1780,7 +1780,7 @@
       ],
       "p": 1.0
      },
-     "FvsC:novel_per_iter": {
+     "C-F:novel_per_iter": {
       "a": "F",
       "b": "C",
       "metric": "novel_per_iter",
@@ -1794,7 +1794,7 @@
       ],
       "p": 0.0
      },
-     "FvsC:result_jaccard": {
+     "C-F:result_jaccard": {
       "a": "F",
       "b": "C",
       "metric": "result_jaccard",
@@ -1808,7 +1808,7 @@
       ],
       "p": 0.4898
      },
-     "FvsA:success@1": {
+     "A-F:success@1": {
       "a": "F",
       "b": "A",
       "metric": "success@1",
@@ -1822,7 +1822,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:success@2": {
+     "A-F:success@2": {
       "a": "F",
       "b": "A",
       "metric": "success@2",
@@ -1836,7 +1836,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:success@3": {
+     "A-F:success@3": {
       "a": "F",
       "b": "A",
       "metric": "success@3",
@@ -1850,7 +1850,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:success@4": {
+     "A-F:success@4": {
       "a": "F",
       "b": "A",
       "metric": "success@4",
@@ -1864,7 +1864,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:success@5": {
+     "A-F:success@5": {
       "a": "F",
       "b": "A",
       "metric": "success@5",
@@ -1878,7 +1878,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:rr": {
+     "A-F:rr": {
       "a": "F",
       "b": "A",
       "metric": "rr",
@@ -1892,7 +1892,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:found_in_final": {
+     "A-F:found_in_final": {
       "a": "F",
       "b": "A",
       "metric": "found_in_final",
@@ -1906,7 +1906,7 @@
       ],
       "p": 1.0
      },
-     "FvsA:novel_per_iter": {
+     "A-F:novel_per_iter": {
       "a": "F",
       "b": "A",
       "metric": "novel_per_iter",
@@ -1920,7 +1920,7 @@
       ],
       "p": 0.0
      },
-     "FvsA:result_jaccard": {
+     "A-F:result_jaccard": {
       "a": "F",
       "b": "A",
       "metric": "result_jaccard",
@@ -1961,6 +1961,516 @@
       }
      }
     }
+   },
+   "known-popular": {
+    "summary": {
+     "A": {
+      "success@1": 1.0,
+      "success@2": 1.0,
+      "success@3": 1.0,
+      "success@4": 1.0,
+      "success@5": 1.0,
+      "rr": 1.0,
+      "found_in_final": 1.0,
+      "final_len": 1.6666666666666667,
+      "final_unretrieved": 0.0,
+      "iterations": 1.6666666666666667,
+      "novel_per_iter": 12.333333333333334,
+      "n_unique_retrieved": 19.666666666666668,
+      "result_jaccard": 0.3894736842105263,
+      "query_jaccard": 0.42647058823529416,
+      "query_type_token": 0.7307692307692308,
+      "term_uptake_agg": 0.0,
+      "term_uptake_any": 0.0,
+      "cost_usd": 0.028846,
+      "prompt_tokens": 3057.3333333333335,
+      "completion_tokens": 5920.333333333333
+     },
+     "C": {
+      "success@1": 1.0,
+      "success@2": 1.0,
+      "success@3": 1.0,
+      "success@4": 1.0,
+      "success@5": 1.0,
+      "rr": 1.0,
+      "found_in_final": 1.0,
+      "final_len": 1.0,
+      "final_unretrieved": 0.0,
+      "iterations": 2.0,
+      "novel_per_iter": 12.833333333333334,
+      "n_unique_retrieved": 25.666666666666668,
+      "result_jaccard": 0.17961019490254873,
+      "query_jaccard": 0.35743034055727546,
+      "query_type_token": 0.6714452371337551,
+      "term_uptake_agg": 0.3333333333333333,
+      "term_uptake_any": 0.3333333333333333,
+      "cost_usd": 0.057625,
+      "prompt_tokens": 4024.0,
+      "completion_tokens": 12170.0
+     },
+     "F": {
+      "success@1": 1.0,
+      "success@2": 1.0,
+      "success@3": 1.0,
+      "success@4": 1.0,
+      "success@5": 1.0,
+      "rr": 1.0,
+      "found_in_final": 1.0,
+      "final_len": 1.0,
+      "final_unretrieved": 0.0,
+      "iterations": 1.6666666666666667,
+      "novel_per_iter": 2.0,
+      "n_unique_retrieved": 3.6666666666666665,
+      "result_jaccard": 0.23809523809523808,
+      "query_jaccard": 0.07142857142857142,
+      "query_type_token": 0.9393939393939394,
+      "cost_usd": 0.024831333333333334,
+      "prompt_tokens": 2558.3333333333335,
+      "completion_tokens": 5166.666666666667
+     }
+    },
+    "bootstrap": {
+     "C-A:success@1": {
+      "a": "A",
+      "b": "C",
+      "metric": "success@1",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:success@2": {
+      "a": "A",
+      "b": "C",
+      "metric": "success@2",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:success@3": {
+      "a": "A",
+      "b": "C",
+      "metric": "success@3",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:success@4": {
+      "a": "A",
+      "b": "C",
+      "metric": "success@4",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:success@5": {
+      "a": "A",
+      "b": "C",
+      "metric": "success@5",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:rr": {
+      "a": "A",
+      "b": "C",
+      "metric": "rr",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:found_in_final": {
+      "a": "A",
+      "b": "C",
+      "metric": "found_in_final",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-A:novel_per_iter": {
+      "a": "A",
+      "b": "C",
+      "metric": "novel_per_iter",
+      "n_tasks": 3,
+      "mean_a": 12.333333333333334,
+      "mean_b": 12.833333333333334,
+      "diff": 0.5,
+      "ci95": [
+       -0.5,
+       2.0
+      ],
+      "p": 0.5828
+     },
+     "C-A:result_jaccard": {
+      "a": "A",
+      "b": "C",
+      "metric": "result_jaccard",
+      "n_tasks": 2,
+      "mean_a": 0.3894736842105263,
+      "mean_b": 0.25217391304347825,
+      "diff": -0.13729977116704806,
+      "ci95": [
+       -0.2745995423340961,
+       0.0
+      ],
+      "p": 0.4864
+     },
+     "C-A:term_uptake_agg": {
+      "a": "A",
+      "b": "C",
+      "metric": "term_uptake_agg",
+      "n_tasks": 2,
+      "mean_a": 0.0,
+      "mean_b": 0.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:success@1": {
+      "a": "F",
+      "b": "C",
+      "metric": "success@1",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:success@2": {
+      "a": "F",
+      "b": "C",
+      "metric": "success@2",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:success@3": {
+      "a": "F",
+      "b": "C",
+      "metric": "success@3",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:success@4": {
+      "a": "F",
+      "b": "C",
+      "metric": "success@4",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:success@5": {
+      "a": "F",
+      "b": "C",
+      "metric": "success@5",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:rr": {
+      "a": "F",
+      "b": "C",
+      "metric": "rr",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:found_in_final": {
+      "a": "F",
+      "b": "C",
+      "metric": "found_in_final",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "C-F:novel_per_iter": {
+      "a": "F",
+      "b": "C",
+      "metric": "novel_per_iter",
+      "n_tasks": 3,
+      "mean_a": 2.0,
+      "mean_b": 12.833333333333334,
+      "diff": 10.833333333333334,
+      "ci95": [
+       9.0,
+       13.5
+      ],
+      "p": 0.0
+     },
+     "C-F:result_jaccard": {
+      "a": "F",
+      "b": "C",
+      "metric": "result_jaccard",
+      "n_tasks": 2,
+      "mean_a": 0.23809523809523808,
+      "mean_b": 0.25217391304347825,
+      "diff": 0.014078674948240194,
+      "ci95": [
+       -0.028985507246376774,
+       0.05714285714285716
+      ],
+      "p": 0.4898
+     },
+     "A-F:success@1": {
+      "a": "F",
+      "b": "A",
+      "metric": "success@1",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:success@2": {
+      "a": "F",
+      "b": "A",
+      "metric": "success@2",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:success@3": {
+      "a": "F",
+      "b": "A",
+      "metric": "success@3",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:success@4": {
+      "a": "F",
+      "b": "A",
+      "metric": "success@4",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:success@5": {
+      "a": "F",
+      "b": "A",
+      "metric": "success@5",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:rr": {
+      "a": "F",
+      "b": "A",
+      "metric": "rr",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:found_in_final": {
+      "a": "F",
+      "b": "A",
+      "metric": "found_in_final",
+      "n_tasks": 3,
+      "mean_a": 1.0,
+      "mean_b": 1.0,
+      "diff": 0.0,
+      "ci95": [
+       0.0,
+       0.0
+      ],
+      "p": 1.0
+     },
+     "A-F:novel_per_iter": {
+      "a": "F",
+      "b": "A",
+      "metric": "novel_per_iter",
+      "n_tasks": 3,
+      "mean_a": 2.0,
+      "mean_b": 12.333333333333334,
+      "diff": 10.333333333333334,
+      "ci95": [
+       8.0,
+       14.0
+      ],
+      "p": 0.0
+     },
+     "A-F:result_jaccard": {
+      "a": "F",
+      "b": "A",
+      "metric": "result_jaccard",
+      "n_tasks": 2,
+      "mean_a": 0.23809523809523808,
+      "mean_b": 0.3894736842105263,
+      "diff": 0.15137844611528825,
+      "ci95": [
+       0.05714285714285716,
+       0.24561403508771934
+      ],
+      "p": 0.0
+     }
+    },
+    "repeats": {
+     "A": {
+      "found_in_final": {
+       "0": 1.0
+      },
+      "success@5": {
+       "0": 1.0
+      }
+     },
+     "C": {
+      "found_in_final": {
+       "0": 1.0
+      },
+      "success@5": {
+       "0": 1.0
+      }
+     },
+     "F": {
+      "found_in_final": {
+       "0": 1.0
+      },
+      "success@5": {
+       "0": 1.0
+      }
+     }
+    }
+   },
+   "known-obscure": {
+    "summary": {
+     "A": {},
+     "C": {},
+     "F": {}
+    },
+    "bootstrap": {},
+    "repeats": {
+     "A": {
+      "found_in_final": {},
+      "success@5": {}
+     },
+     "C": {
+      "found_in_final": {},
+      "success@5": {}
+     },
+     "F": {
+      "found_in_final": {},
+      "success@5": {}
+     }
+    }
    }
   }
  },
@@ -1970,6 +2480,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.1,
    "recall@2": 0.2,
    "recall@3": 0.2,
@@ -2001,6 +2512,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.2962962962962963,
    "recall@2": 0.5925925925925926,
    "recall@3": 0.6666666666666666,
@@ -2032,6 +2544,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.2222222222222222,
    "recall@2": 0.37037037037037035,
    "recall@3": 0.5555555555555556,
@@ -2063,6 +2576,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.04430379746835443,
    "recall@2": 0.0759493670886076,
    "recall@3": 0.17088607594936708,
@@ -2094,6 +2608,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.10714285714285714,
    "recall@2": 0.2,
    "recall@3": 0.22142857142857142,
@@ -2125,6 +2640,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2163,6 +2679,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.0949367088607595,
    "recall@2": 0.0949367088607595,
    "recall@3": 0.13924050632911392,
@@ -2194,6 +2711,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.1774193548387097,
    "recall@2": 0.22580645161290322,
    "recall@3": 0.3064516129032258,
@@ -2225,6 +2743,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.0967741935483871,
    "recall@2": 0.20967741935483872,
    "recall@3": 0.22580645161290322,
@@ -2256,6 +2775,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2294,6 +2814,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.10526315789473684,
    "recall@2": 0.21052631578947367,
    "recall@3": 0.2236842105263158,
@@ -2325,6 +2846,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.6521739130434783,
    "recall@2": 0.6521739130434783,
    "recall@3": 0.6521739130434783,
@@ -2356,6 +2878,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.05263157894736842,
    "recall@2": 0.05263157894736842,
    "recall@3": 0.05263157894736842,
@@ -2387,6 +2910,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2425,6 +2949,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.21739130434782608,
    "recall@2": 0.30434782608695654,
    "recall@3": 0.391304347826087,
@@ -2456,6 +2981,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2494,6 +3020,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.07865168539325842,
    "recall@2": 0.15730337078651685,
    "recall@3": 0.15730337078651685,
@@ -2525,6 +3052,7 @@
    "cond": "A",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2563,6 +3091,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2601,6 +3130,7 @@
    "cond": "C",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.08426966292134831,
    "recall@2": 0.08426966292134831,
    "recall@3": 0.09550561797752809,
@@ -2632,6 +3162,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.20967741935483872,
    "recall@2": 0.3870967741935484,
    "recall@3": 0.46774193548387094,
@@ -2663,6 +3194,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.4444444444444444,
    "recall@2": 0.6666666666666666,
    "recall@3": 0.7037037037037037,
@@ -2694,6 +3226,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2732,6 +3265,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2770,6 +3304,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "attr",
+   "kind2": null,
    "recall@1": 0.6521739130434783,
    "recall@2": 0.6956521739130435,
    "recall@3": 0.7391304347826086,
@@ -2801,6 +3336,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.03164556962025317,
    "recall@2": 0.12658227848101267,
    "recall@3": 0.12658227848101267,
@@ -2832,6 +3368,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.05263157894736842,
    "recall@2": 0.09210526315789473,
    "recall@3": 0.09210526315789473,
@@ -2863,6 +3400,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "known",
+   "kind2": "known-popular",
    "recall@1": 1.0,
    "success@1": 1.0,
    "recall@2": 1.0,
@@ -2901,6 +3439,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.07865168539325842,
    "recall@2": 0.1348314606741573,
    "recall@3": 0.15730337078651685,
@@ -2932,6 +3471,7 @@
    "cond": "F",
    "rep": 0,
    "kind": "deck",
+   "kind2": null,
    "recall@1": 0.10714285714285714,
    "recall@2": 0.20714285714285716,
    "recall@3": 0.20714285714285716,

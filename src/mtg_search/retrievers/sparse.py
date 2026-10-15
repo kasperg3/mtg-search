@@ -57,12 +57,12 @@ class SparseRetriever:
         self.n = self.docs.shape[0]
 
     @classmethod
-    def from_dir(cls, root: str | Path, model_id: str) -> SparseRetriever:
+    def from_dir(cls, root: str | Path, model_id: str, *, oracle_ids=None) -> SparseRetriever:
         import scipy.sparse as sp
 
         root = Path(root) / "sparse"
         slug = model_slug(model_id)
-        meta = load_meta(root / f"{slug}.json")
+        meta = load_meta(root / f"{slug}.json", oracle_ids)
         return cls(model_id, sp.load_npz(root / f"{slug}.npz"), meta)
 
     def scores(self, query: str) -> np.ndarray:

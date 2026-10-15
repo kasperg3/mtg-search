@@ -186,7 +186,7 @@ class ClaudeCode:
                    "env": {"PYTHONPATH": str(ROOT), "CC_TOOL_URL": tool_url, "CC_TASK": task,
                            "CC_MAX_CALLS": str(BUDGETS[task][0]), "CC_LOG": str(transcript_path),
                            "CC_SERVER_NAME": server_name}}
-        rec = {"task": task, "output": {KEYS[task]: []}, "stop": "error", "tool_calls": [], "llm_calls": 0,
+        rec = {"task": task, "output": {KEYS[task]: []}, "stop": "error", "tool_calls": [], "n_over_budget": 0, "llm_calls": 0,
                "usage": {"prompt": 0, "cached": 0, "completion": 0, "reasoning": 0}, "cost_usd": 0.0,
                "notional_usd": 0.0, "wall_s": 0.0, "parse": "", "error": None}
         try:
@@ -198,6 +198,7 @@ class ClaudeCode:
                 raise LeakError("tool output failed check_tool_output")
             rec["tool_calls"] = [{k: x.get(k) for k in ("n", "tool", "args", "chars", "error") if k in x}
                                  for x in proxy if x["event"] == "tool_call"]
+            rec["n_over_budget"] = sum(x["event"] == "over_budget" for x in proxy)
             final = next((x["args"] for x in proxy if x["event"] == "final_answer"), None)
             if final is not None:
                 rec["output"], rec["parse"] = parse_final(task, final)

@@ -209,3 +209,22 @@ def test_sparse_inference_free_query_matches_sentence_transformers(encoded, card
     # And the repaired doc encoder reproduces the model card's reference score.
     sim = st.similarity(st.encode_query(["What's the weather in ny now?"]), st.encode_document(["Currently New York is rainy."]))
     assert abs(float(sim) - 12.5747) < 1e-3
+
+
+def test_from_dir_checks_card_table_alignment(tmp_path):
+    """Review m6: with the card table's ids, loaders refuse embeddings built for another table/order."""
+    import json
+
+    from mtg_search.retrievers.base import check_alignment, load_meta, oracle_ids_digest
+
+    ids = ["a", "b", "c"]
+    meta = {"card_count": 3, "oracle_ids_sha256": oracle_ids_digest(ids)}
+    (tmp_path / "m.json").write_text(json.dumps(meta))
+    assert load_meta(tmp_path / "m.json", ids) == meta
+    check_alignment(meta, ids)
+    with pytest.raises(RuntimeError, match="different card table"):
+        check_alignment(meta, ["b", "a", "c"])  # same cards, other row order
+    with pytest.raises(RuntimeError, match="different card table"):
+        load_meta(tmp_path / "m.json", ["a", "b"])
+    with pytest.raises(RuntimeError, match="no oracle_ids_sha256"):
+        check_alignment({"card_count": 3}, ids)
