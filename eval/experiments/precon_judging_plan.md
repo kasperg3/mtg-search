@@ -153,3 +153,6 @@ The test pool is judged once. Re-running it is allowed only after a crash, resum
   - The accepted random cards are now mostly lands that fit the mana base (Coastal Tower, Captivating Cave, Mirrex, Hive of the Eye Tyrant) and strong cards (Casualties of War); the filler of v1 and v2 is gone.
   - **Per the gate, the test pool is not judged; the owner decides.**
 - **Across the three dev runs, judged fit@20 of shipped-now − old surface is about 0:** +0.025, +0.005, −0.002, every CI spanning 0. On the same 15 decks, the community key gives −0.066 [−0.108, −0.020]. This is descriptive (dev, one repeat, and the rubric was tuned on these decks).
+- **Owner's decision: judge the test pool with v3** (`20261015_exp017-test`). The dev miss by one card is a recorded deviation from the gate.
+  - The shipped − v1 comparison is drawn only if the test run itself passes: the pre-registered validity rule (random and in-deck controls graded ≥ 1 at most 15% each, on 84 and 42 fresh controls) and the top-label guard (> 50% graded ≥ 1). If it fails, the test result is reported as invalid.
+  - Primary and secondary metrics are as pre-registered; nothing else changes.
