@@ -136,7 +136,26 @@ Term uptake is the share of follow-up queries that introduce a word from the agg
 - **The hypothesis is not supported.** Showing SparseUp's expansion terms changes neither what the agent finds (C − B, D − A: all CIs span 0) nor what it searches for next. The agent uses shown terms no more often than hidden ones (21% / 20% vs 20–24% chance).
 - **The agent steers from its own card knowledge.** It names cards and rewrites into rules text (as in the pilot), so a term line adds little.
 - **As the agent's retriever, SparseUp finds fewer labelled cards in the first 5 searches** than mLateOn (−4.7 recall@5). This matches the static evals (EXP-004, EXP-008).
-- **The lexical-only agent (F) is competitive and ends with significantly more labelled cards in its final 20** (+1.9 R@20 over A). It sees fewer new cards per search (11.4 vs 13.5) and costs 1.5× per episode (longer transcripts). With grep, a strong LLM can recover exact rules wording itself. This is consistent with EXP-008, where BM25 fusion helped once queries were in rules text.
+- **The lexical-only agent (F) is competitive and ends with significantly more labelled cards in its final 20** (+1.9 R@20 over A), but that edge comes from the regex-labelled tasks; see the label-source check below. It sees fewer new cards per search (11.4 vs 13.5) and costs 1.5× per episode (longer transcripts). With grep, a strong LLM can recover exact rules wording itself. This is consistent with EXP-008, where BM25 fusion helped once queries were in rules text.
 - **Not answered:** attribute and known-item tasks never ran, so nothing here speaks to "find this specific card", which is where the user expected term feedback to matter most.
 
 **Leak-guard fix during the run.** `Env.assert_no_leak` rejected two episodes (need-anti-tokens, B and C), because the agent's own query named the card *Illness in the Ranks* and the tool output echoes the query. The guard now ignores the echoed query (commit `1e1a21b`). Those two episodes could not be re-run once the balance ran out.
+
+## Label-source check: grep vs mLateOn (added 2026-10-15)
+
+**Isolation.** Neither agent had web search, file access or any other tool. All 945 logged GLM requests offered only `search` + `final_answer` (A–D) or `grep` + `bm25` + `final_answer` (F); Z.ai's built-in web search is opt-in and was never sent. Labels, tags and popularity never reach the agent: both corpora are `doc_text` (name, cost, type line, oracle text, P/T, keywords), and the leak guard covered all tool text.
+
+**Bias in favour of grep.** The 65 deck tasks have two label sources:
+- `deckneeds` (30 tasks): oracle tags OR regexes over `doc_text`;
+- `paraphrase-need` (35 tasks): regexes over `doc_text` only.
+
+F's `grep` runs regexes over that same `doc_text`, so on regex-labelled tasks it can partly reproduce the labelling rule. Splitting F − A by label source (`agentic_label_source.py`; paired over the 47 tasks both finished; 10k bootstrap):
+
+| label source | n | F − A final R@20 | F − A P@10 | tasks F better / A better |
+|---|---|---|---|---|
+| tags + regex (`deckneeds`) | 29 | +0.8 [−0.1, +1.8] | +2.1 [−4.5, +8.6] | 13 / 11 |
+| regex only (`paraphrase-need`) | 18 | **+3.7 [+0.5, +7.1]** | **+10.0 [+0.6, +20.0]** | 11 / 3 |
+| all (as reported) | 47 | +1.9 [+0.6, +3.4] | +5.1 [−0.6, +10.9] | 24 / 14 |
+
+**Reading.** The significant F advantage comes entirely from tasks whose answer key is a regex over the text grep searches. On tasks with tag-based labels, grep and mLateOn are tied. The claim that holds is the weaker one: **a strong LLM with grep/BM25 keeps pace with mLateOn**; "grep finds more" is not established. A fair test needs labels independent of both retrievers, such as pooled judging (issue #2).
+
