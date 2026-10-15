@@ -1,0 +1,410 @@
+<title>mtg-search Retriever Decision</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~46rem). A red thread runs down the left edge and links the chapters in the
+   order of the argument: the data -> search vs none -> which engine -> how the test sets and graders work ->
+   why one way of scoring is not enough -> what a small corpus means for the result. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --ink: #15181e;
+  --ink-2: #444b57;
+  --muted: #6a717d;
+  --rule: #dde0e6;
+  --thread: #b3261e;
+  --search: #2a6fdb;     /* mLateOn search agent */
+  --grep: #c26a04;       /* grep-only agent */
+  --context: #8b919b;    /* everything in context, and reference bars */
+  --good: #13803b;
+  --wash: #eef1f6;
+  --display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171c; --surface: #1b1f26; --ink: #eceef2; --ink-2: #bdc3cc; --muted: #8f96a1; --rule: #2e333c;
+    --thread: #e5534b; --search: #3d84e6; --grep: #c97c14; --context: #6f7681; --good: #3fb36a; --wash: #20252d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171c; --surface: #1b1f26; --ink: #eceef2; --ink-2: #bdc3cc; --muted: #8f96a1; --rule: #2e333c;
+  --thread: #e5534b; --search: #3d84e6; --grep: #c97c14; --context: #6f7681; --good: #3fb36a; --wash: #20252d;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 1.0625rem/1.62 var(--body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 40px 72px;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--search); text-underline-offset: 2px; }
+a:focus-visible { outline: 2px solid var(--search); outline-offset: 2px; border-radius: 2px; }
+p { margin: 0; }
+h1, h2, h3 { margin: 0; font-family: var(--display); text-wrap: balance; letter-spacing: 0.005em; }
+code { font-family: var(--mono); font-size: 0.84em; }
+
+.page { max-width: 46rem; margin: 0 auto; display: grid; gap: 40px; }
+.eyebrow { font: 500 0.74rem/1.3 var(--mono); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* header */
+.masthead { display: grid; gap: 16px; }
+h1 { font-weight: 700; font-size: clamp(2.2rem, 6vw, 3.3rem); line-height: 1.02; }
+.lede { font-size: 1.15rem; color: var(--ink-2); max-width: 40rem; }
+.answer { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 6px; align-content: start; min-width: 0; }
+.stat .num { font: 700 2rem/1 var(--display); font-variant-numeric: tabular-nums; }
+.stat .num small { font-size: 0.55em; color: var(--muted); font-weight: 600; }
+.stat .what { font-size: 0.86rem; line-height: 1.4; color: var(--ink-2); }
+@media (max-width: 640px) { .answer { grid-template-columns: minmax(0, 1fr); } }
+
+/* the thread */
+.thread { position: relative; display: grid; gap: 44px; padding-left: 30px; }
+.thread::before { content: ""; position: absolute; left: 7px; top: 8px; bottom: 8px; width: 2px; background: var(--thread); border-radius: 2px; }
+.chapter { position: relative; display: grid; gap: 14px; min-width: 0; }
+.chapter::before { content: ""; position: absolute; left: -30px; top: 0.1em; width: 16px; height: 16px; border-radius: 50%; background: var(--bg); border: 2px solid var(--thread); }
+.chapter .eyebrow { color: var(--thread); }
+h2 { font-weight: 700; font-size: clamp(1.6rem, 4vw, 2.05rem); line-height: 1.08; }
+h3 { font-weight: 600; font-size: 1.15rem; line-height: 1.15; }
+.prose { display: grid; gap: 12px; max-width: 40rem; }
+p.prose { display: block; }
+.prose ul { margin: 0; padding-left: 1.2rem; display: grid; gap: 6px; }
+.rules { font-style: italic; color: var(--ink); }
+.key { font-weight: 600; }
+.note { font-size: 0.88rem; color: var(--muted); line-height: 1.5; max-width: 40rem; }
+
+/* the data: key figures and one card as the agent sees it */
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 0; }
+.facts div { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; display: grid; gap: 4px; align-content: start; min-width: 0; }
+.facts dt { font: 500 0.66rem/1.2 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.facts dd { margin: 0; font: 700 1.5rem/1.05 var(--display); font-variant-numeric: tabular-nums; }
+.facts dd small { display: block; margin-top: 4px; font: 400 0.8rem/1.35 var(--body); color: var(--ink-2); }
+@media (max-width: 640px) { .facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.record { margin: 0; display: grid; gap: 8px; min-width: 0; }
+.record pre { margin: 0; font: 400 0.8rem/1.6 var(--mono); background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 12px 14px; overflow-x: auto; color: var(--ink); }
+.record figcaption { font-size: 0.84rem; color: var(--muted); line-height: 1.45; }
+
+/* how the tests are built */
+.lenses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.lens { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+.lens dl { margin: 0; display: grid; gap: 6px; font-size: 0.86rem; line-height: 1.4; }
+.lens dt { font: 500 0.66rem/1.2 var(--mono); letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted); }
+.lens dd { margin: 0; color: var(--ink-2); }
+@media (max-width: 720px) { .lenses { grid-template-columns: minmax(0, 1fr); } }
+
+/* figures */
+figure { margin: 0; display: grid; gap: 10px; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 16px; min-width: 0; position: relative; }
+figure.record { background: none; border: 0; padding: 0; }
+figcaption { font-size: 0.84rem; color: var(--muted); line-height: 1.45; }
+.fig-title { font: 600 1.05rem/1.2 var(--display); letter-spacing: 0.01em; }
+.bars { display: grid; gap: 6px; --lab: 9.5rem; }
+.bar { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); align-items: center; gap: 10px; min-height: 28px; border-radius: 4px; outline: none; }
+.bar:hover, .bar:focus-visible { background: var(--wash); }
+.bar:focus-visible { box-shadow: 0 0 0 2px var(--search); }
+.bar .lab { font-size: 0.85rem; line-height: 1.25; color: var(--ink-2); }
+.bar .track { position: relative; height: 26px; margin-right: 4.5rem; }
+.bar .fill { position: absolute; left: 0; top: 7px; height: 12px; min-width: 2px; border-radius: 0 4px 4px 0; background: var(--c); }
+.bar .val { position: absolute; top: 50%; transform: translateY(-50%); font: 500 0.8rem/1 var(--mono); color: var(--ink); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.bar.ref .fill { background: repeating-linear-gradient(135deg, var(--c) 0 6px, transparent 6px 10px); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--c); display: inline-block; }
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 640px) { .pair { grid-template-columns: minmax(0, 1fr); } .bars { --lab: 7.4rem; } }
+.tip { position: absolute; z-index: 5; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 7px 9px; font-size: 0.78rem; line-height: 1.4; max-width: 17rem; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
+.tip strong { font: 500 0.95rem/1.2 var(--mono); display: block; }
+
+/* tables */
+.twrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 10px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.88rem; line-height: 1.35; }
+th, td { padding: 8px 12px; text-align: left; border-bottom: 1px solid var(--rule); vertical-align: top; }
+thead th { font: 500 0.68rem/1.3 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tbody tr:last-child td, tbody tr:last-child th { border-bottom: 0; }
+tbody th { font-weight: 600; color: var(--ink); }
+td { color: var(--ink-2); }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+td.best { color: var(--ink); font-weight: 600; }
+.sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; background: var(--c); }
+
+.callout { border-left: 3px solid var(--thread); padding: 2px 0 2px 14px; color: var(--ink); max-width: 40rem; }
+.pill { display: inline-block; font: 500 0.7rem/1.2 var(--mono); padding: 3px 7px; border-radius: 999px; border: 1px solid var(--rule); color: var(--ink-2); background: var(--wash); }
+.pill.sig { border-color: var(--good); color: var(--good); }
+
+footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; gap: 8px; font-size: 0.85rem; color: var(--ink-2); }
+.links { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.links a { font-family: var(--mono); font-size: 0.82rem; }
+@media (prefers-reduced-motion: no-preference) { .bar .fill { transition: width 0.4s ease; } }
+</style>
+
+<main class="page">
+  <header class="masthead">
+    <div class="eyebrow">mtg-search · findings · 15 Oct 2026</div>
+    <h1>Does a search engine help a deck-building agent?</h1>
+    <p class="lede">mtg-search gives an AI agent semantic search over every Magic card. We tested what that buys an agent that builds Commander decks, compared with no search infrastructure at all. On this small corpus it finds the same cards as plain grep with 42% fewer tokens. In real decks, the cards it adds fit the deck better than the cards the agent adds from memory.</p>
+    <div class="answer" role="list">
+      <div class="stat" role="listitem"><div class="num">240×</div><div class="what">fewer tokens per task than reading every card: 12.1k vs 2.91M. The card text does not fit in a 1M-token context.</div></div>
+      <div class="stat" role="listitem"><div class="num">−42%</div><div class="what">tokens per task with search instead of grep (12.1k vs 20.9k), with the same share of relevant cards in the top 10: 98.5% vs 96.6% (p = 0.42)</div></div>
+      <div class="stat" role="listitem"><div class="num">0.45 <small>→ 0.65</small></div><div class="what">deck-fit score (0–1) of the agent's 20 card adds, graded blind by a separate Claude model: from memory vs with mtg-search, on 14 test decks (better on 13, p = 0.002)</div></div>
+    </div>
+  </header>
+
+  <div class="thread">
+    <section class="chapter" aria-labelledby="c1">
+      <div class="eyebrow">The data</div>
+      <h2 id="c1">Every Magic card's official text: 3.1M tokens, too much to read for every task</h2>
+      <div class="prose">
+        <p>Everything here runs on Scryfall's <span class="key">Oracle cards</span> data. Scryfall is the community's card database, and it publishes a fresh copy every day. The Oracle file has one entry per distinct card, whatever the printing, with the card's current official rules text: the Oracle text that Wizards of the Coast keeps up to date. That text can differ from the printed card: older printings of Lightning Bolt say <span class="rules">“target creature or player”</span>, while the Oracle text says <span class="rules">“any target”</span>.</p>
+        <p>Each entry also carries the mana cost, type line, colour identity and legality in every format. Scryfall's Tagger project adds community labels for what cards do, which the tools show as roles.</p>
+      </div>
+      <dl class="facts">
+        <div><dt>Cards</dt><dd>34,646<small>one per distinct card; tokens, emblems and art cards dropped</small></dd></div>
+        <div><dt>Rules text</dt><dd>3.1M tokens<small>about 7.5M characters across all cards</small></dd></div>
+        <div><dt>Function tags</dt><dd>4,577<small>Tagger labels such as <code>mana-rock</code> and <code>sweeper</code></small></dd></div>
+        <div><dt>Rulings</dt><dd>78,973<small>official clarifications, shown by <code>get_card</code></small></dd></div>
+        <div><dt>Updated</dt><dd>Daily<small>by Scryfall; this snapshot: 14 Oct 2026</small></dd></div>
+        <div><dt>Never shipped</dt><dd>0 prices<small>and no popularity data; those are used only to evaluate</small></dd></div>
+      </dl>
+      <figure class="record">
+        <pre>Lightning Bolt — {R} (MV 1) · Red · Instant · uncommon
+   Lightning Bolt deals 3 damage to any target.
+   roles: burn-any
+   legal: modern, legacy, vintage, pauper, commander</pre>
+        <figcaption>One card as the agent sees it from the tools.</figcaption>
+      </figure>
+      <p class="prose">The simplest design would skip search entirely and give the agent every card to read. We tried that.</p>
+      <figure data-chart>
+        <div class="fig-title">The card text is three times a 1M-token context</div>
+        <div class="bars">
+          <div class="bar" tabindex="0" data-v="3110" data-max="3200" data-label="3.11M" data-c="var(--context)" data-tip="All 34,646 cards' text|about 7.5M characters"><span class="lab">all card text</span></div>
+          <div class="bar ref" tabindex="0" data-v="1000" data-max="3200" data-label="1M" data-c="var(--context)" data-tip="A 1M-token context window|the card text needs 5 parts plus a merge call"><span class="lab">1M-token context</span></div>
+          <div class="bar" tabindex="0" data-v="12.1" data-max="3200" data-label="12.1k" data-c="var(--search)" data-tip="Search agent, mean tokens per task|113 tasks"><span class="lab">search, per task</span></div>
+        </div>
+        <figcaption>Tokens, on one linear scale. To read everything, the agent went through the cards in 5 parts of at most 1.8M characters, then made one more call to rank the candidates from all parts. That cost 2.91M tokens and 54 s per task, against 12.1k tokens and 8.6 s with search.</figcaption>
+      </figure>
+      <p class="note">On a 12-task sample, reading everything gave slightly better answers than search (not statistically significant). The full 113 tasks would have read about 302M tokens, so we stopped there.</p>
+      <p class="callout">Reading everything is a ceiling, not a design. The agent needs a way to find cards: a search engine, or at least grep over the text.</p>
+    </section>
+
+    <section class="chapter" aria-labelledby="c2">
+      <div class="eyebrow">Step 1 · search vs no search infrastructure</div>
+      <h2 id="c2">Search finds the same cards as grep with 42% fewer tokens</h2>
+      <p class="prose">The same agent ran the 113 agent search tasks two ways: with the mtg-search <code>search</code> tool, or with only <code>grep</code> over the plain card text, which has no ranking and no filters. Each task is a request such as a deck need, a card with given attributes, or a specific card to find. How the tasks are built and graded is described further down.</p>
+      <figure data-chart>
+        <div class="fig-title">Tokens per task: search uses 42% fewer than grep</div>
+        <div class="legend"><span style="--c:var(--search)"><i></i>search</span><span style="--c:var(--grep)"><i></i>grep only</span></div>
+        <div class="bars">
+          <div class="bar" tabindex="0" data-v="12.1" data-max="25" data-u="k" data-c="var(--search)" data-tip="Search agent, mean per task|113 tasks; median 11.1k"><span class="lab">search</span></div>
+          <div class="bar" tabindex="0" data-v="20.9" data-max="25" data-u="k" data-c="var(--grep)" data-tip="Grep-only agent, mean per task|113 tasks; median 16.6k"><span class="lab">grep only</span></div>
+        </div>
+        <figcaption>Mean tokens per task, cached input and output included. Search used fewer tokens on 96 of 113 tasks (p = 1.5×10⁻¹⁴).</figcaption>
+      </figure>
+      <div class="twrap">
+        <table>
+          <thead><tr><th scope="col">Per task</th><th scope="col" class="n"><span class="sw" style="--c:var(--search)"></span>search</th><th scope="col" class="n"><span class="sw" style="--c:var(--grep)"></span>grep only</th><th scope="col" class="n"><span class="sw" style="--c:var(--context)"></span>read everything*</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Tokens</th><td class="n best">12.1k</td><td class="n">20.9k</td><td class="n">2.91M</td></tr>
+            <tr><th scope="row">Claude Code turns</th><td class="n best">4.1</td><td class="n">4.9</td><td class="n">5.6</td></tr>
+            <tr><th scope="row">Tool calls</th><td class="n">2.1</td><td class="n">2.9</td><td class="n">0</td></tr>
+            <tr><th scope="row">Seconds</th><td class="n best">8.6</td><td class="n">10.9</td><td class="n">53.6</td></tr>
+            <tr><th scope="row">Relevant cards in the top 10 (80 tasks)**</th><td class="n">98.5%</td><td class="n">96.6%</td><td class="n">—</td></tr>
+            <tr><th scope="row">Specific card found (33 tasks)</th><td class="n">97%</td><td class="n">94%</td><td class="n">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">*Read everything: the 12-task sample above. **Relevant: on the task's list of correct cards, or graded relevant by the relevance grader (see How the test sets are built). Grep needs more calls because it has no ranking: it pages through matches in file order, or rewrites its patterns.</p>
+      <p class="callout">A strong agent with grep reaches the same cards. What search buys is efficiency: 42% fewer tokens, fewer turns and less time per task.</p>
+    </section>
+
+    <section class="chapter" aria-labelledby="c3">
+      <div class="eyebrow">Step 2 · choosing the engine</div>
+      <h2 id="c3">mLateOn reads rules text best, and the wording of the query matters most</h2>
+      <p class="prose">We compared search engines on the search benchmark: 363 queries, each with a list of the cards that answer it. The score is nDCG@10 on a 0–100 scale; 100 means the correct cards fill the top 10, best first. mLateOn is a multi-vector text model: it matches each word of the query to the closest word in each card.</p>
+      <div class="pair">
+        <figure data-chart>
+          <div class="fig-title">mLateOn ranks rules-text queries best</div>
+          <div class="bars">
+            <div class="bar" tabindex="0" data-v="70.7" data-max="100" data-c="var(--search)" data-tip="mLateOn|46 handwritten rules-text queries"><span class="lab">mLateOn</span></div>
+            <div class="bar" tabindex="0" data-v="61.1" data-max="100" data-c="var(--context)" data-tip="BM25 keyword search|46 handwritten rules-text queries"><span class="lab">BM25 keywords</span></div>
+            <div class="bar" tabindex="0" data-v="36.7" data-max="100" data-c="var(--context)" data-tip="Dense embedding (embeddinggemma-2)|46 handwritten rules-text queries"><span class="lab">Dense embedding</span></div>
+          </div>
+          <figcaption>46 queries written in rules-text wording. mLateOn − dense embedding: +34.0 [+25.4, +42.9].</figcaption>
+        </figure>
+        <figure data-chart>
+          <div class="fig-title">Rewording a request as rules text matters most</div>
+          <div class="bars">
+            <div class="bar" tabindex="0" data-v="13.0" data-max="100" data-c="var(--context)" data-tip="As the player wrote it|252 vague requests, mLateOn"><span class="lab">Player's words</span></div>
+            <div class="bar" tabindex="0" data-v="75.5" data-max="100" data-c="var(--search)" data-tip="Rewritten as rules text|+62.5 [+57.8, +67.1]"><span class="lab">Rules-text rewrite</span></div>
+          </div>
+          <figcaption>252 vague requests, mLateOn. <span class="rules">“I keep losing to fliers”</span> becomes <span class="rules">“Destroy target creature with flying.”</span></figcaption>
+        </figure>
+      </div>
+      <div class="prose">
+        <p>So mtg-search runs mLateOn, and its tool description tells the agent to write queries the way card text is worded. The Docker image returns exactly the same top 10 as the tested search on every benchmark query, in 130–340 ms per search. It has three read-only tools, <code>search_cards</code>, <code>get_card</code> and <code>find_similar</code>, with five filters.</p>
+        <p>The agent searches only when told when to. Offered the tools without a cue, Sonnet made 0 tool calls in 42 deck tasks. Each tool description therefore opens with <span class="rules">“Before recommending cards for a deck, call this to find candidates instead of listing them from memory.”</span> With that sentence the agent searched in 25 of 30 tasks on the tuning decks; without it, in 10 of 30.</p>
+      </div>
+    </section>
+
+    <section class="chapter" aria-labelledby="c4">
+      <div class="eyebrow">How the test sets are built</div>
+      <h2 id="c4">Three test sets, and two graders</h2>
+      <div class="lenses">
+        <article class="lens">
+          <h3>Search benchmark</h3>
+          <dl>
+            <dt>Asks</dt><dd>Which engine ranks the right cards first?</dd>
+            <dt>Built from</dt><dd>65 Tagger function tags phrased as a player would ask; 46 handwritten rules-text queries; 222 rewordings with no rules-text words; 30 open-ended deck needs. 363 queries.</dd>
+            <dt>Correct cards</dt><dd>The cards carrying the tag, or matching a rules-text pattern that was checked against Scryfall's own search. The top answers to each deck need were reviewed by hand.</dd>
+          </dl>
+        </article>
+        <article class="lens">
+          <h3>Agent search tasks</h3>
+          <dl>
+            <dt>Asks</dt><dd>Does an agent with search find more relevant cards than one with only grep?</dd>
+            <dt>Built from</dt><dd>113 requests from the benchmark: 65 deck needs, 15 card attributes (such as a 1-mana red burn instant), 33 specific cards to find. The agent may make up to 5 tool calls and returns a ranked list of up to 20 cards.</dd>
+            <dt>Scored by</dt><dd>Share of the top 10 that is relevant: on the benchmark's list of correct cards, or graded relevant by the relevance grader</dd>
+          </dl>
+        </article>
+        <article class="lens">
+          <h3>Precon decks</h3>
+          <dl>
+            <dt>Asks</dt><dd>Does the agent add, cut and swap better cards in real Commander decks?</dd>
+            <dt>Built from</dt><dd>183 preconstructed decks, the ready-made Commander decks Wizards sells (decklists from MTGJSON). The agent sees all 100 cards and proposes 20 adds, 10 cuts or 10 swaps. 14 decks released after 1 Nov 2025 are the test decks; 15 others are tuning decks.</dd>
+            <dt>Scored by</dt><dd>Player add rates from EDHREC, which pools thousands of players' decklists: the share of players' copies of each deck that add or cut each card. And the deck-fit grader, for adds.</dd>
+          </dl>
+        </article>
+      </div>
+      <p class="prose">Each grader is a separate Claude model that grades cards one batch at a time, 15 cards per call, in random order. It never sees which agent proposed a card, and it gets no popularity or price data. Hidden random cards are mixed into the batches, to check that the grader does not accept everything.</p>
+      <div class="pair">
+        <article class="lens">
+          <h3>Relevance grader · agent search tasks</h3>
+          <dl>
+            <dt>Sees</dt><dd>The request with its constraints (colour, card type, mana value, format), and each card's rules text</dd>
+            <dt>Grades</dt><dd>2 = does what was asked and meets every constraint · 1 = a weaker, narrower or indirect version a player might still consider · 0 = does not do it, or breaks a constraint</dd>
+            <dt>Relevant</dt><dd>Grade 1 or 2</dd>
+            <dt>Check</dt><dd>It accepted 0.6% of hidden random cards that met the constraints</dd>
+          </dl>
+        </article>
+        <article class="lens">
+          <h3>Deck-fit grader · precon decks</h3>
+          <dl>
+            <dt>Sees</dt><dd>The deck (the commander's rules text with its name hidden, plus the other 99 card names) and each proposed add's rules text</dd>
+            <dt>Grades</dt><dd>2 = a clear upgrade: supports the commander or the deck's plan, or fills a role the deck is short of (ramp, card draw, removal, interaction), and beats the deck's weakest cards · 1 = a reasonable but low-priority upgrade · 0 = no specific reason to be in this deck, or breaks a deck rule. It is told not to reward a card for being widely played.</dd>
+            <dt>Deck-fit score</dt><dd>Mean grade of the 20 adds, scaled 0–1; adds that break a deck rule count 0</dd>
+            <dt>Check</dt><dd>It accepted 12% of hidden random legal cards and none of the cards already in the deck</dd>
+          </dl>
+        </article>
+      </div>
+      <p class="note">Agents and graders are Claude Sonnet 5.5 in Claude Code, with no web, file or shell access: only the tools under test. No list of correct cards and no popularity or price data ever reaches an agent. The deck-fit criteria were settled on the tuning decks before any test deck was graded.</p>
+    </section>
+
+    <section class="chapter" aria-labelledby="c5">
+      <div class="eyebrow">Why one way of scoring is not enough</div>
+      <h2 id="c5">Player add rates favour popular cards, and miss a real gain in deck fit</h2>
+      <div class="prose">
+        <p>Every automatic list of correct cards has a blind spot. The tag and pattern lists miss cards that do the job in other words: in the agent search tasks, 22–23% of each agent's top-10 cards were graded relevant but were missing from the lists (636 such cards among all the agents' picks). The patterns also reward exactly the wording grep can rebuild.</p>
+        <p>Player add rates have a different blind spot. They reward what many players add, which is mostly the popular cards, and a deck can be improved in many different ways.</p>
+      </div>
+      <figure data-chart>
+        <div class="fig-title">77% of the agent's 1,051 adds fit the deck; only 16% are common player adds</div>
+        <div class="bars">
+          <div class="bar" tabindex="0" data-v="16.5" data-max="100" data-u="%" data-c="var(--context)" data-tip="Commonly added by players|173 of 1,051 have an add rate of at least 5% for that deck"><span class="lab">commonly added by players</span></div>
+          <div class="bar" tabindex="0" data-v="77.2" data-max="100" data-u="%" data-c="var(--search)" data-tip="Deck-fit grade 1 or 2|811 of 1,051"><span class="lab">graded a reasonable upgrade or better</span></div>
+        </div>
+        <figcaption>Valid adds on the 14 test decks, from memory and with mtg-search together. "Commonly added" means at least 5% of players' copies of that deck add the card. The grader rated 92% of those commonly added cards a reasonable upgrade or better, and 74% of the rest.</figcaption>
+      </figure>
+      <div class="twrap">
+        <table>
+          <thead><tr><th scope="col">Add task, 14 test decks, 3 repeats</th><th scope="col" class="n">from memory</th><th scope="col" class="n">with mtg-search</th><th scope="col">test</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Tasks in which the agent searched</th><td class="n">0%</td><td class="n best">40%</td><td><span class="pill sig">p = 2×10⁻⁶</span></td></tr>
+            <tr><th scope="row">Adds that break a deck rule</th><td class="n">13.2%</td><td class="n best">3.0%</td><td><span class="pill sig">p = 0.002</span></td></tr>
+            <tr><th scope="row">Deck-fit score (0–1)</th><td class="n">0.45</td><td class="n best">0.65</td><td><span class="pill sig">p = 0.002</span></td></tr>
+            <tr><th scope="row">Match with player add rates (nDCG@10, 0–1)</th><td class="n">0.174</td><td class="n">0.262</td><td><span class="pill">p = 0.057, not established</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note">From memory: the agent was offered the tools without any cue to use them, and never called them. With mtg-search: the server with a cue to search; in the other 60% of tasks the agent still answered from memory. Breaking a deck rule means outside the commander's colours, not legal in Commander, or already in the deck.</p>
+      <div class="prose">
+        <p>On the same adds, the two ways of scoring disagree. The deck-fit score shows a clear gain: better on 13 of 14 decks, and it holds on rule-abiding adds alone (0.52 vs 0.67). The match with player add rates is not significant.</p>
+        <p>The reason is popularity. With mtg-search, the agent's typical add is around the 1,000th most-played card on EDHREC, against the 300th from memory, and player add rates favour the most-played cards. The deck-fit grader shows no such pull: if anything, its top grades went to less popular cards.</p>
+      </div>
+      <p class="note">In the swap task (10 one-for-one swaps), the deck-fit gain was smaller and not significant. The deck-fit grader is the same model family as the agent.</p>
+      <p class="callout">With mtg-search, the agent's adds fit the deck better: 0.45 → 0.65, better on 13 of 14 test decks. Player add rates barely register this (p = 0.057), so each test set is scored two ways: by an automatic list of correct cards and by a grader.</p>
+    </section>
+
+    <section class="chapter" aria-labelledby="c6">
+      <div class="eyebrow">Reading the result</div>
+      <h2 id="c6">This is a small corpus: at scale the gap between grep and search will grow</h2>
+      <div class="prose">
+        <p>34,646 cards and 3.1M tokens of text is a small corpus. A grep over it takes a fraction of a second, and a strong agent can page through the matches. Grep also had a second advantage: Sonnet knows Magic's rules-text templating by heart, so it writes patterns that hit.</p>
+        <p>Even so, grep used more tokens than search on 96 of 113 tasks, plus more turns and more time, because its matches come unranked, in file order. That cost scales with the corpus. More documents mean more matches per pattern to page through, while ranked search still returns the best ten. In a larger collection, or one whose wording the model has not memorised, expect the token and turn gap to widen, and the tie in quality may not hold either. This is an expectation, not something measured here.</p>
+      </div>
+      <p class="callout">Read the grep result as the best case for no search infrastructure: a small corpus and a model that knows its wording. Search already pays for itself here, and the effect of embeddings over grep should be more pronounced on anything bigger.</p>
+    </section>
+  </div>
+
+  <footer>
+    <span class="eyebrow">Still open</span>
+    <span>A grader from another model family, to check that Sonnet does not favour its own picks (needs API budget) · fresh test decks once players' data on them matures, around late November · repeats, since the share of tasks in which the agent searches swings by 20 points between identical runs.</span>
+    <span class="eyebrow">Sources</span>
+    <div class="links">
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/REGISTRY.md">Registry</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/README.md">Test sets</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/infra_vs_none.md">Search vs grep vs reading everything</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/results.md">Search benchmark</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/query_rewriting.md">Query wording</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/pooled_judging.md">Relevance grading</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/precon_confirm.md">Precon decks</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/precon_judging.md">Deck-fit grading</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/mcp_cleanup.md">Tool descriptions</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/exact_backend.md">Shipped search</a>
+    </div>
+    <span class="note">All files are in the kasperg3/mtg-search repository.</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
+  document.querySelectorAll("figure[data-chart]").forEach(function (fig) {
+    var tip = el("div", "tip"); tip.hidden = true; fig.appendChild(tip);
+    fig.querySelectorAll(".bar").forEach(function (row) {
+      var v = parseFloat(row.dataset.v), max = parseFloat(row.dataset.max) || 100, u = row.dataset.u || "";
+      var txt = row.dataset.label || (u ? (v % 1 ? v.toFixed(1) : String(v)) + u : v.toFixed(1));
+      var track = el("span", "track"), fill = el("span", "fill"), val = el("span", "val", txt);
+      var w = Math.min(100, v / max * 100);
+      fill.style.width = w + "%";
+      val.style.left = "calc(" + w + "% + 8px)";
+      fill.style.setProperty("--c", row.dataset.c);
+      track.appendChild(fill); track.appendChild(val); row.appendChild(track);
+      var parts = (row.dataset.tip || "").split("|");
+      row.setAttribute("role", "img");
+      row.setAttribute("aria-label", parts[0] + ": " + txt + (parts[1] ? ", " + parts[1] : ""));
+      function show(x) {
+        tip.textContent = ""; tip.appendChild(el("strong", null, txt)); tip.appendChild(el("div", null, parts[0]));
+        if (parts[1]) { var d = el("div", null, parts[1]); d.style.opacity = "0.8"; tip.appendChild(d); }
+        tip.hidden = false;
+        var fr = fig.getBoundingClientRect(), rr = row.getBoundingClientRect();
+        var left = (x != null ? x : rr.left + rr.width / 2) - fr.left - tip.offsetWidth / 2;
+        tip.style.left = Math.max(0, Math.min(left, fr.width - tip.offsetWidth)) + "px";
+        var top = rr.top - fr.top - tip.offsetHeight - 6; if (top < 0) top = rr.bottom - fr.top + 6;
+        tip.style.top = top + "px";
+      }
+      row.addEventListener("pointerenter", function (e) { show(e.clientX); });
+      row.addEventListener("pointermove", function (e) { show(e.clientX); });
+      row.addEventListener("pointerleave", function () { tip.hidden = true; });
+      row.addEventListener("focus", function () { show(null); });
+      row.addEventListener("blur", function () { tip.hidden = true; });
+    });
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") document.querySelectorAll(".tip").forEach(function (t) { t.hidden = true; }); });
+})();
+</script>
