@@ -9,7 +9,9 @@ random order, BATCH cards per call, never the condition, the labels or any popul
 
 Unlike ``judge.py`` (which judges only unlabelled pool cards), the smoke test also judges the pooled cards
 that the original labels already mark relevant, to measure agreement with them. Every batch is judged
-twice, in two different orders, to measure self-consistency.
+twice, in two different orders, to measure self-consistency. ``--decoys-random N`` / ``--decoys-retrieved N``
+mix blind negative controls into the batches: random cards that meet the task's constraints (should be 0)
+and cards the agents retrieved but did not pick (harder, relevance unknown).
 
 Outputs in ``eval/agentic/runs/<run>/``: ``judgments.jsonl`` (one row per task, card and pass),
 ``transcripts/``, ``summary.json`` (agreement, consistency, label gaps, tokens and time, cost projection).
@@ -70,6 +72,8 @@ def main() -> None:
     ap.add_argument("--passes", type=int, default=2)
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--model", default=MODEL)
+    ap.add_argument("--decoys-random", type=int, default=0)
+    ap.add_argument("--decoys-retrieved", type=int, default=0)
     args = ap.parse_args()
     tasks = {t["id"]: t for t in load_tasks()}
     ids = args.tasks.split(",")
@@ -77,6 +81,29 @@ def main() -> None:
     for r in args.pool_runs.split(","):
         for t, oids in build_pool(r, ids).items():
             pool[t] = sorted(set(pool.get(t, [])) | set(oids))
+    kind = {(t, o): "pool" for t, oids in pool.items() for o in oids}
+    if args.decoys_random or args.decoys_retrieved:
+        import numpy as np
+
+        from env import Env
+
+        env = Env((), feedback=False)
+        seen = {t: set() for t in ids}
+        for r in args.pool_runs.split(","):
+            for line in (HERE / "runs" / r / "episodes.jsonl").read_text().splitlines():
+                e = json.loads(line)
+                if e["task_id"] in seen:
+                    seen[e["task_id"]] |= {o for s in e["searches"] for o in s.get("oids", [])}
+        for t in ids:
+            rel = set(tasks[t]["relevant"])
+            rng = random.Random(f"decoy-{t}")
+            hard = sorted(seen[t] - set(pool[t]) - rel)
+            allowed = [env.oids[i] for i in np.flatnonzero(env.mask(tasks[t].get("filters") or {}))]
+            easy = [o for o in rng.sample(allowed, min(len(allowed), 50)) if o not in rel and o not in seen[t] and o not in pool[t]]
+            for o, k in [(o, "decoy_retrieved") for o in rng.sample(hard, min(args.decoys_retrieved, len(hard)))] + \
+                        [(o, "decoy_random") for o in easy[: args.decoys_random]]:
+                kind[(t, o)] = k
+                pool[t] = sorted(set(pool[t]) | {o})
     cards = pl.read_parquet(ROOT / "data" / "cards.parquet", columns=["oracle_id", "doc_text"])
     doc = dict(zip(cards["oracle_id"].to_list(), cards["doc_text"].to_list(), strict=True))
     out_dir = HERE / "runs" / args.run
@@ -113,7 +140,8 @@ def main() -> None:
             for i, o in enumerate(r["oids"], 1):
                 if i in r["grades"]:
                     rows.append({"task_id": r["task_id"], "oracle_id": o, "pass": r["pass"], "grade": r["grades"][i],
-                                 "labelled": o in set(tasks[r["task_id"]]["relevant"]), "judge": args.model})
+                                 "labelled": o in set(tasks[r["task_id"]]["relevant"]), "kind": kind[(r["task_id"], o)],
+                                 "judge": args.model})
             print(f"[{n}/{len(jobs)}] {r['task_id']} p{r['pass']} b{r['batch']}: {len(r['grades'])}/{len(r['oids'])} graded, "
                   f"{sum(r['usage'][k] for k in ('input', 'cache_write', 'cache_read', 'output')):,} tokens, {r['wall_s']}s", flush=True)
     (out_dir / "judgments.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
