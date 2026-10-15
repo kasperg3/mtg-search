@@ -1,0 +1,354 @@
+{
+ "experiment": "EXP-018",
+ "run": "cc-ablation",
+ "tasks": [
+  "need-fliers-mono-green",
+  "hw-tax-spells-cost-more-need",
+  "need-ub-card-advantage",
+  "need-modern-blue-tempo",
+  "need-colorless-draw",
+  "tag-tutor-creature-need",
+  "hw-reanimate-own-need",
+  "need-protect-commander",
+  "need-team-haste",
+  "tag-hate-graveyard-need",
+  "attr-2cmc-blue-counter",
+  "attr-colorless-draw-artifact",
+  "attr-black-cheap-tutor",
+  "attr-white-instant-blink",
+  "attr-white-anthem-enchantment",
+  "attr-2cmc-rock",
+  "attr-green-land-ramp-sorcery",
+  "attr-1cmc-red-burn-instant",
+  "attr-white-wrath-sorcery",
+  "attr-green-cheap-fog",
+  "known-easy-spoils-of-the-vault",
+  "known-forsaken-monument",
+  "known-dryad-militant",
+  "known-easy-biomancer-s-familiar",
+  "known-eager-glyphmage",
+  "known-pulse-of-the-forge",
+  "known-wall-of-faith",
+  "known-lagomos-hand-of-hatred",
+  "known-ghitu-amplifier",
+  "known-street-sweeper"
+ ],
+ "missing_episodes": [],
+ "unjudged_top10": 0,
+ "means": {
+  "A": {
+   "tokens": 11777.966666666667,
+   "turns": 4.033333333333333,
+   "tool_calls": 2.033333333333333,
+   "wall_s": 8.106666666666667,
+   "final_len": 11.8,
+   "p@10": 0.995,
+   "found": 1.0,
+   "rr": 1.0
+  },
+  "G": {
+   "tokens": 20421.966666666667,
+   "turns": 4.8,
+   "tool_calls": 2.8,
+   "wall_s": 10.29,
+   "final_len": 10.8,
+   "p@10": 0.925,
+   "found": 1.0,
+   "rr": 1.0
+  },
+  "A0": {
+   "tokens": 9741.166666666666,
+   "turns": 3.7666666666666666,
+   "tool_calls": 1.7666666666666666,
+   "wall_s": 9.403333333333332,
+   "final_len": 11.366666666666667,
+   "p@10": 0.97,
+   "found": 1.0,
+   "rr": 1.0
+  },
+  "G0": {
+   "tokens": 15672.4,
+   "turns": 4.733333333333333,
+   "tool_calls": 2.7333333333333334,
+   "wall_s": 11.16,
+   "final_len": 6.7,
+   "p@10": 0.71,
+   "found": 1.0,
+   "rr": 1.0
+  }
+ },
+ "primary_minimal": {
+  "tokens_G0_over_A0": {
+   "n": 30,
+   "median_ratio": 1.6911085893707178,
+   "mean_a": 9741.166666666666,
+   "mean_b": 15672.4,
+   "b_more": 20,
+   "p_sign": 0.09873714670538902
+  },
+  "p@10_G0_minus_A0": {
+   "n": 20,
+   "mean_a": 0.97,
+   "mean_b": 0.71,
+   "diff": -0.26000000000000006,
+   "ci95": [
+    -0.43,
+    -0.09999999999999999
+   ],
+   "b_better": 1,
+   "a_better": 10,
+   "ties": 9,
+   "p_sign": 0.01171875
+  },
+  "found_G0_minus_A0": {
+   "n": 10,
+   "mean_a": 1.0,
+   "mean_b": 1.0,
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "b_better": 0,
+   "a_better": 0,
+   "ties": 10,
+   "p_sign": 1.0
+  }
+ },
+ "exp013_same_tasks": {
+  "tokens_G_over_A": {
+   "n": 30,
+   "median_ratio": 1.457342869864919,
+   "mean_a": 11777.966666666667,
+   "mean_b": 20421.966666666667,
+   "b_more": 25,
+   "p_sign": 0.00032491423189640045
+  },
+  "p@10_G_minus_A": {
+   "n": 20,
+   "mean_a": 0.9949999999999999,
+   "mean_b": 0.925,
+   "diff": -0.06999999999999999,
+   "ci95": [
+    -0.14500000000000002,
+    -0.015000000000000003
+   ],
+   "b_better": 0,
+   "a_better": 4,
+   "ties": 16,
+   "p_sign": 0.125
+  },
+  "found_G_minus_A": {
+   "n": 10,
+   "mean_a": 1.0,
+   "mean_b": 1.0,
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "b_better": 0,
+   "a_better": 0,
+   "ties": 10,
+   "p_sign": 1.0
+  }
+ },
+ "prompt_effect": {
+  "A0_vs_A": {
+   "tokens": {
+    "n": 30,
+    "median_ratio": 0.9391389035154531,
+    "mean_a": 11777.966666666667,
+    "mean_b": 9741.166666666666,
+    "b_more": 2,
+    "p_sign": 8.67992639541626e-07
+   },
+   "turns": {
+    "n": 30,
+    "mean_a": 4.033333333333333,
+    "mean_b": 3.7666666666666666,
+    "diff": -0.26666666666666666,
+    "ci95": [
+     -0.4666666666666667,
+     -0.1
+    ],
+    "b_better": 0,
+    "a_better": 7,
+    "ties": 23,
+    "p_sign": 0.015625
+   },
+   "tool_calls": {
+    "n": 30,
+    "mean_a": 2.033333333333333,
+    "mean_b": 1.7666666666666666,
+    "diff": -0.26666666666666666,
+    "ci95": [
+     -0.4666666666666667,
+     -0.1
+    ],
+    "b_better": 0,
+    "a_better": 7,
+    "ties": 23,
+    "p_sign": 0.015625
+   },
+   "p@10": {
+    "n": 20,
+    "mean_a": 0.9949999999999999,
+    "mean_b": 0.97,
+    "diff": -0.025,
+    "ci95": [
+     -0.065,
+     0.0
+    ],
+    "b_better": 0,
+    "a_better": 2,
+    "ties": 18,
+    "p_sign": 0.5
+   },
+   "found": {
+    "n": 10,
+    "mean_a": 1.0,
+    "mean_b": 1.0,
+    "diff": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "b_better": 0,
+    "a_better": 0,
+    "ties": 10,
+    "p_sign": 1.0
+   }
+  },
+  "G0_vs_G": {
+   "tokens": {
+    "n": 30,
+    "median_ratio": 0.7150100844846901,
+    "mean_a": 20421.966666666667,
+    "mean_b": 15672.4,
+    "b_more": 6,
+    "p_sign": 0.001430906355381012
+   },
+   "turns": {
+    "n": 30,
+    "mean_a": 4.8,
+    "mean_b": 4.733333333333333,
+    "diff": -0.06666666666666667,
+    "ci95": [
+     -0.5333333333333333,
+     0.43333333333333335
+    ],
+    "b_better": 8,
+    "a_better": 12,
+    "ties": 10,
+    "p_sign": 0.5034446716308594
+   },
+   "tool_calls": {
+    "n": 30,
+    "mean_a": 2.8,
+    "mean_b": 2.7333333333333334,
+    "diff": -0.06666666666666667,
+    "ci95": [
+     -0.5333333333333333,
+     0.43333333333333335
+    ],
+    "b_better": 8,
+    "a_better": 12,
+    "ties": 10,
+    "p_sign": 0.5034446716308594
+   },
+   "p@10": {
+    "n": 20,
+    "mean_a": 0.925,
+    "mean_b": 0.71,
+    "diff": -0.21499999999999994,
+    "ci95": [
+     -0.375,
+     -0.06999999999999999
+    ],
+    "b_better": 2,
+    "a_better": 10,
+    "ties": 8,
+    "p_sign": 0.03857421875
+   },
+   "found": {
+    "n": 10,
+    "mean_a": 1.0,
+    "mean_b": 1.0,
+    "diff": 0.0,
+    "ci95": [
+     0.0,
+     0.0
+    ],
+    "b_better": 0,
+    "a_better": 0,
+    "ties": 10,
+    "p_sign": 1.0
+   }
+  }
+ },
+ "gap_change_minimal_minus_exp013": {
+  "p@10": {
+   "n": 20,
+   "mean_a": -0.06999999999999999,
+   "mean_b": -0.26000000000000006,
+   "diff": -0.18999999999999997,
+   "ci95": [
+    -0.36,
+    -0.029999999999999992
+   ],
+   "b_better": 2,
+   "a_better": 9,
+   "ties": 9,
+   "p_sign": 0.0654296875
+  },
+  "found": {
+   "n": 10,
+   "mean_a": 0.0,
+   "mean_b": 0.0,
+   "diff": 0.0,
+   "ci95": [
+    0.0,
+    0.0
+   ],
+   "b_better": 0,
+   "a_better": 0,
+   "ties": 10,
+   "p_sign": 1.0
+  },
+  "log_token_ratio": {
+   "n": 30,
+   "mean_a": 0.4511403022674397,
+   "mean_b": 0.3506583638805287,
+   "diff": -0.10048193838691095,
+   "ci95": [
+    -0.2590222043701134,
+    0.06578211132772684
+   ],
+   "b_better": 10,
+   "a_better": 20,
+   "ties": 0,
+   "p_sign": 0.09873714670538902
+  }
+ },
+ "grep_diagnostics": {
+  "G": {
+   "calls": 84,
+   "layout_share": 0.7142857142857143,
+   "newline_share": 0.40476190476190477,
+   "zero_match_share": 0.07142857142857142,
+   "offset_share": 0.08333333333333333,
+   "error_share": 0.0,
+   "alternation_share": 0.7023809523809523
+  },
+  "G0": {
+   "calls": 82,
+   "layout_share": 0.6097560975609756,
+   "newline_share": 0.06097560975609756,
+   "zero_match_share": 0.2926829268292683,
+   "offset_share": 0.036585365853658534,
+   "error_share": 0.0,
+   "alternation_share": 0.6585365853658537
+  }
+ }
+}
