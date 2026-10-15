@@ -117,6 +117,7 @@ figcaption { font-size: 0.84rem; color: var(--muted); line-height: 1.45; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.82rem; color: var(--ink-2); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .legend i { width: 12px; height: 12px; border-radius: 3px; background: var(--c); display: inline-block; }
+.bar.ref .fill { background: repeating-linear-gradient(135deg, var(--c) 0 6px, transparent 6px 10px); box-shadow: inset 0 0 0 1px var(--c); }
 .pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
 @media (max-width: 640px) { .pair { grid-template-columns: minmax(0, 1fr); } .bars { --lab: 7.4rem; } }
 .tip { position: absolute; z-index: 5; pointer-events: none; background: var(--ink); color: var(--bg); border-radius: 8px; padding: 7px 9px; font-size: 0.78rem; line-height: 1.4; max-width: 17rem; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.18); }
@@ -148,10 +149,10 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
   <header class="masthead">
     <div class="eyebrow">mtg-search · findings · 15 Oct 2026</div>
     <h1>Does a search engine help a deck-building agent?</h1>
-    <p class="lede">mtg-search gives an AI agent semantic search over every Magic card. We tested what that buys an agent that builds Commander decks, compared with no search infrastructure at all. On this small corpus it finds the same cards as plain grep with 42% fewer tokens. In real decks, the cards it adds fit the deck better than the cards the agent adds from memory.</p>
+    <p class="lede">mtg-search gives an AI agent semantic search over every Magic card. We tested what that buys an agent that builds Commander decks, compared with no search infrastructure at all. Given the same instructions, it finds more of the right cards than plain grep, with fewer tokens; grep catches up only with a prompt tuned to the card file, at twice the tokens. In real decks, the cards it adds fit the deck better than the cards the agent adds from memory.</p>
     <div class="answer" role="list">
-      <div class="stat" role="listitem"><div class="num">240×</div><div class="what">fewer tokens per task than reading every card: 12.1k vs 2.91M. The card text does not fit in a 1M-token context.</div></div>
-      <div class="stat" role="listitem"><div class="num">−42%</div><div class="what">tokens per task with search instead of grep (12.1k vs 20.9k), with the same share of relevant cards in the top 10: 98.5% vs 96.6% (p = 0.42)</div></div>
+      <div class="stat" role="listitem"><div class="num">270×</div><div class="what">fewer tokens per task than reading every card: 10.6k vs 2.91M. The card text does not fit in a 1M-token context.</div></div>
+      <div class="stat" role="listitem"><div class="num">98% <small>vs 86%</small></div><div class="what">relevant cards in the top 10, search vs grep with the same instructions (p = 3×10⁻⁵), with 26% fewer tokens (10.6k vs 14.3k)</div></div>
       <div class="stat" role="listitem"><div class="num">0.45 <small>→ 0.65</small></div><div class="what">deck-fit score (0–1) of the agent's 20 card adds, graded blind by a separate Claude model: from memory vs with mtg-search, on 14 test decks (better on 13, p = 0.002)</div></div>
     </div>
   </header>
@@ -185,9 +186,9 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
         <div class="bars">
           <div class="bar" tabindex="0" data-v="3110" data-max="3200" data-label="3.11M" data-c="var(--context)" data-tip="All 34,646 cards' text|about 7.5M characters"><span class="lab">all card text</span></div>
           <div class="bar ref" tabindex="0" data-v="1000" data-max="3200" data-label="1M" data-c="var(--context)" data-tip="A 1M-token context window|the card text needs 5 parts plus a merge call"><span class="lab">1M-token context</span></div>
-          <div class="bar" tabindex="0" data-v="12.1" data-max="3200" data-label="12.1k" data-c="var(--search)" data-tip="Search agent, mean tokens per task|113 tasks"><span class="lab">search, per task</span></div>
+          <div class="bar" tabindex="0" data-v="10.6" data-max="3200" data-label="10.6k" data-c="var(--search)" data-tip="Search agent, mean tokens per task|113 tasks"><span class="lab">search, per task</span></div>
         </div>
-        <figcaption>Tokens, on one linear scale. To read everything, the agent went through the cards in 5 parts of at most 1.8M characters, then made one more call to rank the candidates from all parts. That cost 2.91M tokens and 54 s per task, against 12.1k tokens and 8.6 s with search.</figcaption>
+        <figcaption>Tokens, on one linear scale. To read everything, the agent went through the cards in 5 parts of at most 1.8M characters, then made one more call to rank the candidates from all parts. That cost 2.91M tokens and 54 s per task, against 10.6k tokens and 10 s with search.</figcaption>
       </figure>
       <p class="note">On a 12-task sample, reading everything gave slightly better answers than search (not statistically significant). The full 113 tasks would have read about 302M tokens, so we stopped there.</p>
       <p class="callout">Reading everything is a ceiling, not a design. The agent needs a way to find cards: a search engine, or at least grep over the text.</p>
@@ -195,32 +196,55 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
 
     <section class="chapter" aria-labelledby="c2">
       <div class="eyebrow">Step 1 · search vs no search infrastructure</div>
-      <h2 id="c2">Search finds the same cards as grep with 42% fewer tokens</h2>
-      <p class="prose">The same agent ran the 113 agent search tasks two ways: with the mtg-search <code>search</code> tool, or with only <code>grep</code> over the plain card text, which has no ranking and no filters. Each task is a request such as a deck need, a card with given attributes, or a specific card to find. How the tasks are built and graded is described further down.</p>
-      <figure data-chart>
-        <div class="fig-title">Tokens per task: search uses 42% fewer than grep</div>
-        <div class="legend"><span style="--c:var(--search)"><i></i>search</span><span style="--c:var(--grep)"><i></i>grep only</span></div>
-        <div class="bars">
-          <div class="bar" tabindex="0" data-v="12.1" data-max="25" data-u="k" data-c="var(--search)" data-tip="Search agent, mean per task|113 tasks; median 11.1k"><span class="lab">search</span></div>
-          <div class="bar" tabindex="0" data-v="20.9" data-max="25" data-u="k" data-c="var(--grep)" data-tip="Grep-only agent, mean per task|113 tasks; median 16.6k"><span class="lab">grep only</span></div>
-        </div>
-        <figcaption>Mean tokens per task, cached input and output included. Search used fewer tokens on 96 of 113 tasks (p = 1.5×10⁻¹⁴).</figcaption>
-      </figure>
+      <h2 id="c2">With the same instructions, search finds more of the right cards, with fewer tokens</h2>
+      <div class="prose">
+        <p>The same agent ran the 113 agent search tasks three ways. Each task is a request such as a deck need, a card with given attributes, or a specific card to find; how the tasks are built and graded is described further down.</p>
+        <ul>
+          <li><span class="key">Search:</span> the mtg-search <code>search</code> tool, with minimal instructions: the request, a budget of 5 tool calls and the answer format, and nothing on how to search.</li>
+          <li><span class="key">Grep, same prompt:</span> a regular expression over the plain card text, with no ranking and no filters, and the same minimal instructions as search.</li>
+          <li><span class="key">Grep, tuned prompt:</span> the identical grep tool, with a prompt written after a first test run. It shows how a card is laid out in the file, explains how matching works, and adds general search advice and an example pattern. <span class="key">The only difference between the two grep runs is the prompt.</span></li>
+        </ul>
+      </div>
+      <div class="pair">
+        <figure data-chart>
+          <div class="fig-title">Relevant cards in the top 10</div>
+          <div class="bars">
+            <div class="bar" tabindex="0" data-v="98.1" data-max="100" data-u="%" data-c="var(--search)" data-tip="Search|80 deck and attribute tasks"><span class="lab">search</span></div>
+            <div class="bar" tabindex="0" data-v="86.3" data-max="100" data-u="%" data-c="var(--grep)" data-tip="Grep, same prompt as search|−11.9 points [−18.0, −6.1], p = 3×10⁻⁵"><span class="lab">grep, same prompt</span></div>
+            <div class="bar ref" tabindex="0" data-v="96.6" data-max="100" data-u="%" data-c="var(--grep)" data-tip="Grep, tuned prompt|same grep tool; the prompt alone adds 10.4 points (p = 0.0006)"><span class="lab">grep, tuned prompt</span></div>
+          </div>
+          <figcaption>80 deck and attribute tasks. Relevant: on the task's list of correct cards, or graded relevant by the relevance grader.</figcaption>
+        </figure>
+        <figure data-chart>
+          <div class="fig-title">Tokens per task</div>
+          <div class="bars">
+            <div class="bar" tabindex="0" data-v="10.6" data-max="25" data-u="k" data-c="var(--search)" data-tip="Search, mean per task|113 tasks"><span class="lab">search</span></div>
+            <div class="bar" tabindex="0" data-v="14.3" data-max="25" data-u="k" data-c="var(--grep)" data-tip="Grep, same prompt, mean per task|more than search on 80 of 113 tasks (p = 1×10⁻⁵)"><span class="lab">grep, same prompt</span></div>
+            <div class="bar ref" tabindex="0" data-v="20.9" data-max="25" data-u="k" data-c="var(--grep)" data-tip="Grep, tuned prompt, mean per task|113 tasks"><span class="lab">grep, tuned prompt</span></div>
+          </div>
+          <figcaption>Mean tokens per task, 113 tasks, cached input and output included. The hatched bars are the grep run with the tuned prompt.</figcaption>
+        </figure>
+      </div>
       <div class="twrap">
         <table>
-          <thead><tr><th scope="col">Per task</th><th scope="col" class="n"><span class="sw" style="--c:var(--search)"></span>search</th><th scope="col" class="n"><span class="sw" style="--c:var(--grep)"></span>grep only</th><th scope="col" class="n"><span class="sw" style="--c:var(--context)"></span>read everything*</th></tr></thead>
+          <thead><tr><th scope="col">Per task, 113 tasks</th><th scope="col" class="n"><span class="sw" style="--c:var(--search)"></span>search</th><th scope="col" class="n"><span class="sw" style="--c:var(--grep)"></span>grep, same prompt</th><th scope="col" class="n">grep, tuned prompt</th><th scope="col" class="n"><span class="sw" style="--c:var(--context)"></span>read everything*</th></tr></thead>
           <tbody>
-            <tr><th scope="row">Tokens</th><td class="n best">12.1k</td><td class="n">20.9k</td><td class="n">2.91M</td></tr>
-            <tr><th scope="row">Claude Code turns</th><td class="n best">4.1</td><td class="n">4.9</td><td class="n">5.6</td></tr>
-            <tr><th scope="row">Tool calls</th><td class="n">2.1</td><td class="n">2.9</td><td class="n">0</td></tr>
-            <tr><th scope="row">Seconds</th><td class="n best">8.6</td><td class="n">10.9</td><td class="n">53.6</td></tr>
-            <tr><th scope="row">Relevant cards in the top 10 (80 tasks)**</th><td class="n">98.5%</td><td class="n">96.6%</td><td class="n">—</td></tr>
-            <tr><th scope="row">Specific card found (33 tasks)</th><td class="n">97%</td><td class="n">94%</td><td class="n">—</td></tr>
+            <tr><th scope="row">Tokens</th><td class="n best">10.6k</td><td class="n">14.3k</td><td class="n">20.9k</td><td class="n">2.91M</td></tr>
+            <tr><th scope="row">Claude Code turns</th><td class="n best">4.0</td><td class="n">4.6</td><td class="n">4.9</td><td class="n">5.6</td></tr>
+            <tr><th scope="row">Tool calls</th><td class="n">2.0</td><td class="n">2.5</td><td class="n">2.9</td><td class="n">0</td></tr>
+            <tr><th scope="row">Seconds</th><td class="n best">10.3</td><td class="n">17.0**</td><td class="n">10.9</td><td class="n">53.6</td></tr>
+            <tr><th scope="row">Relevant in the top 10: deck needs (65)</th><td class="n">97.8%</td><td class="n">95.2%</td><td class="n">97.7%</td><td class="n">—</td></tr>
+            <tr><th scope="row">Relevant in the top 10: card attributes (15)</th><td class="n best">99.3%</td><td class="n">47.3%</td><td class="n">92.0%</td><td class="n">—</td></tr>
+            <tr><th scope="row">Specific card found (33)</th><td class="n best">100%</td><td class="n">85%</td><td class="n">94%</td><td class="n">—</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note">*Read everything: the 12-task sample above. **Relevant: on the task's list of correct cards, or graded relevant by the relevance grader (see How the test sets are built). Grep needs more calls because it has no ranking: it pages through matches in file order, or rewrites its patterns.</p>
-      <p class="callout">A strong agent with grep reaches the same cards. What search buys is efficiency: 42% fewer tokens, fewer turns and less time per task.</p>
+      <p class="note">*Read everything: the 12-task sample above. **Two slow tasks (159 s and 322 s); the median is 11.3 s.</p>
+      <div class="prose">
+        <p>With the same instructions, grep falls behind on card attributes, such as a 1-mana red burn instant. Only 47% of its top 10 is relevant, against 99% for search. A card's mana cost, type line and rules text sit on separate lines of the file, and without a description of the layout grep guessed it wrong: 29% of its calls matched nothing. On deck needs, whose rules-text phrases sit on one line, the two stay close (95% vs 98%).</p>
+        <p><span class="key">Search needed no prompt tuning.</span> Its first prompt, never tuned, gives the same results as the minimal one: 98.5% vs 98.1% relevant cards in the top 10.</p>
+      </div>
+      <p class="callout">With the same instructions, search finds more of the right cards than grep, with fewer tokens. Grep catches up only with a prompt tuned to the card file, and then uses twice the tokens.</p>
     </section>
 
     <section class="chapter" aria-labelledby="c3">
@@ -345,9 +369,9 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
       <h2 id="c6">This is a small corpus: at scale the gap between grep and search will grow</h2>
       <div class="prose">
         <p>34,646 cards and 3.1M tokens of text is a small corpus. A grep over it takes a fraction of a second, and a strong agent can page through the matches. Grep also had a second advantage: Sonnet knows Magic's rules-text templating by heart, so it writes patterns that hit.</p>
-        <p>Even so, grep used more tokens than search on 96 of 113 tasks, plus more turns and more time, because its matches come unranked, in file order. That cost scales with the corpus. More documents mean more matches per pattern to page through, while ranked search still returns the best ten. In a larger collection, or one whose wording the model has not memorised, expect the token and turn gap to widen, and the tie in quality may not hold either. This is an expectation, not something measured here.</p>
+        <p>Even so, grep matched search's relevance only with a prompt that describes the card file, and then it used twice the tokens, because its matches come unranked, in file order. That cost scales with the corpus. More documents mean more matches per pattern to page through, while ranked search still returns the best ten. In a larger collection, or one whose wording the model has not memorised, expect the token and turn gap to widen, and the quality gap with it. This is an expectation, not something measured here.</p>
       </div>
-      <p class="callout">Read the grep result as the best case for no search infrastructure: a small corpus and a model that knows its wording. Search already pays for itself here, and the effect of embeddings over grep should be more pronounced on anything bigger.</p>
+      <p class="callout">Read the grep result as the best case for no search infrastructure: a small corpus, a model that knows its wording, and a prompt tuned to the file. Search needed none of that here, and the effect of embeddings over grep should be more pronounced on anything bigger.</p>
     </section>
   </div>
 
@@ -359,6 +383,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
       <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/REGISTRY.md">Registry</a>
       <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/README.md">Test sets</a>
       <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/infra_vs_none.md">Search vs grep vs reading everything</a>
+      <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/prompt_only.md">Grep prompt ablation</a>
       <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/results.md">Search benchmark</a>
       <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/query_rewriting.md">Query wording</a>
       <a href="https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/pooled_judging.md">Relevance grading</a>
