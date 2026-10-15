@@ -175,4 +175,4 @@ def git_state(paths=("eval/agentic", "src", "bench/precon/harness")) -> dict:
         except Exception:
             return None
 
-    return {"sha": g("rev-parse", "HEAD"), "dirty": bool(g("status", "--porcelain", "--", *paths))}
+    return {"sha": g("rev-parse", "HEAD"), "dirty": bool(g("status", "--porcelain", "--untracked-files=no", "--", *paths))}

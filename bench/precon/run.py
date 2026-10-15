@@ -55,7 +55,7 @@ def git_info() -> dict:
         except Exception:
             return None
 
-    return {"sha": g("rev-parse", "HEAD"), "dirty_bench": bool(g("status", "--porcelain", "--", "bench/precon", "src"))}
+    return {"sha": g("rev-parse", "HEAD"), "dirty_bench": bool(g("status", "--porcelain", "--untracked-files=no", "--", "bench/precon", "src"))}
 
 
 def slice_fns(bench) -> dict:
