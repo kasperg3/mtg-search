@@ -14,6 +14,9 @@ session is checked.
      (EXP-006 condition A).
   G  no search infrastructure: ``grep(pattern, offset?)``, a case-insensitive regex over the plain
      card text, matches in file order (alphabetical), 15 per call, no ranking, no filter parameters.
+  A0 / G0  (EXP-018, prompt ablation) A and G with identical minimal prompts: the task protocol only, no
+     search advice, tool descriptions limited to mechanics (no examples, no file layout), and G0's grep
+     matched truly line by line.
   I  no tools, everything in context: the plain card text of every card the task allows, in the
      system prompt. All cards are ~2.2M tokens, more than one 1M context, so the file is read in
      alphabetical parts of at most SHARD_CHARS; each part returns up to 20 candidates and, with more
@@ -57,7 +60,7 @@ from bench.precon.harness.claude_code import ClaudeCode  # noqa: E402
 MODEL = "claude-sonnet-5-5[1m]"
 SERVER = "cards"
 SHARD_CHARS = 1_800_000  # ~0.5M tokens per part; the whole card file is ~7.5M characters
-CC_CONDS = ("A", "G", "I")
+CC_CONDS = ("A", "G", "I", "A0", "G0")
 TASK_FILES = ("tasks.yaml", "tasks_known_easy.yaml")
 SHARD_DIR = HERE / ".cache" / "cc_shards"  # I's system prompts (card-file parts), git-ignored and not synced
 
@@ -80,6 +83,43 @@ Pick the candidates that genuinely satisfy the player's request, best first. Cop
 <candidates>
 {cards}
 </candidates>"""
+
+
+# EXP-018: the same protocol for both tools, no advice on how to search, mechanics-only tool descriptions
+SYSTEM_MIN = """You are a deck-building search assistant for Magic: The Gathering. A player describes what they need; you find real cards for it with the `{tool}` tool.
+
+You may make at most 5 `{tool}` calls. When you are done, call `final_answer` with up to 20 card names that satisfy the request, best first. Only include cards that appeared in your `{tool}` results, and copy their names exactly. If the request is for one specific card, put your best guess first."""
+CARD_FIELDS = "name, mana cost, type line, rules text, power/toughness, keywords"
+FILTER_SCHEMA_MIN = {
+    "color_identity": {"type": "string", "description": "Colour identity as WUBRG letters; the card's colour identity must be within them. C = colourless."},
+    "colors": {"type": "string", "description": "Colours as WUBRG letters; the card must have all of them."},
+    "types": {"type": "array", "items": {"type": "string"}, "description": "Card types or subtypes; the card must match every entry."},
+    "cmc_min": {"type": "number", "description": "Minimum mana value."},
+    "cmc_max": {"type": "number", "description": "Maximum mana value."},
+    "format": {"type": "string", "description": "Format name; the card must be legal in it."},
+}
+TOOLS_MIN = [
+    {"type": "function", "function": {
+        "name": "search",
+        "description": f"Ranked search over the text of every Magic card ({CARD_FIELDS}). Returns the 15 best-matching cards, each with name, mana cost, type and truncated rules text.",
+        "parameters": {"type": "object", "properties": {
+            "query": {"type": "string", "description": "Search query."},
+            "filters": {"type": "object", "properties": FILTER_SCHEMA_MIN, "description": "Optional hard filters."}},
+            "required": ["query"]}}},
+    TOOLS[1],
+]
+TOOLS_GREP_MIN = [
+    {"type": "function", "function": {
+        "name": "grep",
+        "description": f"Case-insensitive Python regular expression, matched separately against each line of every Magic card's text ({CARD_FIELDS}). Returns the number of matching cards and 15 of them in file order (alphabetical by name), each with name, mana cost, type, truncated rules text and the matching line, from `offset` on.",
+        "parameters": {"type": "object", "properties": {
+            "pattern": {"type": "string", "description": "Regular expression."},
+            "offset": {"type": "integer", "description": "Number of matches to skip (default 0)."}},
+            "required": ["pattern"]}}},
+    TOOLS[1],
+]
+SYSTEMS = {"A": SYSTEM, "G": SYSTEM_GREP, "A0": SYSTEM_MIN.format(tool="search"), "G0": SYSTEM_MIN.format(tool="grep")}
+TOOLSETS = {"A": TOOLS, "G": TOOLS_GREP, "A0": TOOLS_MIN, "G0": TOOLS_GREP_MIN}
 
 
 def load_tasks(files=TASK_FILES) -> list[dict]:
@@ -144,7 +184,7 @@ class Service:
 
             def do_GET(self):
                 cond = parse_qs(urlparse(self.path).query).get("task", ["A:"])[0].split(":", 1)[0]
-                self._send({"tools": TOOLS_GREP if cond == "G" else TOOLS, "instructions": None})
+                self._send({"tools": TOOLSETS[cond], "instructions": None})
 
             def do_POST(self):
                 req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
@@ -163,7 +203,7 @@ class Service:
     def call(self, cond: str, task: dict, name: str, args: dict, n: int) -> tuple[str, dict]:
         """-> (tool output, search record). Deterministic, so episodes are replayed from the proxy log."""
         env = self.env
-        if cond == "A" and name == "search":
+        if cond in ("A", "A0") and name == "search":
             q = str(args.get("query") or "").strip()
             filt = args.get("filters") if isinstance(args.get("filters"), dict) else {}
             if not q:
@@ -172,12 +212,12 @@ class Service:
             rec = {"tool": "search", "query": q, "filters": filt}
             content = format_results(env, q, n, rows, tool="search", last_note=False)
             snippets = []
-        elif cond == "G" and name == "grep":
+        elif cond in ("G", "G0") and name == "grep":
             q = str(args.get("pattern") or "")
             if not q.strip():
                 raise ValueError("empty pattern")
             offset = max(0, int(args.get("offset") or 0))
-            n_match, rows, snippets = env.grep(q, task.get("filters"), offset=offset)
+            n_match, rows, snippets = env.grep(q, task.get("filters"), offset=offset, per_line=cond == "G0")
             rec = {"tool": "grep", "query": q, "filters": {}, "offset": offset, "n_match": n_match}
             content = format_results(env, q, n, rows, snippets, n_match, "grep", offset, last_note=False)
         else:
@@ -205,7 +245,7 @@ class Runner:
 
     def tool_episode(self, task: dict, cond: str, rep: int) -> dict:
         tpath = self.run_dir / "transcripts" / f"{task['id']}__{cond}__r{rep}.jsonl"
-        system = SYSTEM_GREP if cond == "G" else SYSTEM
+        system = SYSTEMS[cond]
         user = user_message(task)
         with open(tpath, "w") as f:
             f.write(json.dumps({"event": "config", "task": task["id"], "cond": cond, "llm": self.cc.config(),
@@ -363,6 +403,7 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--allow-dirty", action="store_true", help="run with uncommitted harness changes (recorded)")
+    ap.add_argument("--experiment", default="EXP-013")
     args = ap.parse_args()
     from env import git_state
 
@@ -390,15 +431,18 @@ def main() -> None:
         tasks = order[: args.limit]
     from env import Env
 
-    env = Env(("mlateon",) if "A" in conds else ())
+    env = Env(("mlateon",) if {"A", "A0"} & set(conds) else ())
     run_dir = HERE / "runs" / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
     cfg = run_dir / "config.json"
     prev = json.loads(cfg.read_text()) if cfg.exists() else {}
-    cfg.write_text(json.dumps({**prev, "experiment": "EXP-013", "git": git, "model": args.model, "max_calls": MAX_SEARCHES,
+    cfg.write_text(json.dumps({**prev, "experiment": args.experiment, "git": git, "model": args.model, "max_calls": MAX_SEARCHES,
                                "shard_chars": SHARD_CHARS, "conds": sorted(set(prev.get("conds", [])) | set(conds)),
                                "system": SYSTEM, "system_grep": SYSTEM_GREP, "system_in_context": SYSTEM_I,
-                               "system_in_context_merge": SYSTEM_I_MERGE}, indent=1))
+                               "system_in_context_merge": SYSTEM_I_MERGE,
+                               **({"systems_min": {c: SYSTEMS[c] for c in ("A0", "G0")},
+                                   "tools_min": {c: TOOLSETS[c] for c in ("A0", "G0")}} if {"A0", "G0"} & set(conds) else {})},
+                              indent=1))
     runner = Runner(env, tasks, run_dir, args.model)
     try:
         runner.run(tasks, conds, args.repeats, args.workers)

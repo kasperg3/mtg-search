@@ -63,6 +63,8 @@ def main() -> None:
     ap.add_argument("--model", default=MODEL)
     ap.add_argument("--decoys-random", type=int, default=0)
     ap.add_argument("--decoys-retrieved", type=int, default=0)
+    ap.add_argument("--only-new", default=None,
+                    help="comma-separated judge runs: skip cards already judged there for the task, and cards already labelled relevant")
     args = ap.parse_args()
     tasks = {t["id"]: t for t in load_tasks()}
     ids = args.tasks.split(",")
@@ -70,6 +72,10 @@ def main() -> None:
     for r in args.pool_runs.split(","):
         for t, oids in build_pool(r, ids).items():
             pool[t] = sorted(set(pool.get(t, [])) | set(oids))
+    if args.only_new:  # EXP-018: grade only what the earlier pooled judging did not cover
+        seen = {(j["task_id"], j["oracle_id"]) for r in args.only_new.split(",")
+                for j in map(json.loads, (HERE / "runs" / r / "judgments.jsonl").read_text().splitlines())}
+        pool = {t: [o for o in oids if (t, o) not in seen and o not in set(tasks[t]["relevant"])] for t, oids in pool.items()}
     kind = {(t, o): "pool" for t, oids in pool.items() for o in oids}
     if args.decoys_random or args.decoys_retrieved:
         import numpy as np
@@ -135,6 +141,7 @@ def main() -> None:
     (out_dir / "judgments.jsonl").write_text("".join(json.dumps(x) + "\n" for x in rows))
     (out_dir / "calls.jsonl").write_text("".join(json.dumps(x) + "\n" for x in calls))
     (out_dir / "config.json").write_text(json.dumps({"model": args.model, "cli": cc.version, "pool_runs": args.pool_runs, "tasks": ids,
+                                                     "only_new": args.only_new,
                                                      "passes": args.passes, "batch": BATCH, "system": JUDGE_SYSTEM}, indent=1))
     print(f"wrote {len(rows)} judgments to {out_dir.relative_to(ROOT)}")
 

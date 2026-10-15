@@ -133,10 +133,14 @@ class Env:
         path.write_text(json.dumps(rows))
         return rows
 
-    def grep(self, pattern: str, task_filters: dict | None, k: int = TOP_K, offset: int = 0):
-        """Condition G (no search infrastructure): case-insensitive regex over doc_text, matched line by line
-        as in grep. -> (n_matches, rows, matched snippets) in card-file order (alphabetical by name; cards.parquet
-        is sorted by name), from ``offset`` on. No ranking, no popularity signal."""
+    def grep(self, pattern: str, task_filters: dict | None, k: int = TOP_K, offset: int = 0, per_line: bool = False):
+        """Conditions G/G0 (no search infrastructure): case-insensitive regex over doc_text -> (n_matches, rows,
+        matched snippets) in card-file order (alphabetical by name; cards.parquet is sorted by name), from
+        ``offset`` on. No ranking, no popularity signal.
+
+        Default (EXP-013 G): the whole card text with ``re.MULTILINE``: ``.`` stops at line breaks and ``^``/``$``
+        anchor at line ends, but an explicit ``\\n`` spans lines, which grep cannot do. ``per_line`` (EXP-018 G0):
+        each line on its own, as in grep."""
         try:
             rx = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
         except re.error as e:
@@ -144,13 +148,19 @@ class Env:
         allowed = self.mask(task_filters or {})
         if not hasattr(self, "_docs"):
             self._docs = self.cards["doc_text"].to_list()
+            self._lines = [d.split("\n") for d in self._docs]
         match = {}
         for i in np.flatnonzero(allowed):
-            m = rx.search(self._docs[i])
-            if m:
-                match[int(i)] = m
+            if per_line:
+                m = next((x for x in map(rx.search, self._lines[i]) if x), None)
+                if m:
+                    match[int(i)] = (m, m.string)
+            else:
+                m = rx.search(self._docs[i])
+                if m:
+                    match[int(i)] = (m, self._docs[i])
         rows = sorted(match)[max(0, offset):][:k]
-        return len(match), rows, [self._snippet(match[i], self._docs[i]) for i in rows]
+        return len(match), rows, [self._snippet(*match[i]) for i in rows]
 
     @staticmethod
     def _snippet(m: re.Match, doc: str) -> str:
