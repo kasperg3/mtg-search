@@ -90,3 +90,15 @@ def test_initialize_list_and_call(proc):
 
     proc.stdin.close()
     assert proc.wait(30) == 0
+
+
+def test_image_has_no_popularity_data():
+    """EDHREC rank and prices are evaluation-only: neither the image's card table nor its files contain them."""
+    if subprocess.run(["docker", "image", "inspect", IMAGE], check=False, capture_output=True).returncode != 0:
+        pytest.skip(f"image {IMAGE} not built (docker/build.sh)")
+    code = ("import pathlib, polars as pl; c = pl.read_parquet('/app/data/cards.parquet'); "
+            "bad = sorted({'edhrec_rank', 'prices', 'penny_rank', 'edhrec_saltiness'} & set(c.columns)); "
+            "files = sorted(str(p) for p in pathlib.Path('/app').rglob('*popularity*')); print(bad, files)")
+    out = subprocess.run(["docker", "run", "--rm", "--entrypoint", "python", IMAGE, "-c", code],
+                         capture_output=True, text=True, check=True, timeout=120).stdout.strip()
+    assert out == "[] []", out

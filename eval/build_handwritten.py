@@ -18,6 +18,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import sys
 import time
 import urllib.parse
 import urllib.request
@@ -27,6 +28,7 @@ import polars as pl
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))  # for eval.popularity
 CARDS = ROOT / "data" / "cards.parquet"
 OUT = ROOT / "eval" / "queries_handwritten.yaml"
 CACHE = ROOT / "eval" / ".scryfall_cache"
@@ -359,7 +361,9 @@ def main() -> None:
     ap.add_argument("--show", type=int, default=0, help="print N sample names per query")
     args = ap.parse_args()
 
-    cards = pl.read_parquet(CARDS, columns=["oracle_id", "name", "doc_text", "is_funny", "edhrec_rank"])
+    from eval.popularity import with_popularity
+
+    cards = with_popularity(pl.read_parquet(CARDS, columns=["oracle_id", "name", "doc_text", "is_funny"]))  # listing order
     cards = cards.filter(~pl.col("is_funny")).sort(
         pl.col("edhrec_rank").fill_null(10**9), "oracle_id"
     )

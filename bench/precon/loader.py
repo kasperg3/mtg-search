@@ -118,7 +118,12 @@ class CardDB:
 
     @classmethod
     def from_parquet(cls, data_dir: Path = ROOT / "data") -> CardDB:
-        cards = pl.read_parquet(data_dir / "cards.parquet")
+        # edhrec_rank (offline only) comes from the eval-only popularity file, not the shipped card table
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from eval.popularity import with_popularity
+
+        cards = with_popularity(pl.read_parquet(data_dir / "cards.parquet"), data_dir / "eval" / "popularity.parquet")
         tp = data_dir / "tags.parquet"
         tags = pl.read_parquet(tp, columns=["slug", "parent_slugs"]) if tp.exists() else None
         return cls(cards, tags)

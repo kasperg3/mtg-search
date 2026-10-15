@@ -60,9 +60,9 @@ def _norm_name(s: str) -> str:
 
 
 # The only cards.parquet columns the server reads: the rendered allow-list plus columns used
-# purely for identity, filtering and the Scryfall link. Soft / market / crowd-derived metrics
-# (edhrec_rank, prices, ...) stay in the parquet for offline analysis but are never loaded,
-# shown or used for ordering.
+# purely for identity, filtering and the Scryfall link. Soft / market / crowd-derived metrics are
+# not in cards.parquet at all (prices are dropped at ingest; EDHREC rank lives in the evaluation-only
+# data/eval/popularity.parquet, which the image never contains). This allow-list is a second guard.
 INTERNAL_COLUMNS: frozenset[str] = frozenset({
     "oracle_id", "is_funny", "scryfall_uri",
     "supertypes", "types", "subtypes",

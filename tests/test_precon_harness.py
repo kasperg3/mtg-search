@@ -218,3 +218,17 @@ def test_budget_cap():
 def test_cost_formula():
     u = {"prompt_tokens": 1_000_000, "completion_tokens": 1_000_000, "prompt_tokens_details": {"cached_tokens": 500_000}}
     assert cost_usd(u, "glm-5.3") == pytest.approx(0.5 * 1.40 + 0.5 * 0.26 + 4.40)
+
+
+def test_with_popularity_joins_eval_only_rank(tmp_path):
+    """Evaluation code gets EDHREC rank only from the eval-only file, never from the card table."""
+    import polars as pl
+
+    from eval.popularity import with_popularity
+
+    pl.DataFrame({"oracle_id": ["b", "a"], "edhrec_rank": [7, None]}).write_parquet(tmp_path / "pop.parquet")
+    cards = pl.DataFrame({"oracle_id": ["a", "b", "c"], "name": ["A", "B", "C"]})
+    out = with_popularity(cards, tmp_path / "pop.parquet")
+    assert out["oracle_id"].to_list() == ["a", "b", "c"] and out["edhrec_rank"].to_list() == [None, 7, None]
+    with pytest.raises(ValueError, match="already has edhrec_rank"):
+        with_popularity(out, tmp_path / "pop.parquet")

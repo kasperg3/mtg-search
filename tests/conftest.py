@@ -32,6 +32,6 @@ def by_name(raw_cards):
 
 @pytest.fixture(scope="session")
 def cards_df(raw_cards, raw_tags):
-    from mtg_search.ingest import build_cards, tags_by_oracle_id
+    from mtg_search.ingest import build_cards, split_eval_only, tags_by_oracle_id
 
-    return build_cards(raw_cards, tags_by_oracle_id(raw_tags))
+    return split_eval_only(build_cards(raw_cards, tags_by_oracle_id(raw_tags)))[0]  # the shipped table

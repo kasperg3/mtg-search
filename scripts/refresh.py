@@ -244,6 +244,8 @@ def upload_data(api, updated_at: str) -> None:
     from huggingface_hub import CommitOperationAdd
 
     ops = [CommitOperationAdd(path_in_repo=f"data/{f}", path_or_fileobj=str(config.DATA_DIR / f)) for f in DATA_FILES]
+    # evaluation-only popularity: under eval/, outside the data/* pattern the image build downloads
+    ops.append(CommitOperationAdd(path_in_repo="eval/popularity.parquet", path_or_fileobj=str(config.POPULARITY_PARQUET)))
     api.create_commit(config.HF_REPO, repo_type=config.HF_REPO_TYPE, operations=ops,
                       commit_message=f"data: Scryfall snapshot {updated_at}")
     log("uploaded data/*.parquet + manifest.json")

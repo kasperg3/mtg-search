@@ -117,8 +117,10 @@ def pick_known(cards: pl.DataFrame) -> pl.DataFrame:
 def gen_known(cards: pl.DataFrame) -> None:
     from glm import GLM, cost_usd
 
+    from popularity import with_popularity  # eval/popularity.py: the rank is not in the shipped card table
+
     llm = GLM(temperature=0.3, effort="low")
-    picks = pick_known(cards)
+    picks = pick_known(with_popularity(cards))
     drafts, cost = [], 0.0
     log = open(HERE / "known_gen_transcript.jsonl", "w")
     for r in picks.iter_rows(named=True):

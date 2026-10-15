@@ -237,7 +237,9 @@ def main() -> None:
     ap.add_argument("--show", type=int, default=0)
     args = ap.parse_args()
 
-    cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
+    from eval.popularity import with_popularity
+
+    cards = with_popularity(pl.read_parquet(ROOT / "data" / "cards.parquet"))  # rank: listing order only
     base = cards.filter(~pl.col("is_funny"))
     rank = {o: (r if r is not None else 10**9) for o, r in zip(base["oracle_id"], base["edhrec_rank"])}
     texts = {o: REMINDER.sub("", d) for o, d in zip(base["oracle_id"], base["doc_text"])}

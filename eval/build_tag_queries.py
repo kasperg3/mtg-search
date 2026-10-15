@@ -18,12 +18,14 @@ Run:  uv run python eval/build_tag_queries.py
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import polars as pl
 import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))  # for eval.popularity
 CARDS = ROOT / "data" / "cards.parquet"
 TAGS = ROOT / "data" / "tags.parquet"
 OUT = ROOT / "eval" / "queries_tags.yaml"
@@ -131,7 +133,9 @@ def tag_closure(tags: pl.DataFrame) -> dict[str, set[str]]:
 
 
 def main() -> None:
-    cards = pl.read_parquet(CARDS, columns=["oracle_id", "name", "is_funny", "edhrec_rank"])
+    from eval.popularity import with_popularity
+
+    cards = with_popularity(pl.read_parquet(CARDS, columns=["oracle_id", "name", "is_funny"]))  # listing order
     eligible = set(cards.filter(~pl.col("is_funny"))["oracle_id"])
     rank = {
         o: (r if r is not None else 10**9)

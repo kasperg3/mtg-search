@@ -106,6 +106,28 @@ def test_fingerprint_columns_cover_cards_schema(cards_df):
     text, game, vol = set(ingest.TEXT_HASH_COLUMNS), set(ingest.GAMEPLAY_HASH_COLUMNS), set(ingest.VOLATILE_COLUMNS)
     assert not (game | text) & vol
     assert set(cards_df.columns) == text | game | vol, "classify every new cards.parquet column"
+    assert not set(ingest.EVAL_ONLY_COLUMNS) & (text | game | vol)
+
+
+def test_popularity_is_never_in_the_shipped_card_table(raw_cards, raw_tags, raw_rulings, tmp_path):
+    """EDHREC rank is evaluation-only: build_from_raw splits it into eval/popularity.parquet."""
+    import gzip
+
+    raw = {}
+    for name, rows in (("oracle_cards", raw_cards), ("oracle_tags", raw_tags), ("rulings", raw_rulings)):
+        p = tmp_path / f"{name}.jsonl.gz"
+        with gzip.open(p, "wt") as f:
+            f.writelines(json.dumps(r) + "\n" for r in rows)
+        raw[name] = p
+    metas = {k: {"updated_at": "2026-01-01T00:00:00+00:00", "_uri": f"https://x/{k}"} for k in raw}
+    ingest.build_from_raw(raw, metas, tmp_path / "out")
+    cards = pl.read_parquet(tmp_path / "out" / "cards.parquet")
+    pop = pl.read_parquet(tmp_path / "out" / "eval" / "popularity.parquet")
+    assert not {"edhrec_rank", "prices", "penny_rank"} & set(cards.columns)
+    assert pop.columns == ["oracle_id", *ingest.EVAL_ONLY_COLUMNS]
+    assert pop["oracle_id"].to_list() == cards["oracle_id"].to_list()
+    sol = next(c for c in raw_cards if c["name"] == "Sol Ring")
+    assert pop.filter(pl.col("oracle_id") == sol["oracle_id"])["edhrec_rank"].item() == sol.get("edhrec_rank")
 
 
 def _fp(raw_cards, raw_tags, raw_rulings):

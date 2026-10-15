@@ -1,4 +1,5 @@
-"""Scryfall bulk data -> data/cards.parquet, tags.parquet, rulings.parquet, manifest.json.
+"""Scryfall bulk data -> data/cards.parquet, tags.parquet, rulings.parquet, manifest.json, plus the
+evaluation-only data/eval/popularity.parquet (EDHREC rank; never part of the shipped tables).
 
 Usage::
 
@@ -547,10 +548,9 @@ GAMEPLAY_HASH_COLUMNS: tuple[str, ...] = (
     "tags",
 )
 
-# Not hashed: change without any rules change (popularity, links, and the attributes of
-# whichever printing Scryfall picks as representative).
+# Not hashed: change without any rules change (links, and the attributes of whichever printing
+# Scryfall picks as representative).
 VOLATILE_COLUMNS: tuple[str, ...] = (
-    "edhrec_rank",
     "image_uri",
     "scryfall_uri",
     "set",
@@ -558,6 +558,17 @@ VOLATILE_COLUMNS: tuple[str, ...] = (
     "released_at",
     "rarity",
 )
+
+
+# Crowd/popularity data: extracted by build_cards, then split off by split_eval_only into
+# eval/popularity.parquet for offline evaluation (popularity baseline, popularity-drift metric, task
+# stratification). Never in cards.parquet, so the shipped server and image cannot contain it.
+EVAL_ONLY_COLUMNS: tuple[str, ...] = ("edhrec_rank",)
+
+
+def split_eval_only(cards_df: pl.DataFrame) -> tuple[pl.DataFrame, pl.DataFrame]:
+    """-> (shipped cards table without EVAL_ONLY_COLUMNS, eval-only table keyed by oracle_id)."""
+    return cards_df.drop(EVAL_ONLY_COLUMNS), cards_df.select("oracle_id", *EVAL_ONLY_COLUMNS)
 
 
 def _row_json(row: dict[str, Any]) -> str:
@@ -616,7 +627,7 @@ def read_manifest(path: Path = config.MANIFEST_JSON) -> dict[str, Any] | None:
 
 def build_from_raw(raw: dict[str, Path], metas: dict[str, dict[str, Any]], out_dir: Path) -> dict[str, Any]:
     tag_objs = list(iter_jsonl(raw["oracle_tags"]))
-    cards_df = build_cards(iter_jsonl(raw["oracle_cards"]), tags_by_oracle_id(tag_objs))
+    cards_df, popularity_df = split_eval_only(build_cards(iter_jsonl(raw["oracle_cards"]), tags_by_oracle_id(tag_objs)))
     keep_ids = set(cards_df["oracle_id"].to_list())
     tags_df = build_tags(tag_objs, keep_ids)
     rulings_df = build_rulings(iter_jsonl(raw["rulings"]), keep_ids)
@@ -625,6 +636,8 @@ def build_from_raw(raw: dict[str, Path], metas: dict[str, dict[str, Any]], out_d
     cards_df.write_parquet(out_dir / "cards.parquet", compression="zstd")
     tags_df.write_parquet(out_dir / "tags.parquet", compression="zstd")
     rulings_df.write_parquet(out_dir / "rulings.parquet", compression="zstd")
+    (out_dir / "eval").mkdir(exist_ok=True)
+    popularity_df.write_parquet(out_dir / "eval" / "popularity.parquet", compression="zstd")
 
     manifest = {
         "schema_version": config.SCHEMA_VERSION,

@@ -18,9 +18,14 @@ colours, colour identity, type line, rarity, oracle text per face, P/T / loyalty
 keywords, produced mana, legality, filtered functional oracle tags, and the Legendary,
 Commander-eligible / partner, Game Changer (WotC's official bracket list), Reserved and layout
 markers. `get_card` adds the official rulings and the Scryfall link. Results are ordered by text
-relevance only. Popularity, price and other crowd- or market-derived metrics (EDHREC rank,
-prices, salt) are never loaded, shown or used for ordering. The server reads only an
-allow-list of `cards.parquet` columns (`SERVER_COLUMNS` in `src/mtg_search/server.py`).
+relevance only. Popularity, price and other crowd- or market-derived metrics are **not in the
+image at all**:
+- prices and salt are dropped at ingest;
+- EDHREC rank goes to the evaluation-only `eval/popularity.parquet` on the HF dataset (locally
+  `data/eval/popularity.parquet`), which the image build never downloads or copies;
+- `tests/test_server_docker.py::test_image_has_no_popularity_data` checks the built image;
+- as a second guard, the server reads only an allow-list of `cards.parquet` columns
+  (`SERVER_COLUMNS` in `src/mtg_search/server.py`).
 
 ## Register with Claude Code
 

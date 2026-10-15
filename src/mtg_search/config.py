@@ -14,6 +14,9 @@ CARDS_PARQUET = DATA_DIR / "cards.parquet"
 TAGS_PARQUET = DATA_DIR / "tags.parquet"
 RULINGS_PARQUET = DATA_DIR / "rulings.parquet"
 MANIFEST_JSON = DATA_DIR / "manifest.json"
+# Popularity (EDHREC rank) is evaluation-only: written next to, never into, the shipped tables. The server
+# and the Docker image never read or contain it (.dockerignore allow-list; HF path eval/, not data/).
+POPULARITY_PARQUET = DATA_DIR / "eval" / "popularity.parquet"
 
 SCHEMA_VERSION = 2  # 2: cards.parquet without prices; manifest fingerprint
 

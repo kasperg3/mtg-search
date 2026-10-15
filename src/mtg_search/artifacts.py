@@ -3,6 +3,7 @@
 Layout (same as the dataset repo)::
 
     data/cards.parquet, data/tags.parquet, data/rulings.parquet, data/manifest.json
+    eval/popularity.parquet   # part "eval": offline evaluation only, never requested by the image build
     embeddings/late/lightonai__mLateOn/{tokens.npy, offsets.npy, meta.json}   # doc tokens (GPU)
     models/lightonai__mLateOn-int8rr/{...}   # legacy NextPlaid int8 encoder (part "model-int8")
 
@@ -44,6 +45,8 @@ PATTERNS = {
     "data": ["data/*.parquet", "data/manifest.json"],
     "embeddings": [f"embeddings/late/{LATE_SLUG}/*"],
     "model-int8": [f"{MODEL_DIR}/*"],
+    # evaluation-only popularity table; download with --dest data -> data/eval/popularity.parquet
+    "eval": ["eval/popularity.parquet"],
 }
 
 
