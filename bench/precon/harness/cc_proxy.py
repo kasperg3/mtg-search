@@ -76,7 +76,8 @@ def main() -> None:
             f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 
     def call(name: str, args: dict) -> str:
-        out = _http(f"{base}/call", {"name": name, "args": args})
+        # task and call number let a shared ToolService format per-episode output (EXP-013); precon ignores them
+        out = _http(f"{base}/call", {"name": name, "args": args, "task": task, "n": budget.n})
         if out.get("leak"):
             log({"event": "leak", "tool": name, "error": out["error"]})
             raise ValueError("tool unavailable")

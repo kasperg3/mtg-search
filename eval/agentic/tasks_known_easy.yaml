@@ -1,0 +1,82 @@
+- id: known-easy-biomancer-s-familiar
+  kind: known
+  source: known-easy bm25@2 edhrec_rank=3065
+  prompt: Find the specific card that's a cheap blue-green creature that makes the abilities you pay for on your creatures
+    cost two less mana and can tap to let one of them pile its growth counters on again even though it already has some.
+  filters: {}
+  relevant:
+  - 923d44a9-774d-459c-9cec-1d5b081b51f0
+  graded: {}
+  popular: true
+- id: known-easy-emperor-mihail-ii
+  kind: known
+  source: known-easy bm25@2 edhrec_rank=4245
+  prompt: Find the specific card that's a three-mana blue legendary 3/3 that lets you peek at the top card of your library
+    whenever you want, cast your fish-people spells straight off the top, and pay a little extra each time to churn out another
+    tiny 1/1 fish token.
+  filters: {}
+  relevant:
+  - 6c901ff4-15c3-468f-9a1b-4c69a7bbc31a
+  graded: {}
+  popular: true
+- id: known-easy-sterling-grove
+  kind: known
+  source: known-easy bm25@1 edhrec_rank=1234
+  prompt: Find the specific card that is a two-mana green-white enchantment which keeps your other enchantments safe from
+    targeted spells and abilities, and can be tossed for one extra mana to dig any enchantment out of your deck and put it
+    on top.
+  filters: {}
+  relevant:
+  - 2c275a85-5a15-46cd-a6e7-add63f9b853d
+  graded: {}
+  popular: true
+- id: known-easy-witch-of-the-moors
+  kind: known
+  source: known-easy bm25@3 edhrec_rank=2567
+  prompt: Find the specific card that's a five-mana black 4/4 that kills anything it damages, and when your turn ends, if
+    you gained life that turn, each opponent has to give up a creature they pick while you get one back from your graveyard.
+  filters: {}
+  relevant:
+  - 7ad97dd9-1342-4ed4-bea9-1bb21d748e04
+  graded: {}
+  popular: true
+- id: known-easy-ransack
+  kind: known
+  source: known-easy bm25@1 edhrec_rank=29340
+  prompt: Find the specific card that's a four-mana blue sorcery letting you peek at the top five cards of any player's deck
+    and stack them however you like, tucking whichever ones you want down to the bottom.
+  filters: {}
+  relevant:
+  - 5b4a400b-435d-4140-984b-65f034c6a9fc
+  graded: {}
+  popular: false
+- id: known-easy-reign-of-terror
+  kind: known
+  source: known-easy bm25@1 edhrec_rank=31310
+  prompt: Find the specific card that's a five-mana black sorcery that wipes out every green creature or every white creature
+    — your pick — with no way to save them, and it costs you a couple of life for each one that dies.
+  filters: {}
+  relevant:
+  - 67d12a5a-9e0c-4550-86ad-cd1e173fea8f
+  graded: {}
+  popular: false
+- id: known-easy-spoils-of-the-vault
+  kind: known
+  source: known-easy bm25@3 edhrec_rank=22714
+  prompt: Find the specific card that's a single black mana instant where you name a card and keep flipping the top of your
+    library until you hit it, except every other card flipped gets tossed out of the game and costs you a life apiece.
+  filters: {}
+  relevant:
+  - ef86f861-1fdf-4be0-9497-8adc064af3de
+  graded: {}
+  popular: false
+- id: known-easy-war-behemoth
+  kind: known
+  source: known-easy bm25@3 edhrec_rank=31785
+  prompt: Find the specific card that's a white creature you can cast face-down as a 2/2 for three mana and flip up later,
+    turning into a fairly tough 3/6.
+  filters: {}
+  relevant:
+  - 4792a05e-b557-4132-8303-235feefe0d99
+  graded: {}
+  popular: false

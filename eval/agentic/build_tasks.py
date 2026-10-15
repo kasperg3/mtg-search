@@ -3,6 +3,7 @@
     uv run python eval/agentic/build_tasks.py                    # deck + attribute + reviewed known-item tasks
     uv run python eval/agentic/build_tasks.py --gen-known        # (GLM) draft known-item descriptions -> known_drafts.yaml
     uv run --extra models python eval/agentic/build_tasks.py --check-known   # single-shot ranks of the target
+    uv run python eval/agentic/build_tasks.py --known-easy       # tasks_known_easy.yaml (EXP-013 stratum)
 
 Task kinds (labels are never shown to the agent):
   deck   30 deckneeds queries + 35 seeded-sample paraphrase "-need" queries. Task filters
@@ -154,22 +155,45 @@ def check_known() -> None:
     src.write_text(yaml.safe_dump(items, sort_keys=False, allow_unicode=True, width=120))
 
 
+def known_task(k: dict, prefix: str = "known") -> dict:
+    return {"id": f"{prefix}-{re.sub(r'[^a-z0-9]+', '-', k['name'].lower()).strip('-')}", "kind": "known",
+            "source": f"edhrec_rank={k['edhrec_rank']}", "prompt": k["prompt"], "filters": {},
+            "relevant": [k["oracle_id"]], "graded": {}, "popular": (k["edhrec_rank"] or 10**9) < 5000}
+
+
+def known_easy() -> None:
+    """tasks_known_easy.yaml (EXP-013): the 8 drafts dropped from tasks.yaml only because single-shot BM25
+    already ranked the target in its top 3. Dropping them biased the known-item set against lexical
+    search, so EXP-013 reports them as a separate stratum. Checked by hand against the card text."""
+    kept = {k["oracle_id"] for k in yaml.safe_load((HERE / "known_reviewed.yaml").read_text())}
+    out = []
+    for k in yaml.safe_load((HERE / "known_drafts.yaml").read_text()):
+        r = (k.get("single_shot_rank") or {}).get("bm25")
+        if k["oracle_id"] in kept or r is None or r > 3:
+            continue
+        k = dict(k, prompt=k["prompt"].replace("Find the specific card that cheap ", "Find the specific card that's a cheap "))
+        out.append({**known_task(k, "known-easy"), "source": f"known-easy bm25@{r} edhrec_rank={k['edhrec_rank']}"})
+    (HERE / "tasks_known_easy.yaml").write_text(yaml.safe_dump(out, sort_keys=False, allow_unicode=True, width=120))
+    print(f"wrote {len(out)} known-easy tasks")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen-known", action="store_true")
     ap.add_argument("--check-known", action="store_true")
+    ap.add_argument("--known-easy", action="store_true")
     args = ap.parse_args()
     cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
     if args.gen_known:
         return gen_known(cards)
     if args.check_known:
         return check_known()
+    if args.known_easy:
+        return known_easy()
     tasks = deck_tasks() + attr_tasks(cards)
     known = yaml.safe_load((HERE / "known_reviewed.yaml").read_text())
-    for i, k in enumerate(known):
-        tasks.append({"id": f"known-{re.sub(r'[^a-z0-9]+', '-', k['name'].lower()).strip('-')}", "kind": "known",
-                      "source": f"edhrec_rank={k['edhrec_rank']}", "prompt": k["prompt"], "filters": {},
-                      "relevant": [k["oracle_id"]], "graded": {}, "popular": (k["edhrec_rank"] or 10**9) < 5000})
+    for k in known:
+        tasks.append(known_task(k))
     ids = [t["id"] for t in tasks]
     assert len(ids) == len(set(ids))
     (HERE / "tasks.yaml").write_text(yaml.safe_dump(tasks, sort_keys=False, allow_unicode=True, width=120))

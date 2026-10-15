@@ -122,8 +122,11 @@ class ClaudeCode:
         return {"llm": "claude-code", "model": self.model, "cli": self.version, "billing": "subscription",
                 "temperature": "provider default", "tool_search": self.tool_search}
 
-    def _session(self, system: str, user: str, transcript_path: Path | None, mcp: dict | None) -> tuple[dict, list]:
-        cmd = ["claude", "-p", "--model", self.model, "--system-prompt", system,
+    def _session(self, system: str, user: str, transcript_path: Path | None, mcp: dict | None,
+                 system_file: Path | None = None) -> tuple[dict, list]:
+        # a long system prompt (EXP-013 in-context shards) goes via a file: one argv string is capped at 128 KiB
+        sys_args = ["--system-prompt-file", str(system_file)] if system_file else ["--system-prompt", system]
+        cmd = ["claude", "-p", "--model", self.model, *sys_args,
                "--tools", "ToolSearch" if (self.tool_search and mcp) else "",
                "--strict-mcp-config", "--no-session-persistence", "--output-format", "stream-json", "--verbose"]
         server = (mcp or {}).get("env", {}).get("CC_SERVER_NAME", PROXY_SERVER)
@@ -156,14 +159,15 @@ class ClaudeCode:
             raise RuntimeError(f"claude -p error: {result.get('subtype')} {str(result.get('result'))[:300]}")
         return result, events
 
-    def _retrying(self, system: str, user: str, transcript_path: Path, mcp: dict | None) -> dict:
+    def _retrying(self, system: str, user: str, transcript_path: Path, mcp: dict | None,
+                  system_file: Path | None = None) -> dict:
         """Retry transient CLI failures (rate limits, crashes); each attempt is marked in the log so
         only the last attempt's proxy events count. Isolation failures are never retried."""
         for attempt in range(self.retries + 1):
             with open(transcript_path, "a") as f:
                 f.write(json.dumps({"event": "attempt", "n": attempt}) + "\n")
             try:
-                return self._session(system, user, transcript_path, mcp)[0]
+                return self._session(system, user, transcript_path, mcp, system_file)[0]
             except (RuntimeError, subprocess.TimeoutExpired):
                 if attempt == self.retries:
                     raise

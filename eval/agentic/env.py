@@ -3,6 +3,8 @@
 Backends (``retriever`` names used by conditions):
   ``mlateon``          LateInMemory(lightonai/mLateOn)
   ``sparseup``         SparseUpRetriever (card-text index)
+  ``grep``             no search infrastructure: a regex over the card text, matches in file order
+                       (condition G); the legacy F variant ranks matches by BM25
 
 Term feedback is always computed with SparseUp, whatever retriever produced the results, so
 the same aggregate line can be shown over mLateOn results (condition D) and logged (hidden)
@@ -59,7 +61,7 @@ def _norm_filters(f: dict | None) -> dict:
 
 
 class Env:
-    def __init__(self, retrievers: tuple[str, ...] = ("mlateon", "sparseup")):
+    def __init__(self, retrievers: tuple[str, ...] = ("mlateon", "sparseup"), feedback: bool = True):
         self.cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
         self.oids = self.cards["oracle_id"].to_list()
         # result-cache key includes the corpus order, so a refreshed cards.parquet never reuses stale row ids
@@ -70,6 +72,16 @@ class Env:
         self._render = [self._render_row(r) for r in self.cards.iter_rows(named=True)]
         self.lock = threading.Semaphore(2)
         self.ret: dict[str, object] = {}
+        self.feedback = feedback
+        if feedback:
+            self._init_feedback()
+        for name in retrievers:
+            self.ret[name] = self._load(name)
+        CACHE_DIR.mkdir(exist_ok=True)
+        self._name_index()
+
+    def _init_feedback(self) -> None:
+        """SparseUp term feedback (conditions C/D; logged for A/B/F as a chance baseline)."""
         from mtg_search.retrievers.sparseup import MODEL_ID, SparseUpRetriever
 
         self.sparseup = SparseUpRetriever.from_dir(INDEX_DIR, MODEL_ID, doc_texts=self.cards["doc_text"].to_list())
@@ -104,13 +116,12 @@ class Env:
         )
         df = np.diff(self.sparseup.docs.indptr)
         self.idf = np.log(self.sparseup.n / (1.0 + df)).astype(np.float32)
-        for name in retrievers:
-            self.ret[name] = self._load(name)
-        CACHE_DIR.mkdir(exist_ok=True)
-        self._name_index()
 
     def _load(self, name: str):
         if name == "sparseup":
+            if not self.feedback:
+                self._init_feedback()
+                self.feedback = True
             return self.sparseup
         if name == "bm25":
             from mtg_search.retrievers.bm25 import BM25Retriever
@@ -196,12 +207,19 @@ class Env:
         path.write_text(json.dumps(rows))
         return rows
 
-    def grep(self, pattern: str, agent_filters: dict | None, task_filters: dict | None, k: int = TOP_K):
+    def grep(self, pattern: str, agent_filters: dict | None, task_filters: dict | None, k: int = TOP_K,
+             order: str = "bm25", offset: int = 0):
         """Case-insensitive regex over doc_text (reminder text included). -> (n_matches, rows, matched
-        snippets). Matching cards are ordered by BM25 score of the pattern's literal words (regex
-        syntax stripped) over card text, ties broken alphabetically by name. No popularity signal."""
-        try:
-            rx = re.compile(pattern, re.IGNORECASE)
+        snippets). No popularity signal either way.
+
+        ``order="file"`` (condition G, no search infrastructure): matches in card-file order, i.e.
+        alphabetical by name (cards.parquet is sorted by name), from ``offset`` on; no ranking.
+        ``order="bm25"`` (legacy condition F): by BM25 score of the pattern's literal words (regex
+        syntax stripped), ties broken alphabetically by name."""
+        if order not in ("bm25", "file"):
+            raise ValueError(order)
+        try:  # G: per-line anchors as in grep (``.`` never crosses a line break in either mode)
+            rx = re.compile(pattern, re.IGNORECASE | (re.MULTILINE if order == "file" else 0))
         except re.error as e:
             raise ValueError(f"invalid regex: {e}") from e
         allowed = self.mask(task_filters or {}, agent_filters or {})
@@ -212,6 +230,9 @@ class Env:
             m = rx.search(self._docs[i])
             if m:
                 match[int(i)] = m
+        if order == "file":
+            order_rows = sorted(match)[max(0, offset):][:k]
+            return len(match), order_rows, [self._snippet(match[i], self._docs[i]) for i in order_rows]
         words = " ".join(re.findall(r"[A-Za-z][A-Za-z'+/-]*", re.sub(r"\\[a-zA-Z]", " ", pattern)))
         bm = np.zeros(len(self._docs), dtype=np.float32)
         if words and match:
@@ -219,16 +240,17 @@ class Env:
             mask[list(match)] = True
             for r, sc in self.ret["bm25"].search(words, len(match), mask):
                 bm[r] = sc
-        order = sorted(match, key=lambda i: (-bm[i], self.names[i]))
-        snippets = []
-        for i in order[:k]:
-            m, doc = match[i], self._docs[i]
-            a, b = doc.rfind("\n", 0, m.start()) + 1, doc.find("\n", m.end())
-            line = doc[a : b if b >= 0 else len(doc)]
-            s0, s1 = m.start() - a, m.end() - a
-            snip = line[:s0] + "[[" + line[s0:s1] + "]]" + line[s1:]
-            snippets.append(snip if len(snip) <= 200 else "…" + snip[max(0, s0 - 80) : s1 + 100] + "…")
-        return len(match), order[:k], snippets
+        ranked = sorted(match, key=lambda i: (-bm[i], self.names[i]))
+        return len(match), ranked[:k], [self._snippet(match[i], self._docs[i]) for i in ranked[:k]]
+
+    @staticmethod
+    def _snippet(m: re.Match, doc: str) -> str:
+        """The matching line with the match in [[ ]] (long lines cut around the match)."""
+        a, b = doc.rfind("\n", 0, m.start()) + 1, doc.find("\n", m.end())
+        line = doc[a : b if b >= 0 else len(doc)]
+        s0, s1 = m.start() - a, m.end() - a
+        snip = line[:s0] + "[[" + line[s0:s1] + "]]" + line[s1:]
+        return snip if len(snip) <= 200 else "…" + snip[max(0, s0 - 80) : s1 + 100] + "…"
 
     # ------------------------------------------------------------------ term feedback (SparseUp)
 
