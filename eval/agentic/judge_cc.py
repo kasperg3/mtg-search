@@ -22,7 +22,6 @@ from __future__ import annotations
 import argparse
 import json
 import random
-import re
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor
@@ -39,6 +38,7 @@ from cc_agent import load_tasks, usage_of  # noqa: E402
 from judge import BATCH, JUDGE_SYSTEM, judge_prompt  # noqa: E402
 
 from bench.precon.harness.claude_code import ClaudeCode  # noqa: E402
+from bench.precon.judge import parse_grades  # noqa: E402
 
 MODEL = "claude-sonnet-5-5"
 
@@ -51,24 +51,6 @@ def build_pool(run: str, task_ids: list[str]) -> dict[str, list[str]]:
         if e["task_id"] in p:
             p[e["task_id"]] |= {o for o in e["final_oids"][:20] if o}
     return {t: sorted(v) for t, v in p.items()}
-
-
-def parse_grades(text: str, n: int) -> dict[int, int]:
-    """Grades from the first JSON object with a "grades" list; text before or after it (e.g. a note that
-    mentions {U}{U}) is ignored."""
-    dec = json.JSONDecoder()
-    for m in re.finditer(r"\{", text or ""):
-        try:
-            obj, _ = dec.raw_decode(text, m.start())
-        except json.JSONDecodeError:
-            continue
-        if isinstance(obj, dict) and isinstance(obj.get("grades"), list):
-            try:
-                out = {int(g["i"]): int(g["g"]) for g in obj["grades"]}
-            except (ValueError, KeyError, TypeError):
-                return {}
-            return {i: g for i, g in out.items() if 1 <= i <= n and g in (0, 1, 2)}
-    return {}
 
 
 def main() -> None:
@@ -91,7 +73,6 @@ def main() -> None:
     kind = {(t, o): "pool" for t, oids in pool.items() for o in oids}
     if args.decoys_random or args.decoys_retrieved:
         import numpy as np
-
         from env import Env
 
         env = Env(())

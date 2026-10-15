@@ -1,6 +1,6 @@
-# Plan: judged labels for the precon deck tasks (EXP-017, proposed)
+# Plan: judged labels for the precon deck tasks (EXP-017, pre-registered)
 
-**Status: plan, awaiting the owner's go-ahead.** Nothing has been run. Once approved, this file is frozen as the pre-registration (commit before any judge call), and the results go in a separate write-up.
+**Status: pre-registered 2026-10-15.** The owner approved the plan ("run the precon deck aware judging plan"). This file is frozen as committed before the first judge call; the details fixed at implementation are in [Pre-registration addendum](#pre-registration-addendum-fixed-before-any-judge-call) at the end. Results go in `precon_judging.md`.
 
 ## Why
 
@@ -85,3 +85,42 @@ That is about 10–20 minutes with 4 workers. Everything runs on the subscriptio
 3. Commit this file as the pre-registration; run the recognition probe on dev.
 4. Judge the EXP-011 test pool (one pass + 10% re-judge); optionally the EXP-014 dev pool.
 5. Analyse; write `eval/experiments/precon_judging.md`; add the registry row; sync to Hugging Face.
+
+## Pre-registration addendum (fixed before any judge call)
+
+Implementation: `bench/precon/judge.py` (`probe`, `judge`, `analyze`), tests in `tests/test_precon_judge.py`. Data: `kasper-cbx/mtg-precon-bench@d6bb8ba`, the revision every judged run was scored on.
+
+**Pool.** Per precon: every add-side pick of the given runs (ADD top 20, SWAP adds, truncated as the scorer does) that resolves and is statically valid: commander-legal, in colour identity, not in the deck. Picks that fail these checks are not judged and score 0. The Game Changer limit depends on rank order, so it is applied per episode at scoring time: over-limit picks score 0 whatever their grade. Dry-run sizes: EXP-011 test 1,051 cards (75 per precon), EXP-014 dev 675 (45 per precon).
+
+**Controls** (seeded, per precon):
+- `random`: 6 commander-legal, in-identity, non-basic cards that are not in the deck or the pool and carry no add label of any rate;
+- `top_label`: the 6 highest-rate `add` (nonland) labels that no run picked and that are addable;
+- `in_deck`: 3 non-basic, non-commander cards from the deck.
+
+**Prompts.**
+- **System prompt:** the rubric as above, the agents' format rules (colour identity, bracket 3, at most 3 Game Changers) and the JSON reply format. "Popular staple" became "widely played", because "staple" is on the leak list.
+- **User prompt:** the deck, then the candidates.
+  - The deck: the commander's full text with its name replaced by "your commander" (the existing `anonymise` of the agent harness), the other 99 cards as names sorted by (land last, mana value, name), and the deck's current Game Changer count.
+  - The candidates: up to 15 cards with full text. Each precon's cards (pool and controls mixed) are shuffled with a seed and split into near-equal batches.
+- **Why the deck is in the user prompt:** the agents saw it there, and the gold-name check covers the system prompt.
+
+**Pre-flight.** Every prompt passes `preflight` before the first call. As for the deck's own cards, an identifier that is part of a candidate card's name is exempt: the dry run found three, the cards "The Masters of Evil", "Sneak Attack" and "Avengers Assemble!". The last is a pool card for its own precon, a disclosed limit. Any other identifier aborts the run.
+
+**Grades.**
+- One pass. A seeded 10% of batches are judged again in a new order, for consistency only; pass 0 grades are used everywhere else.
+- A reply that does not grade every card is asked once more. Cards still ungraded are dropped from both numerator and denominator.
+
+**Metrics.** As above. Per episode, fit@k is the mean of grade/2 over k slots: invalid picks (scorer rules) and missing slots count 0.
+- **Primary:** ADD fit@20, first run − second run, per precon averaged over repeats.
+- **Established** only if the 10k paired-bootstrap 95% CI excludes 0 *and* the two-sided sign test gives p < 0.05, as in EXP-011.
+- **Agreement:** "labelled" means an add or add_land label with grade ≥ 1 (rate ≥ 0.05), the scorer's P@k threshold.
+
+**Order of runs.**
+1. Recognition probe on the 15 dev decks. Same anonymised deck text; the question asks for commander, deck name and product. Auto-matched by name, with answers kept for review.
+2. **Calibration on dev: the EXP-014 dev pool**, shipped-now (`20261015_exp014-dev_after3`) − old surface (`20261015_exp014-dev_before`), 15 precons × 1 rep, with controls and the 10% re-judge.
+   - The validity rule is checked here first.
+   - If it fails, the rubric wording may be revised once, on dev only, and dev is re-judged under a new run id. Both dev runs are reported.
+   - The dev comparison itself is descriptive (n = 15, one repeat).
+3. **Primary on test: the EXP-011 pool**, `20261014_exp011-test_shipped` − `20261014_exp011-test_v1`, 14 precons × 3 reps. The rubric is whichever passed dev, and the validity rule applies again on test, independently.
+
+The test pool is judged once. Re-running it is allowed only after a crash, resuming the same run id; no rubric or prompt change is allowed after the test judgments start.
