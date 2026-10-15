@@ -85,6 +85,14 @@ def main() -> None:
             "complete_parses": sum(c["n_graded"] == c["n_cards"] for c in calls),
             "notional_usd": round(sum(c["usage"].get("notional_usd", 0) for c in calls), 3)}
     out = {"consistency": cons, "agreement_with_labels": agree, "per_task": per_task, "a_vs_g_p10": effect, "cost": cost}
+    dpath = HERE / "runs" / f"{args.run}-decoys" / "judgments.jsonl"
+    if dpath.exists():  # blind negative controls mixed into the batches (judge_cc.py --decoys-*)
+        by = defaultdict(list)
+        for x in dpath.read_text().splitlines():
+            r = json.loads(x)
+            by[r.get("kind", "pool")].append(r["grade"])
+        out["controls"] = {k: {"n": len(v), "judged_relevant": round(sum(x >= 1 for x in v) / len(v), 3),
+                               "grade2": round(sum(x == 2 for x in v) / len(v), 3)} for k, v in by.items()}
     (d / "summary.json").write_text(json.dumps(out, indent=1) + "\n")
     print(json.dumps(out, indent=1))
 

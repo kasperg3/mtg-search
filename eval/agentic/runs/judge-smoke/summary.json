@@ -1,0 +1,111 @@
+{
+ "consistency": {
+  "n_cards": 218,
+  "exact_agreement": 0.7752293577981652,
+  "binary_agreement": 0.9724770642201835,
+  "kappa": 0.5697946033024568,
+  "weighted_kappa": 0.5842550919215808
+ },
+ "agreement_with_labels": {
+  "labelled_pooled": 152,
+  "unlabelled_pooled": 66,
+  "labelled_judged_relevant": 0.9868421052631579,
+  "unlabelled_judged_relevant": 0.8939393939393939,
+  "unlabelled_judged_grade2": 0.18181818181818182,
+  "kappa_label_vs_judge": 0.12293892626302604
+ },
+ "per_task": {
+  "attr-green-cheap-fog": {
+   "source": "otag:fog",
+   "pooled": 19,
+   "labelled": 18,
+   "labelled_judged_rel": 18,
+   "unlabelled_judged_rel": 1
+  },
+  "attr-white-anthem-enchantment": {
+   "source": "otag:anthem",
+   "pooled": 17,
+   "labelled": 9,
+   "labelled_judged_rel": 8,
+   "unlabelled_judged_rel": 6
+  },
+  "hw-each-opponent-mills-need": {
+   "source": "paraphrase-need",
+   "pooled": 36,
+   "labelled": 7,
+   "labelled_judged_rel": 7,
+   "unlabelled_judged_rel": 29
+  },
+  "hw-one-blocker-max-need": {
+   "source": "paraphrase-need",
+   "pooled": 27,
+   "labelled": 26,
+   "labelled_judged_rel": 26,
+   "unlabelled_judged_rel": 1
+  },
+  "need-orzhov-lifegain-payoffs": {
+   "source": "deckneeds",
+   "pooled": 30,
+   "labelled": 30,
+   "labelled_judged_rel": 30,
+   "unlabelled_judged_rel": 0
+  },
+  "need-punish-spells": {
+   "source": "deckneeds",
+   "pooled": 23,
+   "labelled": 12,
+   "labelled_judged_rel": 11,
+   "unlabelled_judged_rel": 8
+  },
+  "need-refill-red-aggro": {
+   "source": "deckneeds",
+   "pooled": 36,
+   "labelled": 20,
+   "labelled_judged_rel": 20,
+   "unlabelled_judged_rel": 14
+  },
+  "tag-fog-need": {
+   "source": "paraphrase-need",
+   "pooled": 30,
+   "labelled": 30,
+   "labelled_judged_rel": 30,
+   "unlabelled_judged_rel": 0
+  }
+ },
+ "a_vs_g_p10": {
+  "A": {
+   "p10_orig": 0.738,
+   "p10_pooled": 0.975
+  },
+  "G": {
+   "p10_orig": 0.75,
+   "p10_pooled": 0.912
+  }
+ },
+ "cost": {
+  "calls": 36,
+  "tokens_per_call_mean": 2245,
+  "tokens_total": 80823,
+  "output_tokens_total": 11044,
+  "wall_s_per_call_mean": 4.5,
+  "complete_parses": 36,
+  "notional_usd": 0.389
+ },
+ "controls": {
+  "decoy_random": {
+   "n": 48,
+   "judged_relevant": 0.042,
+   "grade2": 0.0
+  },
+  "pool": {
+   "n": 218,
+   "judged_relevant": 0.963,
+   "grade2": 0.587
+  },
+  "decoy_retrieved": {
+   "n": 48,
+   "judged_relevant": 0.229,
+   "grade2": 0.021
+  }
+ }
+}
