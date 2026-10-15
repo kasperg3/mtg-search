@@ -221,14 +221,16 @@ class CardService:
 # Measured on the precon benchmark before shipping (EXP-009/011/014): the instructions name the situations that
 # call for the tools and end with the "before you answer" sentence that raised tool use from 0% to 40% (ADD) and
 # 86% (SWAP); the search_cards description opens with when to use it ("rather than listing cards from memory").
-# A rewrite without that opening searched less (EXP-014: 10/30 vs 19/30 dev episodes). search_cards and get_card
+# The slim three-tool schemas searched less than the old 17-parameter ones (EXP-014: 10/30 vs 19/30 dev episodes;
+# EXP-010 e4slim the same), so both core descriptions open with the trigger sentence tested in EXP-010/011
+# (e1desc / e6desc_slim: 60-79% of ADD episodes searched). search_cards and get_card
 # load upfront in Claude Code (alwaysLoad).
 
 INSTRUCTIONS = """Magic: The Gathering (MTG) card search and lookup over every card's current official rules text (Scryfall data, which can include cards printed after your training data). Use these tools whenever a task involves choosing, suggesting or checking cards: building, upgrading or cutting a Commander/EDH or other deck, "cards that do X", replacements for a card, or a card's exact text, rulings, colour identity or format legality. Use them even when you feel sure from memory: errata, new cards, and colour-identity or legality slips are the usual errors.
 Efficient use: one search_cards call per deck need, with color_identity (and format) set, returns candidates that are already in colour and legal; send 2-4 queries in that call for a broad need. get_card checks one card you named from memory or whose rulings matter. find_similar gives alternatives to a known card, e.g. for a swap. Rankings use rules text only.
 Before you answer a deck-building request, use the tools: search for candidate cards and check exact card text, colour identity and legality of your picks."""
 
-SEARCH_DOC = """Search every Magic: The Gathering (MTG) card by what it does: semantic search over the rules text, with filters for Commander colour identity, format legality, card type and mana value. Use it to find candidates for a deck need (removal, ramp, card draw, sacrifice outlets, answers to fliers, ...) rather than listing cards from memory. With color_identity (and format="commander") set, every result is in colour and legal, so no separate check is needed.
+SEARCH_DOC = """Before recommending cards for a deck, call this to find candidates instead of listing them from memory. Search every Magic: The Gathering (MTG) card by what it does: semantic search over the rules text, with filters for Commander colour identity, format legality, card type and mana value. Use it to find candidates for a deck need (removal, ramp, card draw, sacrifice outlets, answers to fliers, ...) rather than listing cards from memory. With color_identity (and format="commander") set, every result is in colour and legal, so no separate check is needed.
 
 Write each query the way the rules text of a matching card reads, not the way a player describes the need: "Destroy target creature with flying." rather than "answers to fliers". For a broad need, send 2-4 queries that each describe a different way to meet it, e.g. ["Reach", "Destroy target creature with flying.", "Creatures you control gain reach until end of turn."]; their rankings are merged. Put colour, format, type and mana-value limits in the filters, not in the queries.
 
@@ -236,7 +238,7 @@ Returns up to `limit` cards, best first, ranked only by how well their text matc
 
 SIMILAR_DOC = """Find Magic: The Gathering cards that do what a given card does: replacements, upgrades or redundancy. The named card's rules text is the query and the card itself is left out. Use it for "more cards like X", an in-colour or format-legal stand-in for a card, or alternatives in a swap, e.g. card_name="Divination", color_identity="BR", format="commander". Same filters and output as search_cards."""
 
-GET_DOC = """Show one Magic: The Gathering card in full, by name (fuzzy: "fire ice", "jace mind sculptor" or one face of a double-faced card all work). Returns the complete current rules text of every face, mana cost and mana value, type line, power/toughness, colours and colour identity, legality in every format, markers (Game Changer, Reserved, Commander-eligible), roles, official rulings and the Scryfall link. Use it before recommending a card you know only from memory, or when exact wording, a ruling or legality decides the answer. Cards from a search_cards call with color_identity and format set need no second check."""
+GET_DOC = """Before recommending a card you know only from memory, call this to check its current text, colour identity and legality. Shows one Magic: The Gathering card in full, by name (fuzzy: "fire ice", "jace mind sculptor" or one face of a double-faced card all work). Returns the complete current rules text of every face, mana cost and mana value, type line, power/toughness, colours and colour identity, legality in every format, markers (Game Changer, Reserved, Commander-eligible), roles, official rulings and the Scryfall link. Also use it when exact wording, a ruling or legality decides the answer. Cards from a search_cards call with color_identity and format set need no second check."""
 
 
 def _as_list(v: Any) -> Any:
