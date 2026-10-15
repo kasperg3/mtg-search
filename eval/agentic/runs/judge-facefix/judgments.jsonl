@@ -1,0 +1,3 @@
+{"task_id": "hw-reanimate-own-need", "oracle_id": "a044474a-cd72-4e9d-bd8d-a08f2de9cdc0", "pass": 0, "grade": 2, "labelled": false, "kind": "pool", "judge": "claude-sonnet-5-5"}
+{"task_id": "hw-target-player-loses-need", "oracle_id": "4457ed35-7c10-48c8-9776-456485fdf070", "pass": 0, "grade": 2, "labelled": false, "kind": "pool", "judge": "claude-sonnet-5-5"}
+{"task_id": "need-ub-card-advantage", "oracle_id": "c6207f6a-a624-4754-88f5-dbe700c841ff", "pass": 0, "grade": 2, "labelled": false, "kind": "pool", "judge": "claude-sonnet-5-5"}

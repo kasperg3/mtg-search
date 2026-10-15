@@ -64,14 +64,16 @@ This leaves 3,571 eligible vocab terms. The identical filter applies to the term
 
 Original labels. With n = 10 these numbers are only a sanity check, not evidence.
 
+*Correction (2026-10-15):* the scorer resolved some answers to the wrong card (another card's face name beat a card's full name, so "Lightning Bolt" scored as "Emeritus of Conflict // Lightning Bolt"; fixed in `eval/agentic/env.py`, re-resolved by `eval/agentic/rescore.py`). 6 pilot answers changed. The attr rows are corrected; before the fix nDCG@10 / nDCG@20 / P@10 were A 0.905 / 0.756 / 0.93, C 0.927 / 0.805 / 0.97, F 0.927 / 0.886 / 0.97. The deck rows did not change.
+
 | kind | cond | Recall@1 | Recall@5 | nDCG@10 | nDCG@20 | P@10 | novel/iter | result Jaccard | term uptake | iters | $/episode |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | deck (4) | A | 0.069 | 0.194 | 0.709 | 0.661 | 0.68 | 13.7 | 0.030 | 0.25 (hidden) | 5.0 | 0.023 |
 | deck (4) | C | 0.098 | 0.242 | 0.590 | 0.630 | 0.55 | 14.2 | 0.016 | 0.06 (shown) | 5.0 | 0.030 |
 | deck (4) | F | 0.068 | 0.226 | 0.586 | 0.633 | 0.68 | 12.9 | 0.010 | — | 5.0 | 0.055 |
-| attr (3) | A | 0.351 | 0.542 | 0.905 | 0.756 | 0.93 | 10.1 | 0.279 | 0.38 (hidden) | 3.7 | 0.017 |
-| attr (3) | C | 0.203 | 0.571 | 0.927 | 0.805 | 0.97 | 8.3 | 0.285 | 0.17 (shown) | 5.0 | 0.028 |
-| attr (3) | F | 0.435 | 0.701 | 0.927 | 0.886 | 0.97 | 8.1 | 0.157 | — | 3.7 | 0.020 |
+| attr (3) | A | 0.351 | 0.542 | 0.979 | 0.803 | 0.97 | 10.1 | 0.279 | 0.38 (hidden) | 3.7 | 0.017 |
+| attr (3) | C | 0.203 | 0.571 | 1.000 | 0.853 | 1.00 | 8.3 | 0.285 | 0.17 (shown) | 5.0 | 0.028 |
+| attr (3) | F | 0.435 | 0.701 | 1.000 | 0.933 | 1.00 | 8.1 | 0.157 | — | 3.7 | 0.020 |
 
 Known-item (3 popular targets): every condition retrieved the target at t = 1 or 2 and ranked it first (success@1 = RR = 1.0). Condensed nDCG@10 equals nDCG@10 in the pilot, because almost every card in the final lists carries Tagger tags. The tag-based condensed check is therefore close to vacuous, and pooled judging remains the real fix.
 
@@ -119,6 +121,8 @@ Deck-need tasks only (47–51 per condition), GLM-5.3, 1 repeat. Labels are the 
 | F | grep + BM25 tools only | 0.111 | 0.187 | 0.227 | 0.672 | 0.650 | 0.670 | 11.4 | 0.146 (hidden) | 0.044 |
 
 `recall@t` is the recall of labelled cards among everything retrieved up to search t. nDCG/P are computed on the agent's final ranked list.
+
+*Correction (2026-10-15):* the same name-resolution fix changed 17 main-run answers (Wheel of Fortune, Reanimate, Sign in Blood, Lightning Bolt, Swords to Plowshares). No number in these tables changed: in every case both the wrong card and the right one had the same label. Only the share of final cards never retrieved fell (A 0.8% → 0.4%, B 0.2% → 0, D 0.1% → 0); the old shares were mostly these misresolved names.
 
 Paired bootstrap over tasks (10k resamples), difference in points ×100 [95% CI]:
 

@@ -1,0 +1,14 @@
+{
+ "model": "claude-sonnet-5-5",
+ "cli": "2.1.300 (Claude Code)",
+ "pool_runs": "cc-main,cc-ablation,cc-promptonly",
+ "tasks": [
+  "hw-reanimate-own-need",
+  "hw-target-player-loses-need",
+  "need-ub-card-advantage"
+ ],
+ "only_new": "judge-full,judge-ablation,judge-promptonly",
+ "passes": 1,
+ "batch": 15,
+ "system": "You are an expert Magic: The Gathering judge grading search results for relevance to a player's request.\n\nGrade each card for how well it satisfies the player's request:\n2 = clearly satisfies it: the card itself performs the requested function directly and meets every stated constraint (colour, card type, mana value, format, cost).\n1 = partially satisfies it: a weaker, narrower, conditional or indirect version of the requested function, or a card a reasonable player would still consider for this request; it must still meet the stated constraints.\n0 = does not satisfy the request, or violates a stated constraint (wrong colour, card type or mana value, etc.).\nJudge only from the card text shown. Do not reward popularity or general power level.\n\nReply with JSON only: {\"grades\": [{\"i\": <card number>, \"g\": <0|1|2>}, ...]} with one entry per card."
+}

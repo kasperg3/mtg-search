@@ -2,11 +2,13 @@
 
 **Status: done 2026-10-15.** Pre-registered in commit `c53825c` before any judging call. The pre-registration follows unchanged, from its own status line down to "Known limits"; Results and Reading come after it.
 
+**Correction (2026-10-15, after the results).** The scorer resolved some answers to the wrong card: another card's face name beat a card's full name, so the answer "Lightning Bolt" was scored as "Emeritus of Conflict // Lightning Bolt" (fixed in `eval/agentic/env.py`; `eval/agentic/rescore.py` re-resolved every saved episode). In EXP-013's episodes 4 answers changed: Lightning Bolt on attr-1cmc-red-burn-instant and Reanimate on hw-reanimate-own-need, for A and for G. Reanimate is not on its task's list, so it was graded by the same judge in `runs/judge-facefix` (grade 2); Lightning Bolt is on its list. The agent scores below are corrected (`analyze_pooled.py --judge-runs judge-full,judge-facefix`). Before the fix: pooled P@10 A 0.985, G 0.966; attribute stratum A 0.993, G 0.920; original-label P@10 A 0.755, G 0.744. The judge diagnostics and the new-relevant counts describe the judging run and are left as run. No sign-test count, p-value or conclusion changed.
+
 **Answer.**
-- **No established difference in precision.** Under pooled labels, P@10 is search (A) 0.985 vs grep (G) 0.966: G − A = −0.019 [−0.051, +0.011], A better on 9 tasks, G on 5, 66 tied, sign p = 0.42. nDCG@10 is level (0.851 vs 0.852).
+- **No established difference in precision.** Under pooled labels, P@10 is search (A) 0.986 vs grep (G) 0.968: G − A = −0.019 [−0.051, +0.011], A better on 9 tasks, G on 5, 66 tied, sign p = 0.42. nDCG@10 is level (0.853 vs 0.854).
 - **The original labels were the problem, not the agents.** Both agents' top-10s are about 98% relevant under pooled labels, against about 75% under the original labels. For both agents alike, 22–23% of all top-10 slots held relevant cards the labels missed.
-- **Precision is saturated.** Among the cards each agent returned in its top 10, the judge found 98.8% relevant for both. What still separates them is list length: G returned fewer than 10 cards on 5 tasks (20 empty slots), A on 2 (7 slots).
-- **Grep's regex-label advantage does not turn into a search advantage** on the 80 tasks. In the paraphrase stratum the gap went from −0.020 (original) to −0.006 (pooled). The 8-task smoke's A lead (0.975 vs 0.912) does not hold at this size.
+- **Precision is saturated.** Among the cards each agent returned in its top 10, the judge found 99.0% (A) and 98.9% (G) relevant. What still separates them is list length: G returned fewer than 10 cards on 5 tasks (20 empty slots), A on 2 (7 slots).
+- **Grep's regex-label advantage does not turn into a search advantage** on the 80 tasks. In the paraphrase stratum the gap went from −0.023 (original) to −0.006 (pooled). The 8-task smoke's A lead (0.975 vs 0.912) does not hold at this size.
 - **The judge behaved as in the smoke.** 98.9% of labelled cards judged relevant, 92.4% of unlabelled picks, and 1 of 160 random in-constraint decoys (0.6%).
 - **Cost.** 203 calls, 448k tokens, about 3.6 minutes with 4 workers, on the subscription (notional $2.13).
 
@@ -94,10 +96,10 @@ Differences are G − A, 95% bootstrap CI over tasks; "G / A / tie" counts tasks
 
 | stratum | n | A | G | G − A [95% CI] | G / A / tie | sign p |
 |---|---|---|---|---|---|---|
-| **all 80 (primary)** | 80 | **0.985** | **0.966** | **−0.019 [−0.051, +0.011]** | 5 / 9 / 66 | **0.42** |
+| **all 80 (primary)** | 80 | **0.986** | **0.968** | **−0.019 [−0.051, +0.011]** | 5 / 9 / 66 | **0.42** |
 | deck/deckneeds | 30 | 0.990 | 0.983 | −0.007 [−0.037, +0.023] | 1 / 3 / 26 | 0.63 |
 | deck/paraphrase | 35 | 0.977 | 0.971 | −0.006 [−0.069, +0.043] | 4 / 2 / 29 | 0.69 |
-| attr | 15 | 0.993 | 0.920 | −0.073 [−0.167, −0.007] | 0 / 4 / 11 | 0.13 |
+| attr | 15 | 1.000 | 0.927 | −0.073 [−0.167, −0.007] | 0 / 4 / 11 | 0.13 |
 
 The CI includes 0 and p = 0.42, so by the pre-registered rule **no difference is established**. In the attribute stratum the CI excludes 0, but only 4 tasks differ (p = 0.13), and 3 of those 4 are G returning a short list (4, 7 and 9 cards).
 
@@ -105,10 +107,10 @@ Same tasks, **original labels** (these reproduce EXP-013):
 
 | stratum | n | A | G | G − A [95% CI] | G / A / tie | sign p |
 |---|---|---|---|---|---|---|
-| all 80 | 80 | 0.755 | 0.744 | −0.011 [−0.064, +0.040] | 23 / 24 / 33 | 1.0 |
+| all 80 | 80 | 0.756 | 0.744 | −0.013 [−0.065, +0.040] | 23 / 24 / 33 | 1.0 |
 | deck/deckneeds | 30 | 0.793 | 0.823 | +0.030 [−0.043, +0.107] | 12 / 9 / 9 | 0.66 |
-| deck/paraphrase | 35 | 0.651 | 0.631 | −0.020 [−0.114, +0.071] | 10 / 10 / 15 | 1.0 |
-| attr | 15 | 0.920 | 0.847 | −0.073 [−0.147, −0.013] | 1 / 5 / 9 | 0.22 |
+| deck/paraphrase | 35 | 0.651 | 0.629 | −0.023 [−0.120, +0.071] | 10 / 10 / 15 | 1.0 |
+| attr | 15 | 0.927 | 0.853 | −0.073 [−0.147, −0.013] | 1 / 5 / 9 | 0.22 |
 
 ### Where the top-10 slots go
 
@@ -116,12 +118,12 @@ Each agent has 80 × 10 = 800 top-10 slots.
 
 | slot holds | A | G |
 |---|---|---|
-| a card the original labels mark relevant | 604 | 595 |
-| an unlabelled card the judge grades ≥ 1 | 184 | 178 |
-| a card judged not relevant (grade 0, unlabelled) | 5 | 7 |
+| a card the original labels mark relevant | 605 | 595 |
+| an unlabelled card the judge grades ≥ 1 | 184 | 179 |
+| a card judged not relevant (grade 0, unlabelled) | 4 | 6 |
 | nothing (final list shorter than 10) | 7 | 20 |
 
-Pooled labels move both agents up by the same amount (+184 vs +178 slots). What is left between them is mostly short lists. G returned fewer than 10 cards on 5 tasks:
+Pooled labels move both agents up by the same amount (+184 vs +179 slots). What is left between them is mostly short lists. G returned fewer than 10 cards on 5 tasks:
 - hw-each-opponent-loses-need: 2;
 - attr-white-anthem-enchantment: 4;
 - attr-white-instant-blink: 7;
@@ -136,10 +138,10 @@ A did so on 2: tag-free-sacrifice-outlet-need (5) and need-red-enchantment-answe
 
 | stratum | n | original A | original G | pooled A | pooled G | pooled G − A [95% CI] | G / A / tie | sign p |
 |---|---|---|---|---|---|---|---|---|
-| all 80 | 80 | 0.763 | 0.749 | 0.851 | 0.852 | +0.001 [−0.029, +0.029] | 23 / 28 / 29 | 0.58 |
+| all 80 | 80 | 0.765 | 0.751 | 0.853 | 0.854 | +0.001 [−0.028, +0.030] | 23 / 28 / 29 | 0.58 |
 | deck/deckneeds | 30 | 0.805 | 0.824 | 0.821 | 0.829 | +0.007 [−0.045, +0.058] | 10 / 13 / 7 | 0.68 |
-| deck/paraphrase | 35 | 0.658 | 0.633 | 0.856 | 0.868 | +0.012 [−0.032, +0.052] | 12 / 10 / 13 | 0.83 |
-| attr | 15 | 0.923 | 0.870 | 0.898 | 0.859 | −0.039 [−0.107, +0.011] | 1 / 5 / 9 | 0.22 |
+| deck/paraphrase | 35 | 0.658 | 0.631 | 0.855 | 0.868 | +0.013 [−0.031, +0.053] | 12 / 10 / 13 | 0.83 |
+| attr | 15 | 0.938 | 0.884 | 0.913 | 0.874 | −0.039 [−0.107, +0.011] | 1 / 5 / 9 | 0.22 |
 
 Pooled nDCG is lower than pooled P@10 because the ideal ranking for a task is now full of grade-2 cards. Those are judged grade-2 cards, or labelled cards of the 6 graded tasks. Most labelled cards count only gain 1. As pre-registered, this mixes two scales.
 
@@ -147,19 +149,19 @@ Pooled nDCG is lower than pooled P@10 because the ideal ranking for a task is no
 
 | stratum | n | A | G | G − A [95% CI] | G / A / tie | sign p |
 |---|---|---|---|---|---|---|
-| all 80 | 80 | 0.988 | 0.988 | −0.001 [−0.013, +0.009] | 7 / 4 / 69 | 0.55 |
+| all 80 | 80 | 0.990 | 0.989 | −0.001 [−0.013, +0.009] | 7 / 4 / 69 | 0.55 |
 | deck/deckneeds | 30 | 0.986 | 0.973 | −0.013 [−0.040, +0.010] | 3 / 3 / 24 | 1.0 |
 | deck/paraphrase | 35 | 0.989 | 1.000 | +0.011 [+0.003, +0.023] | 4 / 0 / 31 | 0.13 |
-| attr | 15 | 0.993 | 0.987 | −0.007 [−0.020, +0.000] | 0 / 1 / 14 | 1.0 |
+| attr | 15 | 1.000 | 0.993 | −0.007 [−0.020, +0.000] | 0 / 1 / 14 | 1.0 |
 
 **Exploratory, not pre-registered: strict pooled P@10.** Here a new card counts only if judged grade 2, which tests whether the result rests on the judge's more lenient grade 1.
 
 | stratum | n | A | G | G − A [95% CI] | G / A / tie | sign p |
 |---|---|---|---|---|---|---|
-| all 80 | 80 | 0.900 | 0.901 | +0.001 [−0.043, +0.044] | 20 / 17 / 43 | 0.74 |
+| all 80 | 80 | 0.901 | 0.903 | +0.001 [−0.043, +0.044] | 20 / 17 / 43 | 0.74 |
 | deck/deckneeds | 30 | 0.900 | 0.943 | +0.043 [−0.010, +0.097] | 10 / 3 / 17 | 0.09 |
 | deck/paraphrase | 35 | 0.871 | 0.866 | −0.006 [−0.086, +0.069] | 9 / 10 / 16 | 1.0 |
-| attr | 15 | 0.967 | 0.900 | −0.067 [−0.147, +0.000] | 1 / 4 / 10 | 0.38 |
+| attr | 15 | 0.973 | 0.907 | −0.067 [−0.147, +0.000] | 1 / 4 / 10 | 0.38 |
 
 Strict or lenient, the agents are level overall.
 
@@ -222,8 +224,8 @@ Strict or lenient, the agents are level overall.
 ## Reading
 
 1. **On these 80 tasks, search and grep pick equally relevant cards.** Once the labels are completed, both agents' top 10s are about 98% relevant. The primary test finds no difference (−0.019 [−0.051, +0.011], p = 0.42), and neither do nDCG@10 or the judged share. This fits EXP-013's reading: with a strong model, the value of the search infrastructure is efficiency (1.46× fewer tokens, fewer turns, faster), not precision.
-2. **The original labels understated both agents by about a quarter.** Under the original labels, P@10 was about 0.75. Nearly all of the gap to 1 was relevant cards the tag/regex labels miss, and it was the same size for both agents (+184 vs +178 slots). The regex-built paraphrase labels were the most incomplete: 342 new relevant cards on 35 tasks, with two tasks having no labelled card in their pool at all. They did not, however, hide a search advantage: the paraphrase gap stayed near 0.
-3. **What remains is list length, not judgement.** G's remaining deficit, mainly on attribute tasks, comes from returning short lists: 4, 7 or 9 cards where 10 or more qualify. Grep without ranking sometimes stops before it has filled the list. It does not pick wrong cards: 98.8% of what it returns is relevant, the same as A. A has the same failure on two tasks.
+2. **The original labels understated both agents by about a quarter.** Under the original labels, P@10 was about 0.75. Nearly all of the gap to 1 was relevant cards the tag/regex labels miss, and it was the same size for both agents (+184 vs +179 slots). The regex-built paraphrase labels were the most incomplete: 342 new relevant cards on 35 tasks, with two tasks having no labelled card in their pool at all. They did not, however, hide a search advantage: the paraphrase gap stayed near 0.
+3. **What remains is list length, not judgement.** G's remaining deficit, mainly on attribute tasks, comes from returning short lists: 4, 7 or 9 cards where 10 or more qualify. Grep without ranking sometimes stops before it has filled the list. It does not pick wrong cards: 98.9% of what it returns is relevant, against 99.0% for A. A has the same failure on two tasks.
 4. **P@10 is now at its ceiling** (66 of 80 tasks tied at the pooled level) and can no longer tell good agents apart on these tasks. A future comparison needs a measure with headroom:
    - recall against a deeper, judged pool (for example the agents' retrieved-but-not-picked cards);
    - harder tasks;

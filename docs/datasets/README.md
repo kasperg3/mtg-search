@@ -5,8 +5,10 @@ The project's data lives in three private Hugging Face datasets. Their cards are
 | dataset | what | cite revision | commit |
 |---|---|---|---|
 | [`kasper-cbx/mtg-search-index`](https://huggingface.co/datasets/kasper-cbx/mtg-search-index) | The card corpus (Scryfall Oracle cards, 34,646), tags and rulings; mLateOn embeddings the server searches; eval-only EDHREC rank | `scryfall-20261014090155` | `c2b5455` |
-| [`kasper-cbx/mtg-search-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-search-bench) | The search benchmark (363 queries), the 113 agent search tasks, every relevance grade (EXP-016/018/019) and the final relevance labels | `v1.0` | `33e2c6b` |
+| [`kasper-cbx/mtg-search-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-search-bench) | The search benchmark (363 queries), the 113 agent search tasks, every relevance grade (EXP-016/018/019 and the 2026-10-15 rescore) and the final relevance labels | `v1.1` | `38028e1` |
 | [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench) | Precon deck benchmark: official decklists, EDHREC add/cut rates, deck-fit grades (EXP-017) | `v1.0` | `c6fe41f` |
+
+`mtg-search-bench` `v1.0` (`33e2c6b`) is kept; `v1.1` adds 3 grades and rescored qrels after a fix to the agent scorer's name matching (2026-10-15).
 
 Raw run outputs (episodes, transcripts) are mirrored to the private `kasper-cbx/mtg-search-experiments` by `scripts/sync_results.py`. That is a backup, not a dataset to cite.
 
@@ -37,7 +39,7 @@ Raw run outputs (episodes, transcripts) are mirrored to the private `kasper-cbx/
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-bench}},
-  note         = {Revision v1.0; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155. Private dataset}
+  note         = {Revision v1.1; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155. Private dataset}
 }
 
 @misc{mtgsearch_preconbench_2026,

@@ -51,7 +51,7 @@ The precon deck benchmark (player add/cut rates from EDHREC, and deck-fit grades
 
 ## Citation
 
-Cite the tagged release `v1.0`:
+Cite the tagged release `v1.1`. It adds 3 grades after a scoring fix (see `relevance_grades`); `v1.0` is kept unchanged.
 
 ```bibtex
 @misc{mtgsearch_bench_2026,
@@ -60,7 +60,7 @@ Cite the tagged release `v1.0`:
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-bench}},
-  note         = {Revision v1.0; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155. Private dataset}
+  note         = {Revision v1.1; cards from kasper-cbx/mtg-search-index@scryfall-20261014090155. Private dataset}
 }
 ```
 
@@ -105,7 +105,7 @@ Cite the tagged release `v1.0`:
 
 | column | meaning |
 |---|---|
-| `experiment`, `grading_run` | `EXP-016` (`judge-full`), `EXP-018` (`judge-ablation`), `EXP-019` (`judge-promptonly`) |
+| `experiment`, `grading_run` | `EXP-016` (`judge-full`), `EXP-018` (`judge-ablation`), `EXP-019` (`judge-promptonly`), `fix-2026-10-15` (`judge-facefix`) |
 | `task_id`, `oracle_id`, `name` | the graded card |
 | `grade` | 0, 1 or 2 |
 | `on_list` | the card was already on the task's list |
@@ -115,6 +115,7 @@ Cite the tagged release `v1.0`:
 **What was graded:**
 - **EXP-016:** the union of the search agent's and the grep agent's final top 20 on the 80 deck and attribute tasks, including cards already on the list. Two random decoys per task were mixed in.
 - **EXP-018 and EXP-019:** only cards that no earlier run had graded and that were not on the list.
+- **fix-2026-10-15:** the scorer used to match some answers to the wrong card ("Lightning Bolt" to "Emeritus of Conflict // Lightning Bolt", a double-faced card with that back face). After the fix, 3 cards counted that no run had graded: Reanimate, Lightning Bolt and Sign in Blood, each on one task. They were graded in the same way.
 
 **The grader:** headless Claude Code with no tools, 15 cards per call in a seeded random order. It sees the request (with its constraints) and each card's rules text. It never sees which agent returned a card, the list, or any popularity data. Its instructions:
 
@@ -144,7 +145,7 @@ from huggingface_hub import hf_hub_download
 
 def load(cfg):
     return pl.read_parquet(hf_hub_download("kasper-cbx/mtg-search-bench", f"data/{cfg}.parquet",
-                                           repo_type="dataset", revision="v1.0"))
+                                           repo_type="dataset", revision="v1.1"))
 
 qrels = load("qrels")
 rel = {t: set(g["oracle_id"]) for t, g in qrels.group_by("task_id")}  # task_id -> relevant oracle_ids
@@ -169,10 +170,10 @@ The agent is Claude Sonnet 5.5 in Claude Code, with one repeat per task.
 
 | agent tools and prompt | P@10, 80 deck + attr | deck (65) | attr (15) | specific card found (33) | tokens / task | experiment |
 |---|---|---|---|---|---|---|
-| search (mLateOn), minimal prompt | 0.981 | 0.978 | 0.993 | 1.000 | 10.6k | EXP-019 |
-| search (mLateOn), EXP-013 prompt | 0.985 | 0.983 | 0.993 | 0.970 | 12.1k | EXP-013 |
-| grep, minimal prompt | 0.863 | 0.952 | 0.473 | 0.848 | 14.3k | EXP-019 |
-| grep, tuned prompt (layout example, matching note, example pattern) | 0.966 | 0.977 | 0.920 | 0.939 | 20.9k | EXP-013 |
+| search (mLateOn), minimal prompt | 0.983 | 0.978 | 1.000 | 1.000 | 10.6k | EXP-019 |
+| search (mLateOn), EXP-013 prompt | 0.986 | 0.983 | 1.000 | 0.970 | 12.1k | EXP-013 |
+| grep, minimal prompt | 0.865 | 0.954 | 0.480 | 0.848 | 14.3k | EXP-019 |
+| grep, tuned prompt (layout example, matching note, example pattern) | 0.968 | 0.977 | 0.927 | 0.939 | 20.9k | EXP-013 |
 
 - **The two grep rows** use the same tool and differ only in the prompt.
 - **"Minimal"** is the same prompt for search and grep: the task protocol, with no advice on searching.

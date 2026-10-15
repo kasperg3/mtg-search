@@ -86,23 +86,25 @@ About 60 episodes, about 1M tokens and about 10 minutes with 4 workers, plus at 
 - **New grades:** 66 new cards graded in 14 grading calls; every card in a top 10 has a list entry or a grade.
 - **Pre-registered reading:** neither "holds" nor "challenged". The relevance condition favours search, with a CI excluding 0. The token condition misses p < 0.05 (sign p = 0.099).
 
+**Correction (2026-10-15, after the results).** The scorer resolved some answers to the wrong card: another card's face name beat a card's full name, so the answer "Lightning Bolt" was scored as "Emeritus of Conflict // Lightning Bolt" (fixed in `eval/agentic/env.py`; `eval/agentic/rescore.py` re-resolved every saved episode, and `runs/judge-facefix` graded the cards that newly counted). On these 30 tasks, 2 A0 answers and 2 of EXP-013's A and G answers changed. The numbers below are corrected. Before the fix they were: P@10 A 0.995, G 0.925, A0 0.970; G0 − A0 −0.26 [−0.43, −0.10]; G0 vs G −0.215 [−0.375, −0.07]; gap change −0.19 [−0.36, −0.03]; precision of returned cards A 0.995, G 0.980, A0 0.985; A0 on attribute tasks 0.990. G0 did not change. No sign-test count, p-value or conclusion changed.
+
 | per task, 30 tasks | A (EXP-013) | G (EXP-013) | **A0** (minimal) | **G0** (minimal) |
 |---|---|---|---|---|
 | tokens (mean) | 11.8k | 20.4k | 9.7k | 15.7k |
 | Claude Code turns | 4.03 | 4.80 | 3.77 | 4.73 |
 | tool calls | 2.03 | 2.80 | 1.77 | 2.73 |
 | seconds | 8.1 | 10.3 | 9.4 | 11.2 |
-| P@10, 20 deck + attr tasks | 0.995 | 0.925 | **0.970** | **0.710** |
+| P@10, 20 deck + attr tasks | 1.000 | 0.930 | **0.975** | **0.710** |
 | specific card found, 10 tasks | 10/10 | 10/10 | 10/10 | 10/10 |
 
 **Primary (minimal prompts):**
 1. **Tokens:** G0 / A0 median ratio 1.69. G0 used more on 20 of 30 tasks, sign p = 0.099, so this is **not established at n = 30**. On the same 30 tasks EXP-013 had 1.46 and 25 of 30 (p = 0.0003).
-2. **Relevance:** P@10 G0 − A0 = **−0.26 [−0.43, −0.10]**, sign p = 0.012 (A0 better on 10, G0 on 1, 9 tied). EXP-013 on the same tasks: −0.07 [−0.145, −0.015], p = 0.125.
+2. **Relevance:** P@10 G0 − A0 = **−0.265 [−0.44, −0.10]**, sign p = 0.012 (A0 better on 10, G0 on 1, 9 tied). EXP-013 on the same tasks: −0.07 [−0.145, −0.015], p = 0.125.
 
 **Secondary:**
 - **Search barely needs the guidance.** A0 vs A: P@10 −0.025 [−0.065, 0], p = 0.5. A0 used slightly fewer tokens (median ratio 0.94, fewer on 28 of 30) and 0.27 fewer calls.
-- **Grep loses relevance without it.** G0 vs G: P@10 −0.215 [−0.375, −0.07], p = 0.039. G0 used fewer tokens (median ratio 0.72), because it found less: 29% of its calls matched nothing (G: 7%), and its lists were shorter.
-- **Gap change.** The P@10 gap (G0 − A0) − (G − A) moved by −0.19 [−0.36, −0.03], sign p = 0.065. The log token ratio did not change significantly (−0.10 [−0.26, +0.07]).
+- **Grep loses relevance without it.** G0 vs G: P@10 −0.22 [−0.385, −0.075], p = 0.039. G0 used fewer tokens (median ratio 0.72), because it found less: 29% of its calls matched nothing (G: 7%), and its lists were shorter.
+- **Gap change.** The P@10 gap (G0 − A0) − (G − A) moved by −0.195 [−0.37, −0.03], sign p = 0.065. The log token ratio did not change significantly (−0.10 [−0.26, +0.07]).
 - **Find-this-card:** all four arms found all 10 targets.
 - **Grep diagnostics** (G → G0):
   - layout features in patterns: 71% → 61%;
@@ -111,16 +113,16 @@ About 60 episodes, about 1M tokens and about 10 minutes with 4 workers, plus at 
   - paging with `offset`: 8% → 4%.
 
 **Exploratory (not pre-registered):**
-- **Grep returns fewer cards, not wrong ones.** The precision of the cards it did return is the same for every arm: A 0.995, G 0.980, A0 0.985, G0 0.978. G0's top 10 was shorter than 10 on 8 of 20 tasks, and empty on 2.
+- **Grep returns fewer cards, not wrong ones.** The precision of the cards it did return is about the same for every arm: A 1.000, G 0.985, A0 0.990, G0 0.978. G0's top 10 was shorter than 10 on 8 of 20 tasks, and empty on 2.
 - **All of the loss is on attribute tasks.**
   - Deck needs: A0 0.950, G0 0.970, a tie.
-  - Attribute tasks, such as "a 1-mana red burn instant": A0 0.990, G0 **0.450**.
+  - Attribute tasks, such as "a 1-mana red burn instant": A0 1.000, G0 **0.450**.
 - **Why attribute tasks fail.** Without the layout example, G0 assumed one-line records like the rendered results ("Name {cost} — Type — text"). It wrote patterns joining cost, type and rules text, such as `^[^{]*\{R\} — Instant.*deals \d+ damage to any target`, and those match nothing: a card's cost, type and rules text are on different lines. It then fell back to listing card names from memory (`^(Lightning Bolt|Shock|…)`). Search has filter parameters for exactly these attributes.
 
 ## Reading
 
 - **What EXP-013's tie needed.** Grep matched search on relevance only when its prompt showed how the card file is laid out, and its matching could span lines.
-- **With identical minimal instructions, the methods separate.** Search keeps its relevance (0.97). Grep falls to 0.71, because per-line grep cannot combine a card's mana cost, type and rules text unless they share a line.
+- **With identical minimal instructions, the methods separate.** Search keeps its relevance (0.975). Grep falls to 0.71, because per-line grep cannot combine a card's mana cost, type and rules text unless they share a line.
 - **On deck needs the two tie**, as before: the rules-text phrases a deck need calls for sit on one line.
 - **Tokens.** Grep still tends to use more (median 1.7×), but that is not established at n = 30.
 - **Revised conclusion:**

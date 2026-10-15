@@ -90,10 +90,14 @@ class Env:
 
     def _name_index(self) -> None:
         self.by_name: dict[str, str] = {}
-        for r in self.cards.select("oracle_id", "name", "face_names", "is_funny").iter_rows(named=True):
-            if r["is_funny"]:
-                continue
-            for n in [r["name"], *(r["face_names"] or [])]:
+        rows = [r for r in self.cards.select("oracle_id", "name", "face_names", "is_funny").iter_rows(named=True)
+                if not r["is_funny"]]
+        # a card's full name beats another card's face name: "Lightning Bolt" is also the back face of
+        # "Emeritus of Conflict // Lightning Bolt", which sorts first (as in the server's _name_index)
+        for r in rows:
+            self.by_name.setdefault(r["name"].lower().strip(), r["oracle_id"])
+        for r in rows:
+            for n in r["face_names"] or []:
                 self.by_name.setdefault(n.lower().strip(), r["oracle_id"])
 
     def resolve_name(self, name: str) -> str | None:

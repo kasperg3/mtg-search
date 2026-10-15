@@ -4,7 +4,7 @@
     uv run python scripts/publish_datasets.py precon-fit   [--upload] [--tag v1.0]   # deck_fit config of kasper-cbx/mtg-precon-bench
 
 ``bench``: the search benchmark (363 queries), the 113 agent search tasks, every relevance grade from the
-pooled-grading runs (EXP-016, EXP-018, EXP-019) and the resulting relevance labels (qrels). ``precon-fit``: the
+pooled-grading runs (EXP-016, EXP-018, EXP-019, and the 2026-10-15 rescore) and the resulting relevance labels (qrels). ``precon-fit``: the
 EXP-017 deck-fit grades (rubric v3, tuning and test decks) added to the precon benchmark as config ``deck_fit``.
 Cards are referenced by Scryfall ``oracle_id``, with names from the card snapshot of
 ``kasper-cbx/mtg-search-index@scryfall-20261014090155``. Files are written to ``data/hf/<repo>/`` first; ``--upload``
@@ -26,7 +26,9 @@ sys.path[:0] = [str(ROOT), str(ROOT / "src")]
 
 INDEX_REV = "scryfall-20261014090155"
 QUERY_SETS = ("tags", "handwritten", "paraphrase", "deckneeds")
-JUDGE_RUNS = {"judge-full": "EXP-016", "judge-ablation": "EXP-018", "judge-promptonly": "EXP-019"}
+# judge-facefix: the 3 cards that counted only after the 2026-10-15 name-matching fix (eval/agentic/rescore.py)
+JUDGE_RUNS = {"judge-full": "EXP-016", "judge-ablation": "EXP-018", "judge-promptonly": "EXP-019",
+              "judge-facefix": "fix-2026-10-15"}
 FIT_RUNS = {"20261015_exp017-dev-r3": "dev", "20261015_exp017-test": "test"}
 GRADED = pl.List(pl.Struct({"oracle_id": pl.String, "grade": pl.Int8}))
 

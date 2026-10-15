@@ -119,6 +119,8 @@ The model was `claude-sonnet-5-5[1m]` on Claude Code 2.1.300, 1 repeat. Labels a
   - The prompt cache made the parts cheap to re-read: notional list price $6.88 for the 12 episodes, against $2.38 for all 113 A episodes and $3.58 for all 113 G episodes. In tokens, though, I uses roughly 300× more.
   - All of this ran on the subscription, so the notional figures are list-price equivalents, not spend.
 
+**Correction (2026-10-15, after the results).** The scorer resolved some answers to the wrong card: another card's face name beat a card's full name, so the answer "Lightning Bolt" was scored as "Emeritus of Conflict // Lightning Bolt" (fixed in `eval/agentic/env.py`; `eval/agentic/rescore.py` re-resolved every saved episode). Four answers changed: Lightning Bolt on attr-1cmc-red-burn-instant and Reanimate on hw-reanimate-own-need, for A and for G. The quality numbers below are corrected. Before the fix: attr nDCG@10 A 0.923, G 0.870; attr final R@20 A 0.326, G 0.282; paraphrase nDCG@10 G 0.633 (G − A −0.025); the 12-task sample's mean score A 0.794, G 0.882, attr nDCG@10 A 0.804, G 0.785, with I better than A and G on 5 tasks each. Tokens, turns and time did not change, and neither did any sign-test p-value or conclusion.
+
 ### Quality, A vs G (all 113 tasks)
 
 | stratum (label source) | n | metric | A | G | G − A [95% CI] | tasks G better / A better | sign p |
@@ -126,10 +128,10 @@ The model was `claude-sonnet-5-5[1m]` on Claude Code 2.1.300, 1 repeat. Labels a
 | known + known-easy (**primary**) | 33 | found in final | 0.970 | 0.939 | −0.030 [−0.121, +0.061] | 1 / 2 | 1.0 |
 | known (chosen against BM25) | 25 | found in final | 0.960 | 0.960 | 0 | 1 / 1 | 1.0 |
 | known-easy | 8 | found in final | 1.000 | 0.875 | −0.125 | 0 / 1 | 1.0 |
-| attr (tag closure; **secondary**) | 15 | nDCG@10 | 0.923 | 0.870 | −0.054 [−0.108, −0.008] | 2 / 5 | 0.45 |
-| attr | 15 | final R@20 | 0.326 | 0.282 | −0.044 [−0.089, −0.007] | 2 / 10 | 0.04 |
+| attr (tag closure; **secondary**) | 15 | nDCG@10 | 0.938 | 0.884 | −0.054 [−0.108, −0.008] | 2 / 5 | 0.45 |
+| attr | 15 | final R@20 | 0.329 | 0.285 | −0.044 [−0.089, −0.007] | 2 / 10 | 0.04 |
 | deck / deckneeds (tags or regex) | 30 | nDCG@10 | 0.805 | 0.824 | +0.019 [−0.057, +0.104] | 11 / 12 | 1.0 |
-| deck / paraphrase (regex only) | 35 | nDCG@10 | 0.658 | 0.633 | −0.025 [−0.105, +0.051] | 10 / 12 | 0.83 |
+| deck / paraphrase (regex only) | 35 | nDCG@10 | 0.658 | 0.631 | −0.027 [−0.108, +0.050] | 10 / 12 | 0.83 |
 | deck / paraphrase (regex only) | 35 | final R@20 | 0.121 | 0.146 | +0.025 [−0.001, +0.054] | 16 / 14 | 0.86 |
 
 **Known-item misses:**
@@ -140,14 +142,14 @@ The model was `claude-sonnet-5-5[1m]` on Claude Code 2.1.300, 1 repeat. Labels a
 
 ### Quality, in context (I) on the 12-task sample
 
-The score below is nDCG@10, or found-in-final for known items. The sample happened to favour G over A (0.882 vs 0.794), whereas on all 113 tasks A and G are level, so treat these numbers as indicative.
+The score below is nDCG@10, or found-in-final for known items. The sample happened to favour G over A (0.901 vs 0.812), whereas on all 113 tasks A and G are level, so treat these numbers as indicative.
 
 | | A | G | I |
 |---|---|---|---|
-| mean score, 12 tasks | 0.794 | 0.882 | **0.919** |
-| I better / worse than the arm | 5 / 1 | 5 / 1 | — |
+| mean score, 12 tasks | 0.812 | 0.901 | **0.919** |
+| I better / worse than the arm | 4 / 1 | 4 / 1 | — |
 | known items found (4) | 3 | 4 | 4 |
-| attr nDCG@10 (4) | 0.804 | 0.785 | 0.888 |
+| attr nDCG@10 (4) | 0.859 | 0.840 | 0.888 |
 
 In context, the model sees every candidate. It does well when the request is clear, as with 1-mana dorks, counterspells and named-effect known items. Its only weakness is cost.
 

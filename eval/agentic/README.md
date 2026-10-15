@@ -58,4 +58,5 @@ uv run python eval/agentic/analyze_cc.py --runs cc-main --runs cc-main-I --out e
 - `glm.py`: HTTP client, retries, cost accounting (USD per 1M tokens: $1.40 input, $0.26 cached input, $4.40 output).
 - `build_tasks.py`: task set. Known-item descriptions were drafted by GLM (`known_drafts.yaml`, `known_gen_transcript.jsonl`) and hand-reviewed (`known_reviewed.yaml`).
 - `analyze.py`: metrics on the original labels, condensed-list nDCG, paired bootstrap, plot.
+- `rescore.py`: re-resolves every saved episode's answer names with the current `Env.resolve_name` (dry run by default, `--write` to apply). Written for the 2026-10-15 fix, where another card's face name had beaten a card's full name; `runs/judge-facefix` grades the cards that newly counted.
 - `judge.py`: the pre-registered judging rubric and prompt (GLM client, not run); `judge_cc.py` runs the same judge with Claude Code Sonnet (EXP-015), `judge_smoke_analyze.py` analyses it.

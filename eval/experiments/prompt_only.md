@@ -62,21 +62,23 @@ Paired over tasks: mean difference, 10k bootstrap 95% CI (seed 0), two-sided sig
 - **New grades:** 309 new cards graded in 58 calls; every top-10 card has a list entry or a grade.
 - **Search rule ("search needed no prompt tuning"): met.**
 
+**Correction (2026-10-15, after the results).** The scorer resolved some answers to the wrong card: another card's face name beat a card's full name, so the answer "Lightning Bolt" was scored as "Emeritus of Conflict // Lightning Bolt". The fix is in `eval/agentic/env.py`, and `eval/agentic/rescore.py` re-resolved every saved episode. In this run 5 answers changed (A0: 2, G1: 3), and 4 in EXP-013's (A, G). The 3 cards that newly counted were graded by the same grader (`runs/judge-facefix`, all grade 2). The numbers below are corrected. Before the fix they were: P@10 A 0.985, A0 0.981, G1 0.863, G 0.966; attribute tasks A 0.993, A0 0.993, G1 0.473, G 0.920; G1 vs G −0.104 [−0.161, −0.054]; G1 vs A0 −0.119 [−0.180, −0.061]. No sign-test count, p-value or conclusion changed.
+
 | per task, 113 tasks | A: search, EXP-013 prompt | **A0: search, minimal prompt** | **G1: grep, minimal prompt** | G: grep, tuned prompt (EXP-013) |
 |---|---|---|---|---|
 | tokens (mean) | 12.1k | **10.6k** | **14.3k** | 20.9k |
 | Claude Code turns | 4.14 | 3.98 | 4.55 | 4.90 |
 | tool calls | 2.14 | 1.98 | 2.53 | 2.90 |
 | seconds, mean (median) | 8.6 (8.3) | 10.3 (9.8) | 17.0 (11.3)* | 10.9 (10.1) |
-| P@10, 80 deck + attr tasks | 0.985 | **0.981** | **0.863** | 0.966 |
-| P@10, 65 deck tasks | 0.983 | 0.978 | 0.952 | 0.977 |
-| P@10, 15 attr tasks | 0.993 | 0.993 | 0.473 | 0.920 |
+| P@10, 80 deck + attr tasks | 0.986 | **0.983** | **0.865** | 0.968 |
+| P@10, 65 deck tasks | 0.983 | 0.978 | 0.954 | 0.977 |
+| P@10, 15 attr tasks | 1.000 | 1.000 | 0.480 | 0.927 |
 | specific card found, 33 tasks | 0.970 | 1.000 | 0.848 | 0.939 |
 
 \*Two G1 tasks took 159 s and 322 s; the median is 11.3 s.
 
 **1. Prompt effect on grep, G1 vs G (primary).** Only the prompt differs.
-- **P@10:** −0.104 [−0.161, −0.054], sign p = 0.0006 (G1 better on 5 tasks, G on 24, 51 tied). By kind: deck −0.025, attr −0.447.
+- **P@10:** −0.103 [−0.160, −0.053], sign p = 0.0006 (G1 better on 5 tasks, G on 24, 51 tied). By kind: deck −0.023, attr −0.447.
 - **Specific card found:** −0.091 [−0.242, +0.061], p = 0.45.
 - **Effort:** G1 used fewer tokens (median ratio 0.72), turns (−0.35, p = 0.004) and calls (−0.37), because it found less. 29% of its calls matched nothing (G: 8%), and its lists were shorter (mean 12.7 cards on deck/attr tasks; 23 lists under 10, 1 empty).
 
@@ -87,7 +89,7 @@ Paired over tasks: mean difference, 10k bootstrap 95% CI (seed 0), two-sided sig
 - **Verdict:** both CI lower bounds are above −0.05, so the rule is met. Search's EXP-013 prompt was never tuned, and the minimal prompt does as well.
 
 **3. Same minimal prompt, G1 vs A0.**
-- **P@10:** −0.119 [−0.180, −0.061], sign p = 3.4×10⁻⁵ (G1 better on 4 tasks, A0 on 27). Deck −0.026, attr −0.520.
+- **P@10:** −0.118 [−0.178, −0.061], sign p = 3.4×10⁻⁵ (G1 better on 4 tasks, A0 on 27). Deck −0.025, attr −0.520.
 - **Specific card found:** −0.152 [−0.273, −0.030], p = 0.062.
 - **Tokens:** G1 used more on 80 of 113 tasks (median ratio 1.24, p = 1.1×10⁻⁵).
 
@@ -105,7 +107,7 @@ Without the layout example, G1 still writes layout-dependent patterns, but again
 
 - **The tuned prompt is what made grep competitive.** With EXP-013's grep tool unchanged, removing the grep-specific prompt (layout example, matching note, strategy paragraph, example pattern) costs grep 10 points of P@10, and 45 points on attribute tasks.
 - **Search needs no prompt tuning.** Its first, untuned prompt and the minimal prompt give the same relevance.
-- **Like for like,** with the same minimal prompt for both tools, search finds more of the right cards than grep (0.98 vs 0.86 of the top 10, p = 3×10⁻⁵) with fewer tokens (10.6k vs 14.3k). It also finds every specific card, where grep finds 85%.
+- **Like for like,** with the same minimal prompt for both tools, search finds more of the right cards than grep (0.98 vs 0.87 of the top 10, p = 3×10⁻⁵) with fewer tokens (10.6k vs 14.3k). It also finds every specific card, where grep finds 85%.
 - **Grep can reach search's relevance on these tasks** only with a prompt that documents the card file, and then it uses about twice the tokens (20.9k vs 10.6k).
 - **Deck needs stay close in every setup** (0.95–0.98): their rules-text phrases sit on one line, which grep handles well.
 

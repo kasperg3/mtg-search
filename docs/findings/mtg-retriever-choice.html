@@ -152,7 +152,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
     <p class="lede">mtg-search gives an AI agent semantic search over every Magic card. We tested what that buys an agent that builds Commander decks, compared with no search infrastructure at all. Given the same instructions, it finds more of the right cards than plain grep, with fewer tokens; grep catches up only with a prompt tuned to the card file, at twice the tokens. In real decks, the cards it adds fit the deck better than the cards the agent adds from memory.</p>
     <div class="answer" role="list">
       <div class="stat" role="listitem"><div class="num">270×</div><div class="what">fewer tokens per task than reading every card: 10.6k vs 2.91M. The card text does not fit in a 1M-token context.</div></div>
-      <div class="stat" role="listitem"><div class="num">98% <small>vs 86%</small></div><div class="what">relevant cards in the top 10, search vs grep with the same instructions (p = 3×10⁻⁵), with 26% fewer tokens (10.6k vs 14.3k)</div></div>
+      <div class="stat" role="listitem"><div class="num">98% <small>vs 87%</small></div><div class="what">relevant cards in the top 10, search vs grep with the same instructions (p = 3×10⁻⁵), with 26% fewer tokens (10.6k vs 14.3k)</div></div>
       <div class="stat" role="listitem"><div class="num">0.45 <small>→ 0.65</small></div><div class="what">deck-fit score (0–1) of the agent's 20 card adds, graded blind by a separate Claude model: from memory vs with mtg-search, on 14 test decks (better on 13, p = 0.002)</div></div>
     </div>
   </header>
@@ -209,9 +209,9 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
         <figure data-chart>
           <div class="fig-title">Relevant cards in the top 10</div>
           <div class="bars">
-            <div class="bar" tabindex="0" data-v="98.1" data-max="100" data-u="%" data-c="var(--search)" data-tip="Search|80 deck and attribute tasks"><span class="lab">search</span></div>
-            <div class="bar" tabindex="0" data-v="86.3" data-max="100" data-u="%" data-c="var(--grep)" data-tip="Grep, same prompt as search|−11.9 points [−18.0, −6.1], p = 3×10⁻⁵"><span class="lab">grep, same prompt</span></div>
-            <div class="bar ref" tabindex="0" data-v="96.6" data-max="100" data-u="%" data-c="var(--grep)" data-tip="Grep, tuned prompt|same grep tool; the prompt alone adds 10.4 points (p = 0.0006)"><span class="lab">grep, tuned prompt</span></div>
+            <div class="bar" tabindex="0" data-v="98.3" data-max="100" data-u="%" data-c="var(--search)" data-tip="Search|80 deck and attribute tasks"><span class="lab">search</span></div>
+            <div class="bar" tabindex="0" data-v="86.5" data-max="100" data-u="%" data-c="var(--grep)" data-tip="Grep, same prompt as search|−11.8 points [−17.8, −6.1], p = 3×10⁻⁵"><span class="lab">grep, same prompt</span></div>
+            <div class="bar ref" tabindex="0" data-v="96.8" data-max="100" data-u="%" data-c="var(--grep)" data-tip="Grep, tuned prompt|same grep tool; the prompt alone adds 10.3 points (p = 0.0006)"><span class="lab">grep, tuned prompt</span></div>
           </div>
           <figcaption>80 deck and attribute tasks. Relevant: on the task's list of correct cards, or graded relevant by the relevance grader.</figcaption>
         </figure>
@@ -233,16 +233,16 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
             <tr><th scope="row">Claude Code turns</th><td class="n best">4.0</td><td class="n">4.6</td><td class="n">4.9</td><td class="n">5.6</td></tr>
             <tr><th scope="row">Tool calls</th><td class="n">2.0</td><td class="n">2.5</td><td class="n">2.9</td><td class="n">0</td></tr>
             <tr><th scope="row">Seconds</th><td class="n best">10.3</td><td class="n">17.0**</td><td class="n">10.9</td><td class="n">53.6</td></tr>
-            <tr><th scope="row">Relevant in the top 10: deck needs (65)</th><td class="n">97.8%</td><td class="n">95.2%</td><td class="n">97.7%</td><td class="n">—</td></tr>
-            <tr><th scope="row">Relevant in the top 10: card attributes (15)</th><td class="n best">99.3%</td><td class="n">47.3%</td><td class="n">92.0%</td><td class="n">—</td></tr>
+            <tr><th scope="row">Relevant in the top 10: deck needs (65)</th><td class="n">97.8%</td><td class="n">95.4%</td><td class="n">97.7%</td><td class="n">—</td></tr>
+            <tr><th scope="row">Relevant in the top 10: card attributes (15)</th><td class="n best">100%</td><td class="n">48.0%</td><td class="n">92.7%</td><td class="n">—</td></tr>
             <tr><th scope="row">Specific card found (33)</th><td class="n best">100%</td><td class="n">85%</td><td class="n">94%</td><td class="n">—</td></tr>
           </tbody>
         </table>
       </div>
-      <p class="note">*Read everything: the 12-task sample above. **Two slow tasks (159 s and 322 s); the median is 11.3 s.</p>
+      <p class="note">*Read everything: the 12-task sample above. **Two slow tasks (159 s and 322 s); the median is 11.3 s. Rescored on 15 Oct 2026 after a fix to card-name matching: a few answers such as "Lightning Bolt" had been matched to a double-faced card that shares the name. Every change is under a point, and no conclusion changed.</p>
       <div class="prose">
-        <p>With the same instructions, grep falls behind on card attributes, such as a 1-mana red burn instant. Only 47% of its top 10 is relevant, against 99% for search. A card's mana cost, type line and rules text sit on separate lines of the file, and without a description of the layout grep guessed it wrong: 29% of its calls matched nothing. On deck needs, whose rules-text phrases sit on one line, the two stay close (95% vs 98%).</p>
-        <p><span class="key">Search needed no prompt tuning.</span> Its first prompt, never tuned, gives the same results as the minimal one: 98.5% vs 98.1% relevant cards in the top 10.</p>
+        <p>With the same instructions, grep falls behind on card attributes, such as a 1-mana red burn instant. Only 48% of its top 10 is relevant, against 100% for search. A card's mana cost, type line and rules text sit on separate lines of the file, and without a description of the layout grep guessed it wrong: 29% of its calls matched nothing. On deck needs, whose rules-text phrases sit on one line, the two stay close (95% vs 98%).</p>
+        <p><span class="key">Search needed no prompt tuning.</span> Its first prompt, never tuned, gives the same results as the minimal one: 98.6% vs 98.3% relevant cards in the top 10.</p>
       </div>
       <p class="callout">With the same instructions, search finds more of the right cards than grep, with fewer tokens. Grep catches up only with a prompt tuned to the card file, and then uses twice the tokens.</p>
     </section>
