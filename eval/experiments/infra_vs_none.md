@@ -32,13 +32,13 @@ All three arms use the same agent: headless Claude Code (`claude -p`), `claude-s
 | arm | infrastructure | tool / context |
 |---|---|---|
 | **A** search | yes | `search(query, filters?)`: mLateOn (exact) plus metadata filters, top 15 per call (EXP-006 A) |
-| **G** grep | none | `grep(pattern, offset?)`: case-insensitive regex over the plain card text, matched line by line as in grep. Matches come in file order (alphabetical by name, with no correlation to popularity: Spearman ρ = 0.02 against EDHREC rank), 15 per call, with an offset for paging. No ranking and no filter parameters. |
+| **G** grep | none | `grep(pattern, offset?)`: case-insensitive regex over the plain card text, matched against each card's whole text with `re.MULTILINE`: `.` does not cross a line break and `^`/`$` anchor at line ends, as in grep, but a pattern with `\n` or `[\s\S]` can span the lines of one card, which grep cannot (see the correction below). Matches come in file order (alphabetical by name, with no correlation to popularity: Spearman ρ = 0.02 against EDHREC rank), 15 per call, with an offset for paging. No ranking and no filter parameters. |
 | **I** in context | none, no tools | the plain card text of every card the task allows, in the system prompt |
 
 **Common to all arms:**
 - **"Card text"** is the same `doc_text` everywhere: name and mana cost, type line, rules text, P/T and keywords. It is what mLateOn indexes, what grep searches and what I reads. It contains no tags, popularity or price.
 - **Task constraints** (colour identity, format, type, mana value: deck tasks only) are applied by the environment. A and G have them applied to every call; I's card file contains only the allowed cards. Only A can add further filters of its own.
-- **Protocol.** At most 5 tool calls (A, G), then a ranked final list of at most 20 card names. The system prompts are EXP-006's, varying only in the tool paragraph. G's paragraph adds the per-line matching rule and one example file entry (Serra Angel, which is not relevant to any task). A coding agent would look at the file before grepping it; this was added after the smoke run.
+- **Protocol.** At most 5 tool calls (A, G), then a ranked final list of at most 20 card names. The system prompts are EXP-006's, varying only in the tool paragraph. G's paragraph adds the per-line matching rule and one example file entry (Serra Angel, which is not relevant to any task). A coding agent would look at the file before grepping it; this was added after the smoke run. G's `pattern` description also gives one example pattern in rules-text wording (`'counter target spell unless'`); A's tool description gives no advice on query wording.
 - **I's corpus is too big for one context.** The whole file is about 7.5M characters, roughly 3.1M Sonnet 5.5 tokens at 2.42 characters per token. I therefore reads it in alphabetical parts of at most 1.8M characters (≤ ~750k tokens), and each part returns up to 20 candidates. With more than one part, one merge call ranks all the candidates, shown with their full text, into the final list. A task without constraints takes 5 parts plus the merge.
 
 ## Tasks and label sources
@@ -166,3 +166,14 @@ In context, the model sees every candidate. It does well when the request is cle
 - **Labels.** Still the original incomplete ones. Pooled judging (issue #2) would make the deck strata fairer to every arm.
 - **Grep echo.** G's tool output includes the matched line, which a coding agent's grep would also show. Without it, G would use about 20% fewer tool-output tokens, still more than A per episode, because it makes more calls.
 
+## Correction (2026-10-15): grep matching and G's prompt
+
+- **G's matching was not strictly line by line.** The prompt told the agent "Matching works line by line, as in grep", but `env.grep` ran each pattern over the card's whole text with `re.MULTILINE`.
+  - `.` does not cross a line break, and `^`/`$` anchor at line ends, as stated.
+  - An explicit `\n` or `[\s\S]` does span the lines of one card, which real grep cannot do.
+  - 88 of G's 328 patterns did this and 77 of them matched, so G had a capability beyond grep.
+- **G's prompt carried more method-specific guidance than A's.** The example file entry and the per-line note were added after the smoke run, and the `pattern` description has an example in rules-text wording. A was told only that `search` takes natural language; it got no advice on query wording, which the shipped server does give.
+  - G used the layout it was shown: 49% of its patterns rely on the file layout (line anchors, line breaks, mana-cost braces) to stand in for the filters it lacks. That rises to 88% on attribute tasks and 58% on find-this-card tasks.
+  - 44 of 112 first calls did this before seeing any result.
+  - The example pattern was copied verbatim once.
+- **Both differences favour G.** The ablation EXP-018 (`prompt_ablation.md`) reruns A and G on 30 of these tasks with identical minimal prompts, tool descriptions limited to mechanics, and grep matching truly line by line.
