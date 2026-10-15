@@ -21,9 +21,8 @@ is then compared with the published manifest:
 * nothing changed (only prices, EDHREC rank, printing metadata, ...)
   -> **no-op**: nothing uploaded or tagged.                                        exit 0
 
-The Docker image bakes ``cards.parquet`` plus the published embeddings (the NextPlaid
-index is rebuilt from them at image build time), so a metadata-only refresh only needs an
-image rebuild, not new embeddings.
+The Docker image bakes ``cards.parquet`` plus the published embeddings, so a metadata-only
+refresh only needs an image rebuild, not new embeddings.
 
 Every publishing refresh tags the dataset with ``scryfall-<YYYYMMDDHHMMSS>`` (from the
 Scryfall ``updated_at``), so older builds stay reproducible via ``revision=<tag>``.
@@ -73,7 +72,6 @@ ENCODE_CMD = [
     "-d",
     str(ROOT / "jobs" / "encode.py"),
     "--model", LATE_MODEL,
-    "--kind", "late",
     "--require-gpu",
 ]  # fmt: skip
 DATA_FILES = ["cards.parquet", "tags.parquet", "rulings.parquet", "manifest.json"]
@@ -217,7 +215,7 @@ def sh(cmd: list[str], **kw) -> subprocess.CompletedProcess:
 
 
 def oracle_ids_digest(cards_parquet: Path) -> str:
-    # Must match mtg_search.retrievers.base.oracle_ids_digest / jobs/encode.py
+    # Must match mtg_search.mlateon.oracle_ids_digest / jobs/encode.py
     import polars as pl
 
     h = hashlib.sha256()
@@ -392,7 +390,7 @@ def main(argv: list[str] | None = None) -> int:
     # 5) tag this snapshot
     ensure_tag(api, updated_at)
 
-    # 6) image (bakes the new cards.parquet; the NextPlaid index is rebuilt from the embeddings)
+    # 6) image (bakes the new cards.parquet and the published embeddings)
     if args.build_image:
         build_image()
     else:

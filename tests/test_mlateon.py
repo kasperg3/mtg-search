@@ -1,4 +1,4 @@
-"""Exact late-interaction backend (EXP-012): MaxSim, batching, filtering and safety checks, with a stub
+"""mLateOn search (EXP-012): MaxSim, batching, filtering and safety checks, with a stub
 query encoder (no ONNX model needed)."""
 
 import json
@@ -6,7 +6,7 @@ import json
 import numpy as np
 import pytest
 
-from mtg_search.exact import ExactLateBackend
+from mtg_search.mlateon import MLateOn
 
 
 def _backend(n_docs=300, dim=8, seed=0, threads=3):
@@ -15,7 +15,7 @@ def _backend(n_docs=300, dim=8, seed=0, threads=3):
     offsets = np.concatenate([[0], np.cumsum(lens)]).astype(np.int64)
     tokens = rng.standard_normal((offsets[-1], dim)).astype(np.float32)
     tokens /= np.linalg.norm(tokens, axis=1, keepdims=True)
-    be = object.__new__(ExactLateBackend)
+    be = object.__new__(MLateOn)
     be.tokens, be.offsets, be.n = tokens, offsets, n_docs
     be._init_scoring(threads)
     qs = {}
@@ -41,16 +41,19 @@ def test_maxsim_matches_brute_force_and_batching():
     many = be.scores_many(qs)
     for i, q in enumerate(qs):
         np.testing.assert_allclose(many[i], _brute(be, q), rtol=1e-5, atol=1e-5)
-        np.testing.assert_allclose(be.scores(q), many[i], rtol=1e-6, atol=1e-6)
+        np.testing.assert_allclose(be.scores_many([q])[0], many[i], rtol=1e-6, atol=1e-6)
     assert len(be._chunks) > 1  # really exercised the chunked path
 
 
 def test_search_filters_before_top_k_and_orders_deterministically():
     be = _backend()
-    s = be.scores("removal")
+    s = be.scores_many(["removal"])[0]
     allowed = np.arange(0, be.n, 7)
     hits = be.search("removal", 5, allowed)
     assert [r for r, _ in hits] == list(allowed[np.argsort(-s[allowed], kind="stable")][:5])
+    mask = np.zeros(be.n, dtype=bool)  # a boolean mask over all rows is accepted too
+    mask[allowed] = True
+    assert be.search("removal", 5, mask) == hits
     assert all(r % 7 == 0 for r, _ in hits)
     assert be.search("removal", 5, np.array([], dtype=np.int64)) == []
     assert len(be.search("removal", 10_000)) == be.n
@@ -72,11 +75,11 @@ def test_refuses_mismatched_embeddings(tmp_path):
     emb.mkdir()
     model.mkdir()
     (emb / "meta.json").write_text(json.dumps({"card_count": 2, "oracle_ids_sha256": "nope", "revision": "r1"}))
-    with pytest.raises(RuntimeError, match="do not match cards.parquet"):
-        ExactLateBackend(["a", "b"], embeddings_dir=emb, model_dir=model)
-    from mtg_search.artifacts import oracle_ids_digest
+    with pytest.raises(RuntimeError, match="different card table"):
+        MLateOn(["a", "b"], embeddings_dir=emb, model_dir=model)
+    from mtg_search.mlateon import oracle_ids_digest
     (emb / "meta.json").write_text(json.dumps({"card_count": 2, "oracle_ids_sha256": oracle_ids_digest(["a", "b"]),
                                                "revision": "r1"}))
     (model / "source.json").write_text(json.dumps({"revision": "r2"}))
     with pytest.raises(RuntimeError, match="one checkpoint"):
-        ExactLateBackend(["a", "b"], embeddings_dir=emb, model_dir=model)
+        MLateOn(["a", "b"], embeddings_dir=emb, model_dir=model)

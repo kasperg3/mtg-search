@@ -4,16 +4,16 @@
     uv run python -m bench.precon.run --system random --split all --repeats 3
     uv run python -m bench.precon.run --system heuristic --split all
     uv run python -m bench.precon.run --system popularity --split all
-    # harness plumbing dry run with the scripted fake LLM (no API calls)
-    uv run python -m bench.precon.run --system agent --llm fake --tools lexical --split test --limit 3
-    # real GLM-5.3 runs require explicit approval flags (not run so far):
-    uv run python -m bench.precon.run --system agent --llm glm --allow-llm --tools mcp --max-usd 5 ...
-    uv run python -m bench.precon.run --system probe --llm glm --allow-llm --split all --max-usd 2
+    # harness plumbing dry run with the scripted fake LLM (no model calls)
+    uv run python -m bench.precon.run --system agent --llm fake --tools none --split test --limit 3
+    # model runs need explicit approval flags; Claude Code runs on the subscription:
+    uv run python -m bench.precon.run --system agent --llm claude-code --allow-llm --tools shipped --cc-tool-search ...
+    uv run python -m bench.precon.run --system probe --llm claude-code --allow-llm --split dev
     # paired comparison / gain-function sensitivity between finished runs
     uv run python -m bench.precon.run compare RUN_A RUN_B [RUN_C ...]
 
-Systems: random | heuristic | popularity (reference) | agent (tools mcp|lexical|none,
-optional --anonymise-commander) | probe (memorisation probe, product name only).
+Systems: random | heuristic | popularity (reference) | agent (tools shipped|none, optional
+--anonymise-commander) | probe (memorisation probe, product name only).
 
 Outputs:
   bench/precon/runs/<run_id>.json      TRACKED: git sha, dataset revision, config, aggregate
@@ -97,16 +97,10 @@ def build_system(args, bench, db):
 
         from bench.precon.baselines.simple import TextHeuristic
 
+        from mtg_search.mlateon import MLateOn
+
         cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
-        if args.backend == "late":
-            from mtg_search.retrievers.late import LateInMemory
-
-            r = LateInMemory.from_dir(ROOT / "index" / "embeddings", "lightonai/mLateOn", oracle_ids=cards["oracle_id"].to_list())
-        else:
-            from mtg_search.retrievers.bm25 import BM25Retriever
-
-            r = BM25Retriever(cards["doc_text"].to_list())
-        return TextHeuristic(db, cards, r, gc_limit=args.gc_limit)
+        return TextHeuristic(db, cards, MLateOn.local(cards["oracle_id"].to_list()), gc_limit=args.gc_limit)
     return None
 
 
@@ -455,11 +449,11 @@ def main(argv=None) -> None:
     ap.add_argument("--add-thresholds", default=None, help="grade 3,2,1 lower bounds on r (default .30,.15,.05)")
     ap.add_argument("--n-boot", type=int, default=10_000)
     ap.add_argument("--run-id", default=None)
-    ap.add_argument("--tools", default="mcp", choices=["mcp", "lexical", "none", "shipped"],
+    ap.add_argument("--tools", default="shipped", choices=["shipped", "none"],
                     help="shipped = the real MCP server surface (instructions + tool descriptions), see --surface")
-    ap.add_argument("--surface", default="v1", help="model-facing text variant for --tools shipped (surfaces.py)")
-    ap.add_argument("--backend", default="late", choices=["late", "bm25", "docker"],
-                    help="retrieval backend for --tools mcp and the heuristic baseline")
+    ap.add_argument("--surface", default="shipped", help="model-facing text variant for --tools shipped (surfaces.py)")
+    ap.add_argument("--backend", default="local", choices=["local", "docker"],
+                    help="where the shipped tools run: in-process (local) or the built Docker image")
     ap.add_argument("--llm", default="fake", choices=["fake", "glm", "claude-code"],
                     help="claude-code = headless `claude -p` on the Claude Code subscription (no API key)")
     ap.add_argument("--cc-model", default="claude-sonnet-5-5", help="model for --llm claude-code")

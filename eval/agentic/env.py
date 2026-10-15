@@ -1,14 +1,8 @@
-"""EXP-006 search environment: retrievers, compact card rendering and SparseUp term feedback.
+"""Agentic search environment (EXP-006/013): mLateOn search, plain grep, compact card rendering, leak guard.
 
-Backends (``retriever`` names used by conditions):
-  ``mlateon``          LateInMemory(lightonai/mLateOn)
-  ``sparseup``         SparseUpRetriever (card-text index)
-  ``grep``             no search infrastructure: a regex over the card text, matches in file order
-                       (condition G); the legacy F variant ranks matches by BM25
-
-Term feedback is always computed with SparseUp, whatever retriever produced the results, so
-the same aggregate line can be shown over mLateOn results (condition D) and logged (hidden)
-for A/B as a counterfactual baseline for the "did the agent use the terms" analysis.
+Conditions use ``search("mlateon", ...)`` (A: search infrastructure) or ``grep`` (G: none). The SparseUp and
+BM25 conditions of EXP-006 (B, C, D, F) were removed with those retrievers; their code is in git history
+up to commit 61071da and their results stay in eval/agentic/runs/main and agentic_search.md.
 """
 
 from __future__ import annotations
@@ -28,28 +22,12 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from mtg_search.filters import filter_expr  # noqa: E402
 
-INDEX_DIR = ROOT / "index" / "embeddings"
 CACHE_DIR = Path(__file__).resolve().parent / ".cache"
 TOP_K = 15
 ORACLE_CHARS = 180
 FILTER_KEYS = ("color_identity", "colors", "colors_mode", "types", "cmc_min", "cmc_max", "format")
-_WORD = re.compile(r"^[a-z][a-z'-]{2,}$")
 # no popularity / price / crowd signal may reach the agent (asserted on every tool result)
 LEAK = re.compile(r"edhrec|price|\$|rank|popular|salt", re.IGNORECASE)
-# generic rules words that every card shares; never useful as steering feedback
-ENGLISH_STOP = set(
-    "a about above after again against all also am an and any are as at be because been before being below between both but by "
-    "can could did do does doing down during each few for from further had has have having he her here hers him his how if in "
-    "into is it its itself just more most must no nor not now of off on once only or other our out over own same she should so "
-    "some such than that their theirs them then there these they this those through to too under until up very was we were what "
-    "when where which while who whom why will with would yet you your yours".split()
-)
-MIN_CORPUS_DF = 5  # a feedback term must occur as a standalone word in at least this many cards' text
-TERM_STOP = ENGLISH_STOP | set(
-    "the and you your this that with for from into its card cards target each player players creature creatures "
-    "turn end may put get gets one two three until control controller spell spells ability abilities battlefield "
-    "mana cost costs pay additional instead then also any can't cant don't other another".split()
-)
 
 
 def _norm_filters(f: dict | None) -> dict:
@@ -61,7 +39,7 @@ def _norm_filters(f: dict | None) -> dict:
 
 
 class Env:
-    def __init__(self, retrievers: tuple[str, ...] = ("mlateon", "sparseup"), feedback: bool = True):
+    def __init__(self, retrievers: tuple[str, ...] = ("mlateon",)):
         self.cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
         self.oids = self.cards["oracle_id"].to_list()
         # result-cache key includes the corpus order, so a refreshed cards.parquet never reuses stale row ids
@@ -72,66 +50,14 @@ class Env:
         self._render = [self._render_row(r) for r in self.cards.iter_rows(named=True)]
         self.lock = threading.Semaphore(2)
         self.ret: dict[str, object] = {}
-        self.feedback = feedback
-        if feedback:
-            self._init_feedback()
         for name in retrievers:
-            self.ret[name] = self._load(name)
+            if name != "mlateon":
+                raise ValueError(f"unknown retriever {name!r} (only mlateon)")
+            from mtg_search.mlateon import MLateOn
+
+            self.ret[name] = MLateOn.local(self.oids)
         CACHE_DIR.mkdir(exist_ok=True)
         self._name_index()
-
-    def _init_feedback(self) -> None:
-        """SparseUp term feedback (conditions C/D; logged for A/B/F as a chance baseline)."""
-        from mtg_search.retrievers.sparseup import MODEL_ID, SparseUpRetriever
-
-        self.sparseup = SparseUpRetriever.from_dir(INDEX_DIR, MODEL_ID, oracle_ids=self.oids, doc_texts=self.cards["doc_text"].to_list())
-        # memoize query encodings: the same query is encoded for search and for term feedback
-        _enc, _memo = self.sparseup.encode_query, {}
-
-        def enc(q: str):
-            if q not in _memo:
-                _memo[q] = _enc(q)
-            return _memo[q]
-
-        self.sparseup.encode_query = enc
-        tok = self.sparseup.tokenizer
-        vocab = tok.convert_ids_to_tokens(list(range(self.sparseup.csr.shape[1])))
-        self.vocab = vocab
-        # whole-word, alphabetic, non-stopword vocab dims are eligible as feedback terms
-        # Feedback-term filter (identical for every condition; tightened after the pilot showed the
-        # aggregate line was dominated by subword fragments): whole-word vocab items only (Ġ-prefixed,
-        # alphabetic, >= 3 letters), no stopwords, no popularity/price vocabulary, and the word must
-        # occur as a standalone word in >= MIN_CORPUS_DF cards' doc_text.
-        from collections import Counter
-
-        corpus_df = Counter()
-        for d in self.cards.filter(~pl.col("is_funny"))["doc_text"].to_list():
-            corpus_df.update(set(re.findall(r"[a-z]+", d.lower())))
-        self.term_ok = np.array(
-            [
-                t.startswith("Ġ") and bool(re.fullmatch(r"[a-z]{3,}", t[1:].lower())) and t[1:].lower() not in TERM_STOP
-                and not LEAK.search(t[1:]) and corpus_df.get(t[1:].lower(), 0) >= MIN_CORPUS_DF
-                for t in vocab
-            ]
-        )
-        df = np.diff(self.sparseup.docs.indptr)
-        self.idf = np.log(self.sparseup.n / (1.0 + df)).astype(np.float32)
-
-    def _load(self, name: str):
-        if name == "sparseup":
-            if not self.feedback:
-                self._init_feedback()
-                self.feedback = True
-            return self.sparseup
-        if name == "bm25":
-            from mtg_search.retrievers.bm25 import BM25Retriever
-
-            return BM25Retriever.from_parquet(ROOT / "data" / "cards.parquet")
-        if name == "mlateon":
-            from mtg_search.retrievers.late import LateInMemory
-
-            return LateInMemory.from_dir(INDEX_DIR, "lightonai/mLateOn", oracle_ids=self.oids)
-        raise ValueError(name)
 
     # ------------------------------------------------------------------ rendering
 
@@ -207,22 +133,15 @@ class Env:
         path.write_text(json.dumps(rows))
         return rows
 
-    def grep(self, pattern: str, agent_filters: dict | None, task_filters: dict | None, k: int = TOP_K,
-             order: str = "bm25", offset: int = 0):
-        """Case-insensitive regex over doc_text (reminder text included). -> (n_matches, rows, matched
-        snippets). No popularity signal either way.
-
-        ``order="file"`` (condition G, no search infrastructure): matches in card-file order, i.e.
-        alphabetical by name (cards.parquet is sorted by name), from ``offset`` on; no ranking.
-        ``order="bm25"`` (legacy condition F): by BM25 score of the pattern's literal words (regex
-        syntax stripped), ties broken alphabetically by name."""
-        if order not in ("bm25", "file"):
-            raise ValueError(order)
-        try:  # G: per-line anchors as in grep (``.`` never crosses a line break in either mode)
-            rx = re.compile(pattern, re.IGNORECASE | (re.MULTILINE if order == "file" else 0))
+    def grep(self, pattern: str, task_filters: dict | None, k: int = TOP_K, offset: int = 0):
+        """Condition G (no search infrastructure): case-insensitive regex over doc_text, matched line by line
+        as in grep. -> (n_matches, rows, matched snippets) in card-file order (alphabetical by name; cards.parquet
+        is sorted by name), from ``offset`` on. No ranking, no popularity signal."""
+        try:
+            rx = re.compile(pattern, re.IGNORECASE | re.MULTILINE)
         except re.error as e:
             raise ValueError(f"invalid regex: {e}") from e
-        allowed = self.mask(task_filters or {}, agent_filters or {})
+        allowed = self.mask(task_filters or {})
         if not hasattr(self, "_docs"):
             self._docs = self.cards["doc_text"].to_list()
         match = {}
@@ -230,18 +149,8 @@ class Env:
             m = rx.search(self._docs[i])
             if m:
                 match[int(i)] = m
-        if order == "file":
-            order_rows = sorted(match)[max(0, offset):][:k]
-            return len(match), order_rows, [self._snippet(match[i], self._docs[i]) for i in order_rows]
-        words = " ".join(re.findall(r"[A-Za-z][A-Za-z'+/-]*", re.sub(r"\\[a-zA-Z]", " ", pattern)))
-        bm = np.zeros(len(self._docs), dtype=np.float32)
-        if words and match:
-            mask = np.zeros(len(self._docs), dtype=bool)
-            mask[list(match)] = True
-            for r, sc in self.ret["bm25"].search(words, len(match), mask):
-                bm[r] = sc
-        ranked = sorted(match, key=lambda i: (-bm[i], self.names[i]))
-        return len(match), ranked[:k], [self._snippet(match[i], self._docs[i]) for i in ranked[:k]]
+        rows = sorted(match)[max(0, offset):][:k]
+        return len(match), rows, [self._snippet(match[i], self._docs[i]) for i in rows]
 
     @staticmethod
     def _snippet(m: re.Match, doc: str) -> str:
@@ -252,59 +161,7 @@ class Env:
         snip = line[:s0] + "[[" + line[s0:s1] + "]]" + line[s1:]
         return snip if len(snip) <= 200 else "…" + snip[max(0, s0 - 80) : s1 + 100] + "…"
 
-    # ------------------------------------------------------------------ term feedback (SparseUp)
 
-    def _qvec(self, query: str):
-        with self.lock:
-            return self.sparseup.encode_query(query)  # memoized
-
-    def query_literal(self, query: str) -> set[int]:
-        return self.sparseup._literal_dims(query, self.sparseup.query_max_length)
-
-    def _qwords(self, query: str) -> set[str]:
-        return {w for w in re.findall(r"[a-z']+", query.lower()) if len(w) > 2}
-
-    def _same_word(self, term: str, qwords: set[str]) -> bool:
-        # crude stemming so "fliers"/"flier" or "deck"/"decks" don't count as new terms
-        return any(term[:5] == w[:5] and abs(len(term) - len(w)) <= 3 for w in qwords if len(w) >= 4) or term in qwords
-
-    def per_result_terms(self, query: str, rows: list[int], n: int = 5) -> list[list[tuple[str, bool]]]:
-        """Top contributing whole-word SparseUp terms (q[t]*d[t]) per result; flag = expansion
-        (term is not a word of the query)."""
-        ids, w = self._qvec(query)
-        qw = dict(zip(ids.tolist(), w.tolist(), strict=True))
-        qlit, qwords = self.query_literal(query), self._qwords(query)
-        out = []
-        for row in rows:
-            rw = self.sparseup.csr.getrow(row)
-            contrib = [(qw[t] * d, t) for t, d in zip(rw.indices.tolist(), rw.data.tolist(), strict=True) if t in qw and self.term_ok[t]]
-            contrib.sort(reverse=True)
-            terms = []
-            for _, t in contrib[:n]:
-                word = self.vocab[t][1:].lower()
-                terms.append((word, t not in qlit and not self._same_word(word, qwords)))
-            out.append(terms)
-        return out
-
-    def aggregate_terms(self, query: str, rows: list[int], n: int = 15, prior_text: str = "") -> list[tuple[str, int]]:
-        """Frequent, distinctive terms in the results' SparseUp document vectors that are not in the
-        query: score(t) = idf(t) * sum_r d_r[t], over terms present in >= 2 results."""
-        if not rows:
-            return []
-        sub = self.sparseup.csr[rows]
-        dfr = np.asarray((sub > 0).sum(axis=0)).ravel()
-        mass = np.asarray(sub.sum(axis=0)).ravel()
-        score = mass * self.idf * self.term_ok * (dfr >= 2)
-        qlit, qwords = self.query_literal(query), self._qwords(query)
-        out = []
-        for t in np.argsort(-score):
-            if score[t] <= 0 or len(out) >= n:
-                break
-            word = self.vocab[t][1:].lower()
-            if int(t) in qlit or self._same_word(word, qwords) or any(word == o for o, _ in out):
-                continue
-            out.append((word, int(dfr[t])))
-        return out
 
 def git_state(paths=("eval/agentic", "src", "bench/precon/harness")) -> dict:
     """Commit and whether the harness has uncommitted changes (recorded in config.json; review m4)."""

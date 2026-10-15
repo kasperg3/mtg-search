@@ -87,7 +87,7 @@ def main() -> None:
 
         from env import Env
 
-        env = Env((), feedback=False)
+        env = Env(())
         seen = {t: set() for t in ids}
         for r in args.pool_runs.split(","):
             for line in (HERE / "runs" / r / "episodes.jsonl").read_text().splitlines():

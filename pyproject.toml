@@ -13,23 +13,9 @@ dependencies = [
     "huggingface_hub>=0.25",
     "pyyaml>=6",
     "mcp>=2.3,<3",
-    # exact backend query encoder (EXP-012)
+    # mLateOn query encoder (fp32 ONNX) for search (mlateon.py)
     "onnxruntime>=1.30",
     "tokenizers>=0.23",
-]
-
-[project.optional-dependencies]
-# Query-side model stack (CPU). Install with `uv sync --extra models`.
-models = [
-    "torch>=2.6",
-    "sentence-transformers>=6.1",
-    "transformers>=5.5",
-    "bm25s>=0.2.13",
-    "PyStemmer>=2.2",
-    "scipy>=1.13",
-    # embeddinggemma-2's processor imports PIL + torchvision even for text-only use
-    "pillow>=10",
-    "torchvision>=0.21",
 ]
 
 [project.scripts]
@@ -49,16 +35,6 @@ packages = ["src/mtg_search"]
 testpaths = ["tests"]
 
 markers = [
-    "models: tests that download/run ML models (deselect with -m 'not models')",
     "docker: tests that run the built mtg-search image (uv run pytest -m docker)",
 ]
-addopts = "-m 'not models and not docker'"
-
-[[tool.uv.index]]
-name = "pytorch-cpu"
-url = "https://download.pytorch.org/whl/cpu"
-explicit = true
-
-[tool.uv.sources]
-torch = [{ index = "pytorch-cpu" }]
-torchvision = [{ index = "pytorch-cpu" }]
+addopts = "-m 'not docker'"

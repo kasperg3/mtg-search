@@ -63,12 +63,12 @@ def test_initialize_list_and_call(proc):
 
     _send(proc, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tools = {t["name"] for t in _recv(proc, 2)["result"]["tools"]}
-    assert tools == {"search_cards", "find_similar", "get_card", "list_tags"}
+    assert tools == {"search_cards", "find_similar", "get_card"}
 
     _send(proc, {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
         "name": "search_cards",
-        "arguments": {"query": "counter target spell unless its controller pays",
-                      "format": "pauper", "color_identity": "U", "cmc_max": 2, "limit": 10}}})
+        "arguments": {"queries": ["Counter target spell unless its controller pays {2}."],
+                      "format": "pauper", "color_identity": "U", "mana_value_max": 2, "limit": 10}}})
     res = _recv(proc, 3)["result"]
     assert not res.get("isError"), res
     text = res["content"][0]["text"]
@@ -84,7 +84,7 @@ def test_initialize_list_and_call(proc):
     assert time.perf_counter() - t < 5
 
     _send(proc, {"jsonrpc": "2.0", "id": 5, "method": "tools/call",
-                 "params": {"name": "search_cards", "arguments": {"query": "x", "format": "nope"}}})
+                 "params": {"name": "search_cards", "arguments": {"queries": ["x"], "format": "nope"}}})
     res = _recv(proc, 5)["result"]
     assert res["isError"] and "unknown format" in res["content"][0]["text"]
 

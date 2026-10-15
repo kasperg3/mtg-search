@@ -1,10 +1,10 @@
 """EXP-012: parity of the shipped exact backend (fp32 ONNX + numpy MaxSim) with the benchmark ranker.
 
-    OMP_NUM_THREADS=4 uv run --extra models python eval/experiments/exact_parity.py
+    OMP_NUM_THREADS=4 uv run python eval/experiments/exact_parity.py
 
 Reference: the cached top-100 rankings of ``late-mLateOn`` (``LateInMemory``, PyTorch fp32, the ranker
-behind every retrieval number in EXP-001..011) for all 363 eval queries under their filters
-(``eval/.cache/late-mLateOn.json``). Candidate: ``mtg_search.exact.ExactLateBackend`` over the same
+behind every retrieval number in EXP-001..011, since removed) for all 363 eval queries under their filters
+(``eval/.cache/late-mLateOn.json``). Candidate: ``mtg_search.mlateon.MLateOn`` over the same
 cards and embeddings, as loaded by the Docker image. Reports top-k agreement, score differences,
 per-set nDCG@10 for both, search latency and peak RSS.
 
@@ -30,7 +30,7 @@ ROOT = EXP.parents[1]
 sys.path[:0] = [str(ROOT / "src"), str(ROOT)]
 
 from eval.run import CARDS, Masks, load_all_queries, load_cache, per_query_metrics  # noqa: E402
-from mtg_search.exact import ExactLateBackend  # noqa: E402
+from mtg_search.mlateon import MLateOn  # noqa: E402
 
 MODEL_DIR = ROOT / "index" / "models" / "lightonai__mLateOn-fp32"
 EMB_DIR = ROOT / "index" / "embeddings" / "late" / "lightonai__mLateOn"
@@ -42,7 +42,7 @@ def main() -> None:
     oids = cards["oracle_id"].to_list()
     rss0 = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     t0 = time.perf_counter()
-    be = ExactLateBackend(oids, embeddings_dir=EMB_DIR, model_dir=MODEL_DIR)
+    be = MLateOn(oids, embeddings_dir=EMB_DIR, model_dir=MODEL_DIR)
     load_s = time.perf_counter() - t0
     rss_loaded = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
     ref = load_cache("late-mLateOn")

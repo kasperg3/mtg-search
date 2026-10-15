@@ -2,8 +2,8 @@
 # mtg-search: one image = stdio MCP server (Python) with exact late-interaction search:
 # mLateOn fp32 ONNX query encoder (onnxruntime) + exact MaxSim over the precomputed card token vectors
 # (numpy). No index service: at ~35k cards exact search is one matrix product (~100 ms) and ranks
-# identically to the benchmarks' reference (EXP-012). The older NextPlaid path lives in git history
-# and in src/mtg_search/nextplaid.py (MTG_SEARCH_BACKEND=nextplaid, not built into this image).
+# identically to the benchmarks' reference (EXP-012). The earlier NextPlaid image is in git history
+# (up to commit 61071da).
 #
 # Build with docker/build.sh (see docker/README.md). Directly:
 #   HF_TOKEN=... docker build -f docker/Dockerfile --secret id=hf_token,env=HF_TOKEN \
@@ -57,7 +57,6 @@ COPY --from=fetch /artifacts/data/cards.parquet /artifacts/data/tags.parquet \
      /artifacts/data/rulings.parquet /artifacts/data/manifest.json /app/data/
 COPY src/mtg_search /app/src/mtg_search
 ENV MTG_SEARCH_DATA_DIR=/app/data \
-    MTG_SEARCH_BACKEND=exact \
     MTG_SEARCH_EMBEDDINGS_DIR=/app/embeddings \
     MTG_SEARCH_MODEL_DIR=/app/model \
     MTG_SEARCH_LOG=WARNING

@@ -1,0 +1,59 @@
+{
+ "label": "mlateon-cleanup-check",
+ "timestamp": "20261015T080824Z",
+ "system": "mLateOn",
+ "git": {
+  "sha": "b801e45fef1c8e5ef681bd7a1f9453912deefe78",
+  "dirty": true
+ },
+ "host": {
+  "platform": "Linux-7.0.0-38-generic-x86_64-with-glibc2.43",
+  "python": "3.12.13"
+ },
+ "corpus": {
+  "file": "data/cards.parquet",
+  "cards": 34646,
+  "sha256": "d8f616e0817bc7b191ffe55004a7b66ccf19d475f75e0c53b31121eb1c3c7001"
+ },
+ "query_sets": {
+  "tags": "dc8dbe0ca815047b2437ef8b2f7ea3add0e322a6d23b896e9025dca4d1b77fca",
+  "handwritten": "9f058e797de1c390efdb33e56ce83b1f62f0a45402785bdb873963fb0ebf07f8",
+  "paraphrase": "3efe2512e44ee55db5368a514f0efb4c628b43962ecc5e2aa1decdfcc68cbd9b",
+  "deckneeds": "f1fbdf2e19e64c0b2d25dc4104bd8711e6b2aa5e1bead6c61ef2aa8f3ff64715"
+ },
+ "depth": 100,
+ "sets": {
+  "tags": {
+   "ndcg10": 0.60549,
+   "r50": 0.21874,
+   "r100": 0.32094,
+   "mrr10": 0.73824,
+   "n": 65
+  },
+  "handwritten": {
+   "ndcg10": 0.7072,
+   "r50": 0.52723,
+   "r100": 0.71379,
+   "mrr10": 0.89493,
+   "n": 46
+  },
+  "paraphrase": {
+   "ndcg10": 0.11897,
+   "r50": 0.04446,
+   "r100": 0.07418,
+   "mrr10": 0.22223,
+   "n": 222
+  },
+  "deckneeds": {
+   "ndcg10": 0.21139,
+   "r50": 0.06116,
+   "r100": 0.10938,
+   "mrr10": 0.37315,
+   "n": 30
+  }
+ },
+ "latency_ms": {
+  "p50": 132.3,
+  "p95": 194.3
+ }
+}

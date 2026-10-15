@@ -1,6 +1,6 @@
 """Eval smoke test for a refreshed index: late-mLateOn on the handwritten + paraphrase sets.
 
-    uv run --extra models python scripts/eval_smoke.py [--tolerance 3.0]
+    uv run python scripts/eval_smoke.py [--tolerance 3.0]
 
 Runs the in-process late retriever over ``index/embeddings`` and ``data/cards.parquet``
 (no eval cache is read or written, ``eval/results.md`` is untouched) and compares
@@ -54,14 +54,13 @@ def main(argv: list[str] | None = None) -> int:
     from eval.queries import load_queries
     from eval.run import DEPTH, Masks, per_query_metrics
     from mtg_search import config
-    from mtg_search.retrievers import load_retriever
+    from mtg_search.mlateon import MLateOn
 
     baseline = baseline_from_results((ROOT / "eval" / "results.md").read_text())
     cards = pl.read_parquet(config.CARDS_PARQUET)
     oids = cards["oracle_id"].to_list()
     masks = Masks(cards)
-    r = load_retriever("late", config.LATE_MODEL, index_dir=config.INDEX_DIR / "embeddings",
-                       cards_parquet=config.CARDS_PARQUET)
+    r = MLateOn.local(oids)
     scores: dict[str, float] = {}
     for s in SETS:
         qs = load_queries(s)

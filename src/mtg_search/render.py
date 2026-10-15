@@ -8,9 +8,8 @@ One block per card (~60-120 tokens in compact mode)::
        legal: pauper ✓
 
 Only deterministic rules/print facts are rendered, from the explicit :data:`ALLOWED_FIELDS`
-allow-list: every other column (popularity ranks, prices, salt, set/print metadata, ...) is
-dropped before rendering, so it can never reach the agent. Columns that are missing from an
-older ``cards.parquet`` are simply not rendered.
+allow-list; every other column is dropped before rendering, so it can never reach the agent.
+"Rules text" is what Scryfall calls ``oracle_text`` (the current official wording of a card).
 """
 
 from __future__ import annotations
@@ -33,13 +32,11 @@ LAYOUT_MARKERS = {
     "meld": "meld",
     "prototype": "prototype",
 }
-COMPACT_ORACLE_CHARS = 250
+COMPACT_TEXT_CHARS = 250  # rules text per face in search results
 
-# The only card fields that may appear in tool output. Deliberately excludes every soft,
-# market- or crowd-derived metric (edhrec_rank, prices, salt, ...). ``game_changer`` is
-# WotC's official Commander-bracket designation, not a popularity metric. ``tags`` are
-# functional oracle tags, filtered by :class:`TagFilter`. ``doc_text`` / ``face_names``
-# only back the face parser and carry the same oracle facts.
+# The only card fields that may appear in tool output: rules and print facts. ``game_changer`` is WotC's
+# official Commander-bracket designation, not a popularity metric. ``tags`` (Scryfall Tagger labels) are
+# shown as "roles", filtered by :class:`TagFilter`. ``doc_text`` / ``face_names`` only back the face parser.
 ALLOWED_FIELDS: frozenset[str] = frozenset({
     "name", "face_names", "faces", "doc_text",
     "mana_cost", "cmc", "colors", "color_identity", "type_line", "rarity",
@@ -55,7 +52,7 @@ def allowed_view(card: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def role_tags(tags: list[str] | None, tag_counts: Mapping[str, int] | TagFilter, n: int = 5) -> list[str]:
-    """Up to ``n`` functional oracle tags (see :mod:`mtg_search.tag_filter`): trivia/flavour/
+    """Up to ``n`` role labels from the card's functional tags (see :mod:`mtg_search.tag_filter`): trivia/flavour/
     template tags and too rare / too generic tags dropped; core deck roles and mid-specificity
     tags first. Pass a :class:`TagFilter` to use the tag hierarchy; a plain ``{slug: count}``
     mapping falls back to the pattern/list rules only."""
@@ -117,12 +114,12 @@ def faces_of(card: Mapping[str, Any]) -> list[dict[str, Any]]:
     return out
 
 
-def _oracle(text: str | None, compact: bool, indent: str) -> list[str]:
+def _rules_text(text: str | None, compact: bool, indent: str) -> list[str]:
     text = (text or "").strip()
     if not text:
         return []
-    if compact and len(text) > COMPACT_ORACLE_CHARS:
-        cut = text[:COMPACT_ORACLE_CHARS].rsplit(" ", 1)[0]
+    if compact and len(text) > COMPACT_TEXT_CHARS:
+        cut = text[:COMPACT_TEXT_CHARS].rsplit(" ", 1)[0]
         text = cut.rstrip(" ,.;:") + "…"
     return [indent + line for line in text.split("\n")]
 
@@ -201,9 +198,9 @@ def render_card(
             if st:
                 fl += f" · {st}"
             lines.append(fl)
-            lines += _oracle(f.get("oracle_text"), compact, ind + "  ")
+            lines += _rules_text(f.get("oracle_text"), compact, ind + "  ")
     elif faces:
-        lines += _oracle(faces[0].get("oracle_text"), compact, ind)
+        lines += _rules_text(faces[0].get("oracle_text"), compact, ind)
 
     info = []
     roles = role_tags(card.get("tags"), tag_counts or {}, n=5 if compact else 12)

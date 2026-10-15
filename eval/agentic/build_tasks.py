@@ -2,7 +2,6 @@
 
     uv run python eval/agentic/build_tasks.py                    # deck + attribute + reviewed known-item tasks
     uv run python eval/agentic/build_tasks.py --gen-known        # (GLM) draft known-item descriptions -> known_drafts.yaml
-    uv run --extra models python eval/agentic/build_tasks.py --check-known   # single-shot ranks of the target
     uv run python eval/agentic/build_tasks.py --known-easy       # tasks_known_easy.yaml (EXP-013 stratum)
 
 Task kinds (labels are never shown to the agent):
@@ -136,27 +135,6 @@ def gen_known(cards: pl.DataFrame) -> None:
     print(f"cost ${cost:.4f}")
 
 
-def check_known() -> None:
-    """Rank of the target for the description used verbatim as a single query (BM25 / mLateOn / SparseUp)."""
-    from env import Env
-
-    from mtg_search.retrievers.bm25 import BM25Retriever
-
-    env = Env(("mlateon", "sparseup"))
-    bm = BM25Retriever.from_parquet(ROOT / "data" / "cards.parquet")
-    src = HERE / ("known_reviewed.yaml" if (HERE / "known_reviewed.yaml").exists() else "known_drafts.yaml")
-    items = yaml.safe_load(src.read_text())
-    for it in items:
-        row = env.row_of[it["oracle_id"]]
-        ranks = {}
-        for name, r in (("bm25", bm), ("mlateon", env.ret["mlateon"]), ("sparseup", env.ret["sparseup"])):
-            hits = [h for h, _ in r.search(it["prompt"], 1000, env.base_mask)]
-            ranks[name] = hits.index(row) + 1 if row in hits else None
-        it["single_shot_rank"] = ranks
-        print(f"{ranks}  {it['name']}: {it['prompt']}")
-    src.write_text(yaml.safe_dump(items, sort_keys=False, allow_unicode=True, width=120))
-
-
 def known_task(k: dict, prefix: str = "known") -> dict:
     return {"id": f"{prefix}-{re.sub(r'[^a-z0-9]+', '-', k['name'].lower()).strip('-')}", "kind": "known",
             "source": f"edhrec_rank={k['edhrec_rank']}", "prompt": k["prompt"], "filters": {},
@@ -182,14 +160,11 @@ def known_easy() -> None:
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--gen-known", action="store_true")
-    ap.add_argument("--check-known", action="store_true")
     ap.add_argument("--known-easy", action="store_true")
     args = ap.parse_args()
     cards = pl.read_parquet(ROOT / "data" / "cards.parquet")
     if args.gen_known:
         return gen_known(cards)
-    if args.check_known:
-        return check_known()
     if args.known_easy:
         return known_easy()
     tasks = deck_tasks() + attr_tasks(cards)

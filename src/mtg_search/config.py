@@ -27,6 +27,4 @@ BULK_TYPES = ("oracle_cards", "oracle_tags", "rulings")
 HF_REPO = "kasper-cbx/mtg-search-index"
 HF_REPO_TYPE = "dataset"
 
-LATE_MODEL = "lightonai/mLateOn"
-DENSE_MODEL = "google/embeddinggemma-2"
-SPARSE_MODEL = "opensearch-project/opensearch-neural-sparse-encoding-doc-v3-gte"
+LATE_MODEL = "lightonai/mLateOn"  # the only retriever (mlateon.py)

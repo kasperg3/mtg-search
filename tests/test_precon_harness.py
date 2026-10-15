@@ -150,8 +150,8 @@ def test_render_deck_card_text_only():
 
 
 def test_system_prompt_budget_and_rules():
-    s = system_prompt("add", "mcp", "RG")
-    assert "at most 10 tool calls" in s and "(RG)" in s and "at most 3 cards marked [Game Changer]" in s
+    s = system_prompt("add", "shipped", "RG")  # the MCP server describes itself; no client states a call budget
+    assert "tool calls" not in s and "(RG)" in s and "at most 3 cards marked [Game Changer]" in s
     s = system_prompt("cut", "none", "RG")
     assert "tool calls" not in s and '"cuts"' in s
     u = user_prompt("cut", "DECK ...")
@@ -179,7 +179,7 @@ class StubTools(Toolset):
 def test_episode_with_fake_llm(tmp_path, monkeypatch):
     monkeypatch.setenv("GLM_API_KEY", "sk-SECRET-should-never-appear")
     tools = StubTools()
-    sys_p, user = system_prompt("add", "lexical", "RG"), user_prompt("add", render_deck(DECK, ROWS))
+    sys_p, user = system_prompt("add", "shipped", "RG"), user_prompt("add", render_deck(DECK, ROWS))
     tp = tmp_path / "t.jsonl"
     res = run_episode(FakeLLM(n_tool_calls=2), tools, "add", sys_p, user, transcript_path=tp)
     assert res.stop == "final_answer" and res.parse == "tool_args"

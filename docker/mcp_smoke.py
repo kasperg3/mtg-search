@@ -17,14 +17,13 @@ import sys
 import time
 
 CALLS = [
-    ("search_cards", {"query": "blue instants that counter a spell unless its controller pays", "format": "pauper"}),
-    ("search_cards", {"query": "free way to sacrifice my creatures", "color_identity": "BG", "format": "commander"}),
-    ("find_similar", {"card_name": "Rhystic Study"}),
+    ("search_cards", {"queries": "Counter target spell unless its controller pays {2}.", "format": "pauper"}),
+    ("search_cards", {"queries": ["Sacrifice a creature: Add {C}."], "color_identity": "BG", "format": "commander"}),
+    ("find_similar", {"card_name": "Divination", "color_identity": "BR", "format": "commander"}),
     ("get_card", {"name": "fire ice"}),
-    ("search_cards", {"query": "ramp", "color_identity": "G", "format": "pauper", "cmc_max": 2, "limit": 5}),
-    ("search_cards", {"queries": ["destroy target artifact", "exile target artifact or enchantment"],
-                      "colors": "RW", "colors_mode": "subset", "format": "modern", "limit": 5}),
-    ("list_tags", {"prefix": "free-sac"}),
+    ("search_cards", {"queries": ["{T}: Add {G}."], "color_identity": "G", "format": "pauper", "mana_value_max": 2, "limit": 5}),
+    ("search_cards", {"queries": ["Destroy target artifact.", "Exile target artifact or enchantment."],
+                      "color_identity": "RW", "format": "modern", "limit": 5}),
     ("search_cards", {"queries": ["Reach", "Destroy target creature with flying.",
                                   "Creatures you control gain reach until end of turn.",
                                   "Whenever a creature with flying attacks you, it deals no combat damage."],

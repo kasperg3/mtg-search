@@ -257,10 +257,10 @@ def test_wait_for_job(monkeypatch):
         refresh.wait_for_job(FakeApi(["RUNNING", "ERROR"]), "x")
 
 
-def test_oracle_ids_digest_matches_retrievers(tmp_path):
+def test_oracle_ids_digest_matches_search_engine(tmp_path):
     import polars as pl
 
-    from mtg_search.retrievers.base import oracle_ids_digest
+    from mtg_search.mlateon import oracle_ids_digest
 
     ids = ["b", "a", "c"]
     pl.DataFrame({"oracle_id": ids}).write_parquet(tmp_path / "cards.parquet")

@@ -1,7 +1,7 @@
 """EXP-013: an agent with search infrastructure vs one without vs all cards in context (Claude Code).
 
-    uv run --extra models python eval/agentic/cc_agent.py --run cc-main --conds A,G --workers 4
-    uv run --extra models python eval/agentic/cc_agent.py --run cc-main --conds I --ids <task ids> --workers 1
+    uv run python eval/agentic/cc_agent.py --run cc-main --conds A,G --workers 4
+    uv run python eval/agentic/cc_agent.py --run cc-main --conds I --ids <task ids> --workers 1
 
 Same tasks (``tasks.yaml`` plus the ``tasks_known_easy.yaml`` stratum) and final-answer protocol as
 EXP-006: up to 5 tool calls, then a ranked list of at most 20 card names. The agent is headless Claude
@@ -50,7 +50,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 sys.path[:0] = [str(HERE), str(ROOT)]
 
-from agent import CONDITIONS, MAX_FINAL, MAX_SEARCHES, SYSTEM, SYSTEM_GREP, TOOLS, TOOLS_GREP, constraints_text, format_results, user_message  # noqa: E402
+from agent import MAX_FINAL, MAX_SEARCHES, SYSTEM, SYSTEM_GREP, TOOLS, TOOLS_GREP, constraints_text, format_results, user_message  # noqa: E402
 
 from bench.precon.harness.claude_code import ClaudeCode  # noqa: E402
 
@@ -170,16 +170,16 @@ class Service:
                 raise ValueError("empty query")
             rows = env.search("mlateon", q, filt, task.get("filters"))
             rec = {"tool": "search", "query": q, "filters": filt}
-            content = format_results(env, CONDITIONS["A"], q, n, rows, [], [], tool="search", last_note=False)
+            content = format_results(env, q, n, rows, tool="search", last_note=False)
             snippets = []
         elif cond == "G" and name == "grep":
             q = str(args.get("pattern") or "")
             if not q.strip():
                 raise ValueError("empty pattern")
             offset = max(0, int(args.get("offset") or 0))
-            n_match, rows, snippets = env.grep(q, {}, task.get("filters"), order="file", offset=offset)
+            n_match, rows, snippets = env.grep(q, task.get("filters"), offset=offset)
             rec = {"tool": "grep", "query": q, "filters": {}, "offset": offset, "n_match": n_match}
-            content = format_results(env, CONDITIONS["G"], q, n, rows, [], [], snippets, n_match, "grep", offset, last_note=False)
+            content = format_results(env, q, n, rows, snippets, n_match, "grep", offset, last_note=False)
         else:
             raise ValueError(f"unknown tool {name}")
         env.assert_no_leak(content, rows, [*snippets, q])
@@ -390,7 +390,7 @@ def main() -> None:
         tasks = order[: args.limit]
     from env import Env
 
-    env = Env(("mlateon",) if "A" in conds else (), feedback=False)
+    env = Env(("mlateon",) if "A" in conds else ())
     run_dir = HERE / "runs" / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
     cfg = run_dir / "config.json"

@@ -104,8 +104,9 @@ Raw EDHREC pages and all builds live under `data/` (gitignored) and are never co
 uv run python -m bench.precon.run --system random --split all --repeats 3
 uv run python -m bench.precon.run --system heuristic --split all          # mLateOn retrieval
 uv run python -m bench.precon.run --system popularity --split all         # reference only
-uv run python -m bench.precon.run --system agent --llm fake --tools mcp --split test   # dry run, no API
-uv run python -m bench.precon.run estimate --dry mcp=<run>,lexical=<run>,none=<run> --precons 20
+uv run python -m bench.precon.run --system agent --llm fake --tools none --split test   # dry run, no model
+uv run python -m bench.precon.run --system agent --llm claude-code --allow-llm --tools shipped --cc-tool-search --split dev
+# --tools shipped serves the real MCP surface in-process (--backend local, mLateOn) or from the image (--backend docker)
 ```
 
 `runs/<run_id>.json` is tracked and holds the git sha, dataset revision, config, aggregate metrics, slices and cost. `runs/<run_id>/` is gitignored and holds the per-precon outputs and metrics (`episodes.jsonl`) and the transcripts.

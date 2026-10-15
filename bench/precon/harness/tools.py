@@ -1,17 +1,14 @@
-"""Pluggable toolsets for the EXP-007 agent (OpenAI function-calling schemas + executors).
+"""Toolsets for the precon benchmark agent (OpenAI function-calling schemas + executors).
 
-``mcp``      the shipped mtg-search tools (``search_cards`` / ``find_similar`` / ``get_card``),
-             either in-process (``CardService`` from ``src/mtg_search/server.py`` over an
-             in-memory mLateOn backend: ``backend="late"``) or the built Docker image over MCP
-             stdio (``backend="docker"``).
-``lexical``  EXP-006 condition F style: ``grep`` (regex over card text; matches ordered by BM25
-             of the pattern's literal words, ties alphabetical) and ``bm25``; cards rendered with
-             the same ``render_card`` as the MCP tools.
+``shipped``  the real mtg-search MCP surface (``src/mtg_search/server.py``: instructions, tool names,
+             descriptions, schemas), served in-process over ``mlateon.MLateOn`` (``backend="local"``) or by
+             the built Docker image over MCP stdio (``backend="docker"``). ``surface`` swaps in variant
+             model-facing text from ``surfaces.SURFACES`` for A/B tests.
 ``none``     no tools.
 
-Every tool output passes :func:`check_tool_output` (no popularity / price / crowd strings), and
-evaluative or precon-identifying oracle tags from the dataset's ``tag_denylist.json`` are removed
-from the card table before rendering (in-process), or from ``roles:`` lines (Docker).
+Every tool output passes :func:`check_tool_output` (no popularity / price / crowd strings), and evaluative
+or precon-identifying tags from the dataset's ``tag_denylist.json`` are removed before rendering
+(in-process) or from ``roles:`` lines (Docker).
 """
 
 from __future__ import annotations
@@ -23,7 +20,6 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-import numpy as np
 import polars as pl
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -72,21 +68,14 @@ def cards_for_eval(cards: pl.DataFrame, deny: set[str]) -> pl.DataFrame:
     return cards.with_columns(pl.col("tags").list.eval(pl.element().filter(~pl.element().is_in(list(deny)))))
 
 
-def _fn(name: str, desc: str, props: dict, required: list[str]) -> dict:
-    return {"type": "function", "function": {"name": name, "description": desc,
-                                             "parameters": {"type": "object", "properties": props, "required": required}}}
-
-
-def _filter_props() -> dict:
-    from mtg_search.filters import FILTER_PARAMS
-
-    return {k: {kk: vv for kk, vv in v.items() if kk in ("type", "items", "enum", "description", "additionalProperties")}
-            for k, v in FILTER_PARAMS.items()}
+def _fn(name: str, desc: str, params: dict) -> dict:
+    return {"type": "function", "function": {"name": name, "description": desc, "parameters": params}}
 
 
 class Toolset:
     name = "none"
     tool_names: tuple[str, ...] = ()
+    instructions: str | None = None
 
     def schemas(self) -> list[dict]:
         return []
@@ -105,103 +94,6 @@ class NoTools(Toolset):
     pass
 
 
-class _MaskBackend:
-    """Adapts a retriever that takes a boolean mask to CardService's row-index protocol."""
-
-    def __init__(self, retriever, n: int):
-        self.r, self.n = retriever, n
-
-    def search(self, query: str, k: int, allowed_rows: np.ndarray | None = None):
-        mask = None
-        if allowed_rows is not None:
-            mask = np.zeros(self.n, dtype=bool)
-            mask[np.asarray(allowed_rows, dtype=np.int64)] = True
-        return self.r.search(query, k, mask)
-
-
-class MCPToolset(Toolset):
-    name = "mcp"
-    tool_names = ("search_cards", "find_similar", "get_card")
-
-    def __init__(self, backend: str = "late", denylist: dict | None = None, data_dir: Path = ROOT / "data",
-                 retriever=None, image: str = "mtg-search"):
-        self.backend_name = backend
-        self.deny: set[str] = set()
-        tags_df = pl.read_parquet(data_dir / "tags.parquet") if (data_dir / "tags.parquet").exists() else None
-        if tags_df is not None:
-            self.deny = denied_tags(tags_df["slug"].to_list(), denylist)
-        if backend == "docker":
-            self._docker = _DockerMCP(image)
-            self.svc = None
-            return
-        from mtg_search.server import CardService, server_columns
-
-        cards = pl.read_parquet(data_dir / "cards.parquet")
-        cards = cards_for_eval(cards.select(server_columns(cards.columns)), self.deny)
-        if retriever is None:
-            if backend == "late":
-                from mtg_search.retrievers.late import LateInMemory
-
-                retriever = LateInMemory.from_dir(ROOT / "index" / "embeddings", "lightonai/mLateOn",
-                                                  oracle_ids=cards["oracle_id"].to_list())
-            elif backend == "bm25":  # cheap stand-in for tests / dry runs; NOT the shipped ranking
-                from mtg_search.retrievers.bm25 import BM25Retriever
-
-                retriever = BM25Retriever(cards["doc_text"].to_list())
-            else:
-                raise ValueError(f"unknown backend {backend!r}")
-        self.svc = CardService(cards, _MaskBackend(retriever, cards.height),
-                               tags=tags_df.filter(~pl.col("slug").is_in(list(self.deny)))
-                               .select("slug", "label", "description", "card_count", "parent_slugs")
-                               if tags_df is not None else None,
-                               rulings_path=data_dir / "rulings.parquet")
-
-    def config(self) -> dict:
-        return {"tools": "mcp", "backend": self.backend_name, "n_denied_tags": len(self.deny)}
-
-    def schemas(self) -> list[dict]:
-        fp = _filter_props()
-        lim = {"limit": {"type": "integer", "description": "Cards to return (1-50, default 15)."},
-               "detail": {"type": "string", "enum": ["compact", "full"]}}
-        return [
-            _fn("search_cards", "Semantic search over all Magic cards. Write the query like the rules text you want "
-                "or describe the effect; put colours/format/types/mana value in filters. Results are ordered by text "
-                "relevance only.", {"query": {"type": "string"}, "queries": {"type": "array", "items": {"type": "string"},
-                                    "description": "Several phrasings; rankings are fused."}, **lim, **fp}, []),
-            _fn("find_similar", "Cards that play like a given card (functional substitutes, upgrades).",
-                {"card_name": {"type": "string"}, **lim, **fp}, ["card_name"]),
-            _fn("get_card", "Full oracle text, legalities, functional tags and rulings of one card.",
-                {"name": {"type": "string"}}, ["name"]),
-        ]
-
-    def call(self, name: str, args: dict) -> str:
-        if name not in self.tool_names:
-            raise ValueError(f"unknown tool {name}")
-        if self.svc is None:
-            out = self._docker.call(name, args)
-            out = self._strip_denied_roles(out)
-        else:
-            fn = {"search_cards": self.svc.search_cards, "find_similar": self.svc.find_similar,
-                  "get_card": self.svc.get_card}[name]
-            out = fn(**args)
-        check_tool_output(out)
-        return out
-
-    def _strip_denied_roles(self, text: str) -> str:
-        if not self.deny:
-            return text
-
-        def fix(m):
-            kept = [t for t in m.group(2).split(", ") if t.strip() not in self.deny]
-            return m.group(1) + ", ".join(kept)
-
-        return re.sub(r"((?:roles|oracle tags): )([^\n·]*)", fix, text)
-
-    def close(self) -> None:
-        if self.svc is None:
-            self._docker.close()
-
-
 class _DockerMCP:
     """Minimal synchronous MCP stdio client for ``docker run -i --rm <image>``."""
 
@@ -209,8 +101,9 @@ class _DockerMCP:
         self.p = subprocess.Popen(["docker", "run", "-i", "--rm", image], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                   stderr=subprocess.DEVNULL, text=True, bufsize=1)
         self._id = 0
-        self._req("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
-                                 "clientInfo": {"name": "precon-bench", "version": "0"}})
+        init = self._req("initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
+                                        "clientInfo": {"name": "precon-bench", "version": "0"}})
+        self.instructions = init.get("instructions")
         self._send({"jsonrpc": "2.0", "method": "notifications/initialized"})
 
     def _send(self, msg: dict) -> None:
@@ -231,6 +124,9 @@ class _DockerMCP:
                     raise ValueError(msg["error"].get("message"))
                 return msg["result"]
 
+    def list_tools(self) -> list[dict]:
+        return self._req("tools/list", {})["tools"]
+
     def call(self, name: str, args: dict) -> str:
         res = self._req("tools/call", {"name": name, "arguments": args})
         text = "\n".join(c.get("text", "") for c in res.get("content", []))
@@ -247,148 +143,48 @@ class _DockerMCP:
                 self.p.kill()
 
 
-class LexicalToolset(Toolset):
-    """``grep`` + ``bm25`` over ``doc_text`` (EXP-006 condition F semantics, popularity-free)."""
-
-    name = "lexical"
-    tool_names = ("grep", "bm25")
-    K = 15
-
-    def __init__(self, denylist: dict | None = None, data_dir: Path = ROOT / "data"):
-        from mtg_search.retrievers.bm25 import BM25Retriever
-        from mtg_search.server import server_columns
-        from mtg_search.tag_filter import TagFilter
-
-        cards = pl.read_parquet(data_dir / "cards.parquet")
-        tags_df = pl.read_parquet(data_dir / "tags.parquet") if (data_dir / "tags.parquet").exists() else None
-        self.deny = denied_tags(tags_df["slug"].to_list(), denylist) if tags_df is not None else set()
-        self.cards = cards_for_eval(cards.select(server_columns(cards.columns)), self.deny)
-        self.docs = self.cards["doc_text"].to_list()
-        self.names = self.cards["name"].to_list()
-        self.funny = np.asarray(self.cards["is_funny"].to_list(), dtype=bool)
-        self.bm25 = BM25Retriever(self.docs)
-        self.tf = TagFilter.from_frame(tags_df) if tags_df is not None else None
-
-    def config(self) -> dict:
-        return {"tools": "lexical", "n_denied_tags": len(self.deny)}
-
-    def schemas(self) -> list[dict]:
-        fp = {k: v for k, v in _filter_props().items() if k in ("color_identity", "colors", "colors_mode", "format",
-                                                                   "types", "cmc_min", "cmc_max")}
-        return [
-            _fn("grep", "Case-insensitive regex over card text. Returns the match count and 15 matching cards.",
-                {"pattern": {"type": "string"}, **fp}, ["pattern"]),
-            _fn("bm25", "BM25 keyword search over card text. Returns the top 15 cards.",
-                {"query": {"type": "string"}, **fp}, ["query"]),
-        ]
-
-    def _mask(self, flt: dict) -> np.ndarray:
-        from mtg_search.filters import FILTER_PARAMS, allowed_indices
-
-        flt = {k: v for k, v in flt.items() if k in FILTER_PARAMS and v not in (None, "", [], {})}
-        m = np.zeros(len(self.docs), dtype=bool)
-        m[allowed_indices(self.cards, **flt)] = True
-        return m & ~self.funny
-
-    def _render(self, rows: list[int]) -> list[str]:
-        from mtg_search.render import render_card
-
-        return [render_card(self.cards.row(r, named=True), rank=i, detail="compact", tag_counts=self.tf)
-                for i, r in enumerate(rows, 1)]
-
-    def call(self, name: str, args: dict) -> str:
-        args = dict(args)
-        if name == "bm25":
-            q = str(args.pop("query", "")).strip()
-            if not q:
-                raise ValueError("empty query")
-            hits = self.bm25.search(q, self.K, self._mask(args))
-            out = "\n".join([f'bm25: "{q}" · {len(hits)} results', *self._render([r for r, _ in hits])])
-        elif name == "grep":
-            pat = str(args.pop("pattern", ""))
-            try:
-                rx = re.compile(pat, re.IGNORECASE)
-            except re.error as e:
-                raise ValueError(f"invalid regex: {e}") from e
-            mask = self._mask(args)
-            match = [i for i in np.flatnonzero(mask) if rx.search(self.docs[i])]
-            words = " ".join(re.findall(r"[A-Za-z][A-Za-z'+/-]*", re.sub(r"\\[a-zA-Z]", " ", pat)))
-            score = np.zeros(len(self.docs), dtype=np.float32)
-            if words and match:
-                mm = np.zeros(len(self.docs), dtype=bool)
-                mm[match] = True
-                for r, s in self.bm25.search(words, len(match), mm):
-                    score[r] = s
-            order = sorted(match, key=lambda i: (-score[i], self.names[i]))[: self.K]
-            out = "\n".join([f"grep: /{pat}/ · {len(match)} cards match; showing {len(order)}", *self._render(order)])
-        else:
-            raise ValueError(f"unknown tool {name}")
-        check_tool_output(out)
-        return out
-
-
-def slim_schema(s: Any) -> Any:
-    """Drop pydantic noise from a JSON schema (EXP-010 token-efficiency arm): per-property ``title`` and
-    ``anyOf [T, null]`` wrappers for optional parameters (the default already says null is allowed)."""
-    if isinstance(s, list):
-        return [slim_schema(x) for x in s]
-    if not isinstance(s, dict):
-        return s
-    out = {}
-    for k, v in s.items():
-        if k == "title" and isinstance(v, str):
-            continue
-        out[k] = slim_schema(v) if k != "properties" else {p: slim_schema(x) for p, x in v.items()}
-    any_of = out.get("anyOf")
-    if isinstance(any_of, list) and len(any_of) == 2 and {"type": "null"} in any_of:
-        inner = next(x for x in any_of if x != {"type": "null"})
-        out.pop("anyOf")
-        out = {**inner, **out}
-    return out
-
-
-class ShippedToolset(MCPToolset):
-    """The shipped MCP server's own surface (instructions, tool names, descriptions, schemas and
-    argument handling via ``build_mcp``) over the in-process eval service. ``surface`` selects the
-    model-facing text: "v1" = as shipped in server.py, otherwise a variant from ``surfaces.SURFACES``."""
+class ShippedToolset(Toolset):
+    """The shipped MCP server's own surface: instructions, tool names, descriptions, schemas and argument
+    handling (``build_mcp``). ``retriever`` replaces mLateOn in tests (any object with ``search``)."""
 
     name = "shipped"
-    tool_names = ("search_cards", "find_similar", "get_card", "list_tags")
 
-    def __init__(self, surface: str = "v1", **kw: Any):
-        super().__init__(**kw)
-        if self.svc is None:
-            raise ValueError("shipped toolset needs an in-process backend (late or bm25)")
-        import anyio
-
-        from mtg_search.server import build_mcp
-
+    def __init__(self, surface: str = "shipped", backend: str = "local", denylist: dict | None = None,
+                 data_dir: Path = ROOT / "data", retriever: Any = None, image: str = "mtg-search"):
         from .surfaces import SURFACES
 
-        self.surface = surface
-        self.mcp = build_mcp(self.svc, SURFACES[surface])
-        self.instructions = self.mcp.instructions
-        drop = set(filter(None, SURFACES[surface].get("_drop", "").split(",")))
-        listed = [t for t in anyio.run(self.mcp.list_tools) if t.name not in drop]
-        self.tool_names = tuple(t.name for t in listed)
-        self._schemas = [_fn(t.name, t.description or "", t.input_schema.get("properties", {}),
-                             t.input_schema.get("required", [])) for t in listed]
-        for sc, t in zip(self._schemas, listed):
-            sc["function"]["parameters"] = dict(t.input_schema)  # keep $defs / constraints verbatim
-            if SURFACES[surface].get("_slim"):
-                sc["function"]["parameters"] = slim_schema(sc["function"]["parameters"])
-        # MCP tool _meta (passed through by the Claude Code proxy only): frozen variants state "_always_load"
-        # explicitly; "shipped" uses the server's own tool meta
-        sv = SURFACES[surface]
-        if "_always_load" in sv:
-            always = [x for x in sv["_always_load"].split(",") if x]
-            for sc in self._schemas:
-                if sc["function"]["name"] in always:
-                    sc["meta"] = {"anthropic/alwaysLoad": True}
+        self.surface, self.backend_name = surface, backend
+        tags_df = pl.read_parquet(data_dir / "tags.parquet") if (data_dir / "tags.parquet").exists() else None
+        self.deny = denied_tags(tags_df["slug"].to_list(), denylist) if tags_df is not None else set()
+        if backend == "docker":
+            if SURFACES[surface]:
+                raise ValueError("surface variants need backend='local'; the image serves its own text")
+            self._docker = _DockerMCP(image)
+            listed = self._docker.list_tools()
+            self.instructions = self._docker.instructions
+            self._schemas = [{**_fn(t["name"], t.get("description") or "", t["inputSchema"]),
+                              **({"meta": t["_meta"]} if t.get("_meta") else {})} for t in listed]
+        elif backend == "local":
+            import anyio
+
+            from mtg_search.server import CardService, build_mcp, server_columns
+
+            cards = pl.read_parquet(data_dir / "cards.parquet")
+            cards = cards_for_eval(cards.select(server_columns(cards.columns)), self.deny)
+            if retriever is None:
+                from mtg_search.mlateon import MLateOn
+
+                retriever = MLateOn.local(cards["oracle_id"].to_list())
+            tags = tags_df.filter(~pl.col("slug").is_in(list(self.deny))) if tags_df is not None else None
+            self.svc = CardService(cards, retriever, tags=tags, rulings_path=data_dir / "rulings.parquet")
+            self.mcp = build_mcp(self.svc, SURFACES[surface])
+            self.instructions = self.mcp.instructions
+            listed = anyio.run(self.mcp.list_tools)
+            self._schemas = [{**_fn(t.name, t.description or "", dict(t.input_schema)),
+                              **({"meta": dict(t.meta)} if t.meta else {})} for t in listed]
         else:
-            for sc, t in zip(self._schemas, listed):
-                if t.meta:
-                    sc["meta"] = dict(t.meta)
+            raise ValueError(f"backend must be 'local' or 'docker', got {backend!r}")
+        self.tool_names = tuple(sc["function"]["name"] for sc in self._schemas)
 
     def config(self) -> dict:
         return {"tools": "shipped", "surface": self.surface, "backend": self.backend_name, "n_denied_tags": len(self.deny),
@@ -398,29 +194,42 @@ class ShippedToolset(MCPToolset):
         return self._schemas
 
     def call(self, name: str, args: dict) -> str:
-        import anyio
-
         if name not in self.tool_names:
             raise ValueError(f"unknown tool {name}")
-        try:
-            res = anyio.run(self.mcp.call_tool, name, args)
-        except Exception as e:  # ToolError / validation error -> shown to the model, like the real server
-            raise ValueError(str(e)) from e
-        text = "\n".join(getattr(c, "text", "") for c in getattr(res, "content", []) or [])
-        if getattr(res, "is_error", False):
-            raise ValueError(text)
+        if self.backend_name == "docker":
+            text = self._docker.call(name, args)
+        else:
+            import anyio
+
+            try:
+                res = anyio.run(self.mcp.call_tool, name, args)
+            except Exception as e:  # ToolError / validation error -> shown to the model, like the real server
+                raise ValueError(str(e)) from e
+            text = "\n".join(getattr(c, "text", "") for c in getattr(res, "content", []) or [])
+            if getattr(res, "is_error", False):
+                raise ValueError(text)
         text = self._strip_denied_roles(text)
         check_tool_output(text)
         return text
 
+    def _strip_denied_roles(self, text: str) -> str:
+        if not self.deny:
+            return text
 
-def make_toolset(kind: str, denylist: dict | None = None, backend: str = "late", **kw: Any) -> Toolset:
+        def fix(m):
+            kept = [t for t in m.group(2).split(", ") if t.strip() not in self.deny]
+            return m.group(1) + ", ".join(kept)
+
+        return re.sub(r"(roles: )([^\n·]*)", fix, text)
+
+    def close(self) -> None:
+        if self.backend_name == "docker":
+            self._docker.close()
+
+
+def make_toolset(kind: str, denylist: dict | None = None, backend: str = "local", **kw: Any) -> Toolset:
     if kind == "none":
         return NoTools()
-    if kind == "mcp":
-        return MCPToolset(backend=backend, denylist=denylist, **kw)
-    if kind == "lexical":
-        return LexicalToolset(denylist=denylist, **kw)
     if kind == "shipped":
         return ShippedToolset(backend=backend, denylist=denylist, **kw)
-    raise ValueError(f"unknown toolset {kind!r}")
+    raise ValueError(f"unknown toolset {kind!r} (shipped | none)")

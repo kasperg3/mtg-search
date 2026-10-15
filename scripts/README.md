@@ -30,13 +30,13 @@ Full (re-encode) pipeline:
 2. Upload `data/*.parquet` plus `manifest.json`.
 3. Launch the HF Job `hf jobs uv run --flavor t4-small ... jobs/encode.py --model lightonai/mLateOn --kind late --require-gpu` and poll it until it finishes.
 4. Check that the `oracle_ids_sha256` in `embeddings/late/lightonai__mLateOn/meta.json` matches the new `cards.parquet`.
-5. Run the eval smoke test (`scripts/eval_smoke.py`, which needs `--extra models`):
+5. Run the eval smoke test (`scripts/eval_smoke.py`):
    - It runs late-mLateOn on the handwritten and paraphrase sets.
    - It fails if nDCG@10 drops more than 3 points below the `late-mLateOn` row in `eval/results.md`.
    - Labels are oracle_ids from the snapshot the eval sets were built on. `--rebuild-labels` re-runs `eval/build_handwritten.py` and `eval/build_paraphrase.py` first, which rewrites the committed YAML files.
 6. Tag the new snapshot `scryfall-<YYYYMMDDHHMMSS>`.
 
-Both publishing tiers need a new Docker image (`docker/build.sh`): the image bakes `cards.parquet` and rebuilds the NextPlaid index from the published embeddings, so a metadata-only refresh needs no new embeddings.
+Both publishing tiers need a new Docker image (`docker/build.sh`): the image bakes `cards.parquet` and the published embeddings, so a metadata-only refresh needs no new embeddings.
 
 ### Content fingerprint (`manifest.json`)
 

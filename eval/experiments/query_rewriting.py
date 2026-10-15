@@ -1,7 +1,7 @@
 """EXP-003: does agent-side query rewriting help on paraphrase + deckneeds?
 
-    uv run --extra models python eval/experiments/query_rewriting.py            # retrieve (cached) + report
-    uv run --extra models python eval/experiments/query_rewriting.py --refresh  # ignore cache
+    uv run python eval/experiments/query_rewriting.py            # retrieve (cached) + report
+    uv run python eval/experiments/query_rewriting.py --refresh  # ignore cache
 
 Rewrites come from eval/experiments/rewrites.yaml (written blind to labels; see
 dump_queries.py). For each retriever (late-mLateOn via LateInMemory, dense
@@ -41,18 +41,14 @@ sys.path.insert(0, str(ROOT))
 
 from eval.queries import SETS as QFILES  # noqa: E402
 from eval.queries import load_queries  # noqa: E402
-from eval.run import CARDS, DEPTH, INDEX_DIR, N_BOOT, SEED, Masks, clusters_for, paired_stats, per_query_metrics  # noqa: E402
+from eval.run import CARDS, DEPTH, N_BOOT, SEED, Masks, clusters_for, paired_stats, per_query_metrics, search_engine  # noqa: E402
 from mtg_search.fusion import rrf  # noqa: E402
 
 SETS = ["paraphrase", "deckneeds"]
 REWRITES = EXP / "rewrites.yaml"
 CACHE = EXP / ".cache"
 RUNS = EXP / "runs"
-SYSTEMS = {
-    "late-mLateOn": ("late", "lightonai/mLateOn", None),
-    "dense": ("dense", "google/embeddinggemma-2", None),
-    "late-mLateOn@32": ("late", "lightonai/mLateOn", 32),
-}
+SYSTEMS = {"late-mLateOn": "mLateOn"}  # EXP-003 also ran dense and a 32-token query cap (code up to commit 61071da)
 FIELDS = ["orig", "oracle", "hyde", "multi0", "multi1", "multi2"]
 VARIANTS = {
     "orig": ["orig"],
@@ -90,13 +86,7 @@ def run_system(name, queries, rw, masks, refresh, tag="") -> dict:
     if not todo:
         print(f"[{name}] cached")
         return cache
-    kind, model_id, qlen = SYSTEMS[name]
-    from mtg_search.retrievers import load_retriever
-
-    r = load_retriever(kind, model_id, index_dir=INDEX_DIR, cards_parquet=CARDS)
-    if qlen is not None:
-        r.model[0].query_length = qlen
-        assert r.encode_query("x " * 100).shape[0] <= qlen, "query cap not applied"
+    r = search_engine()
     for w in ["destroy target creature", "draw a card whenever"]:
         r.search(w, DEPTH, masks.get({}))
     print(f"[{name}] {len(todo)} texts")
@@ -114,9 +104,12 @@ def run_system(name, queries, rw, masks, refresh, tag="") -> dict:
 
 
 def token_stats(queries, rw) -> dict:
-    from transformers import AutoTokenizer
+    from tokenizers import Tokenizer
 
-    tok = AutoTokenizer.from_pretrained("lightonai/mLateOn")
+    from mtg_search import config
+    from mtg_search.mlateon import MODEL_SUBDIR
+
+    tok = Tokenizer.from_file(str(config.INDEX_DIR / MODEL_SUBDIR / "tokenizer.json"))  # the search engine's own tokenizer
     out = {}
     for f in ["orig", "oracle", "hyde", "multi"]:
         lens = []
@@ -124,7 +117,7 @@ def token_stats(queries, rw) -> dict:
             for q in queries[st]:
                 t = texts_for(q, rw)
                 for k in ([f] if f != "multi" else ["multi0", "multi1", "multi2"]):
-                    lens.append(len(tok("[Q] " + t[k])["input_ids"]))
+                    lens.append(len(tok.encode("[Q] " + t[k]).ids))
         a = np.array(lens)
         out[f] = {"n": len(a), "p50": float(np.median(a)), "p95": float(np.percentile(a, 95)), "max": int(a.max()),
                   "frac_gt32": float((a > 32).mean()), "frac_gt64": float((a > 64).mean())}

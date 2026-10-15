@@ -102,7 +102,7 @@ Size:
   break by row, deterministically.
 
 Parity with the benchmark reference (`eval/experiments/exact_parity.py`, all 363 eval queries
-under their filters, vs `LateInMemory` on PyTorch fp32):
+under their filters, vs the PyTorch reference ranker used for EXP-001..011, since removed):
 
 | | value |
 |---|---|
@@ -125,12 +125,8 @@ Performance (i5-9600K, 6 cores):
 Holding the vectors as fp16 and converting per chunk would save 0.53 GB of RAM with bit-identical
 scores, but it doubles single-query latency (215 vs 106 ms), so the image keeps fp32.
 
-### Legacy NextPlaid path
-
-`src/mtg_search/nextplaid.py` and `docker/build_index.py` (approximate PLAID index plus int8
-re-quantized encoder) remain in the repo. The server uses them with `MTG_SEARCH_BACKEND=nextplaid`,
-but this image does not build them. History of that path: `spike/nextplaid.md`, review M1 in
-`docs/review_2026-10-14.md`, EXP-012.
+The earlier NextPlaid image (approximate PLAID index plus int8 encoder) was removed; its code is in git
+history up to commit 61071da. Background: `spike/nextplaid.md`, review M1 in `docs/review_2026-10-14.md`, EXP-012.
 
 ## Dev without Docker
 

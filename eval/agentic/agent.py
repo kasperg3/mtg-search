@@ -1,18 +1,14 @@
-"""EXP-006 agentic multi-step search: run GLM-5.3 episodes over the task set.
+"""Agentic multi-step search with GLM-5.3 (EXP-006 protocol): run episodes over the task set.
 
-    uv run --extra models python eval/agentic/agent.py --run pilot --conds A,C --limit 10 --repeats 1
+    uv run python eval/agentic/agent.py --run <name> --conds A,G --limit 10 --repeats 1
 
-Conditions (identical system prompt; only the tool output differs):
-  A  mLateOn, card info only
-  B  SparseUp, card info only
-  C  SparseUp + per-result matched terms (expansion marked *) + aggregate "frequent terms" line
-  D  mLateOn + the same aggregate line, computed with SparseUp over mLateOn's results
-  F  (legacy, superseded by G) lexical agent: tools `grep(pattern)` (regex over card text; matches ordered by
-     BM25 of the pattern's literal words, ties alphabetical; match highlighted) and `bm25(query)`; same budget
-     (5 calls) and final-answer protocol. Its system prompt differs only in the paragraph describing the tools.
-  G  no search infrastructure (EXP-013): one tool, `grep(pattern, offset?)`, a regex over the plain card text
-     returning the match count and 15 matches in file order (alphabetical by name), no ranking, no filter
-     parameters. Task constraints are applied by the environment, as for every condition.
+Conditions (identical system prompt apart from the tool paragraph):
+  A  search infrastructure: `search(query, filters?)`, mLateOn, top 15 per call.
+  G  none (EXP-013): one tool, `grep(pattern, offset?)`, a regex over the plain card text returning the match
+     count and 15 matches in file order (alphabetical by name); no ranking and no filter parameters.
+Task constraints are applied by the environment in both. The EXP-006 SparseUp/BM25 conditions (B, C, D, F)
+were removed with those retrievers (code up to commit 61071da; results in runs/main). The Claude Code version
+of this experiment is cc_agent.py.
 
 Outputs in eval/agentic/runs/<run>/:
   episodes.jsonl                  one structured record per (task, cond, rep)
@@ -41,26 +37,13 @@ from glm import GLM, MODEL, cost_usd  # noqa: E402
 MAX_SEARCHES = 5
 MAX_TURNS = 10
 MAX_FINAL = 20
-CONDITIONS = {
-    "A": {"retriever": "mlateon", "per_result_terms": False, "aggregate": False},
-    "B": {"retriever": "sparseup", "per_result_terms": False, "aggregate": False},
-    "C": {"retriever": "sparseup", "per_result_terms": True, "aggregate": True},
-    "D": {"retriever": "mlateon", "per_result_terms": False, "aggregate": True},
-    "F": {"retriever": "lexical", "per_result_terms": False, "aggregate": False},  # legacy: grep + bm25 tools
-    "G": {"retriever": "grep", "per_result_terms": False, "aggregate": False},  # grep only, file order (EXP-013)
-}
+CONDITIONS = {"A": {"retriever": "mlateon"}, "G": {"retriever": "grep"}}
 
 SYSTEM = """You are a deck-building search assistant for Magic: The Gathering. A player describes what they need; you find real cards for it with the `search` tool. It queries a card search engine over all Magic cards (it understands natural language; it is not Scryfall syntax) and returns the top 15 matches with name, mana cost, type and truncated rules text. Optional filters restrict colours, types, mana value and format.
 
 You have a budget of 5 searches. Use them to find as many cards that genuinely satisfy the request as possible. After each search, look at what came back and decide what to search next: refine, rephrase, or explore a different angle that the results suggest. A search that returns the same cards again is wasted.
 
 When you are done (after at most 5 searches), call `final_answer` with up to 20 card names that satisfy the request, best first. Only include cards that appeared in your search results, and copy their names exactly. If the request is for one specific card, put your best guess first."""
-
-SYSTEM_LEXICAL = SYSTEM.replace(
-    "you find real cards for it with the `search` tool. It queries a card search engine over all Magic cards (it understands natural language; it is not Scryfall syntax) and returns the top 15 matches with name, mana cost, type and truncated rules text. Optional filters restrict colours, types, mana value and format.",
-    "you find real cards for it with two lexical tools over the full text of all Magic cards (name, cost, type line, rules text): `grep` runs a case-insensitive regular expression and returns the number of matching cards plus 15 of them (ordered by keyword relevance to the words in the pattern, then alphabetically) with the matching line highlighted in [[ ]]; `bm25` is keyword search returning the top 15 cards by BM25 score. Both show name, mana cost, type and truncated rules text. Optional filters restrict colours, types, mana value and format.",
-).replace("You have a budget of 5 searches.", "You have a budget of 5 searches (grep and bm25 calls both count).")
-assert SYSTEM_LEXICAL != SYSTEM
 
 SYSTEM_GREP = SYSTEM.replace(
     "you find real cards for it with the `search` tool. It queries a card search engine over all Magic cards (it understands natural language; it is not Scryfall syntax) and returns the top 15 matches with name, mana cost, type and truncated rules text. Optional filters restrict colours, types, mana value and format.",
@@ -107,20 +90,6 @@ TOOLS = [
 ]
 
 
-def _lex_tool(name: str, arg: str, desc: str, argdesc: str) -> dict:
-    return {"type": "function", "function": {"name": name, "description": desc, "parameters": {
-        "type": "object", "properties": {arg: {"type": "string", "description": argdesc},
-                                         "filters": {"type": "object", "properties": FILTER_SCHEMA, "description": "Optional hard filters."}},
-        "required": [arg]}}}
-
-
-TOOLS_LEXICAL = [
-    _lex_tool("grep", "pattern", "Case-insensitive regex over card text. Returns the match count and 15 matching cards (keyword-relevance order).",
-              "Python regular expression, e.g. 'counter target spell unless'."),
-    _lex_tool("bm25", "query", "BM25 keyword search over card text. Returns the top 15 cards.", "Keywords."),
-    TOOLS[1],
-]
-
 TOOLS_GREP = [
     {"type": "function", "function": {
         "name": "grep",
@@ -155,7 +124,7 @@ def user_message(task: dict) -> str:
     return msg
 
 
-def format_results(env, cond: dict, query: str, n_done: int, rows, per_terms, agg, snippets=None, n_match=None, tool="search",
+def format_results(env, query: str, n_done: int, rows, snippets=None, n_match=None, tool="search",
                    offset: int | None = None, last_note: bool = True) -> str:
     head = f"{tool} {n_done}/{MAX_SEARCHES}: "
     if n_match is not None:
@@ -169,12 +138,6 @@ def format_results(env, cond: dict, query: str, n_done: int, rows, per_terms, ag
         lines.append(f"{i}. {env.render(row)}")
         if snippets:
             lines.append(f"   match: {snippets[i - 1]}")
-        if cond["per_result_terms"]:
-            lines.append("   matched terms: " + ", ".join(w + ("*" if x else "") for w, x in per_terms[i - 1]))
-    if cond["per_result_terms"]:
-        lines.append("(matched terms = the search engine's top-weighted terms linking your query to the card; * = expansion term, not a word in your query)")
-    if cond["aggregate"]:
-        lines.append("Frequent terms in these results not in your query: " + ", ".join(f"{w} ({c})" for w, c in agg))
     if n_done >= MAX_SEARCHES and last_note:
         lines.append("That was your last search. Call final_answer now.")
     return "\n".join(lines)
@@ -197,9 +160,9 @@ class Runner:
             tf.write(json.dumps(rec, ensure_ascii=False) + "\n")
             tf.flush()
 
-        lexical, grep_only = cond["retriever"] == "lexical", cond["retriever"] == "grep"
-        all_tools = TOOLS_LEXICAL if lexical else TOOLS_GREP if grep_only else TOOLS
-        system = SYSTEM_LEXICAL if lexical else SYSTEM_GREP if grep_only else SYSTEM
+        grep_only = cond["retriever"] == "grep"
+        all_tools = TOOLS_GREP if grep_only else TOOLS
+        system = SYSTEM_GREP if grep_only else SYSTEM
         messages = [{"role": "system", "content": system}, {"role": "user", "content": user_message(task)}]
         sent = 0
         searches, final, usage_tot, cost, stop = [], None, {"prompt": 0, "cached": 0, "completion": 0, "reasoning": 0}, 0.0, "max_turns"
@@ -241,7 +204,7 @@ class Runner:
                 if name == "final_answer" and final is None:
                     final = [str(x) for x in (args.get("cards") or [])][:MAX_FINAL]
                     content = "Received."
-                elif name in ("search", "grep", "bm25") and name in {t["function"]["name"] for t in all_tools} and len(searches) < MAX_SEARCHES:
+                elif name in ("search", "grep") and name in {t["function"]["name"] for t in all_tools} and len(searches) < MAX_SEARCHES:
                     q = str(args.get("query") or args.get("pattern") or "").strip()
                     filt = args.get("filters") if isinstance(args.get("filters"), dict) and not grep_only else {}
                     offset = max(0, int(args.get("offset") or 0)) if grep_only else None
@@ -251,24 +214,19 @@ class Runner:
                     try:
                         snippets = n_match = None
                         if name == "grep":
-                            n_match, rows, snippets = env.grep(q, filt, task.get("filters"), order="file" if grep_only else "bm25",
-                                                               offset=offset or 0) if q else (0, [], [])
+                            n_match, rows, snippets = env.grep(q, task.get("filters"), offset=offset or 0) if q else (0, [], [])
                         else:
-                            rows = env.search("bm25" if name == "bm25" else cond["retriever"], q, filt, task.get("filters")) if q else []
-                        # terms are computed for every non-grep search (shown only in C/D) as a counterfactual baseline
-                        per = env.per_result_terms(q, rows) if rows and name != "grep" else []
-                        agg = env.aggregate_terms(q, rows) if rows and name != "grep" else []
-                        rec.update(rows=rows, oids=[env.oids[r] for r in rows], per_terms=per, agg_terms=agg,
-                                   shown_terms=cond["per_result_terms"] or cond["aggregate"], n_match=n_match)
+                            rows = env.search("mlateon", q, filt, task.get("filters")) if q else []
+                        rec.update(rows=rows, oids=[env.oids[r] for r in rows], n_match=n_match)
                         searches.append(rec)
-                        content = format_results(env, cond, q, len(searches), rows, per, agg, snippets, n_match, name, offset)
+                        content = format_results(env, q, len(searches), rows, snippets, n_match, name, offset)
                         # the echoed query is the agent's own text (it may name e.g. "Illness in the Ranks"), not a harness signal
                         env.assert_no_leak(content, rows, [*(snippets or []), q])
                     except (ValueError, TypeError) as e:
-                        rec.update(rows=[], oids=[], per_terms=[], agg_terms=[], error=str(e))
+                        rec.update(rows=[], oids=[], error=str(e))
                         searches.append(rec)
                         content = f"Search failed: {e}. ({len(searches)}/{MAX_SEARCHES} searches used.)"
-                elif name in ("search", "grep", "bm25") and len(searches) >= MAX_SEARCHES:
+                elif name in ("search", "grep") and len(searches) >= MAX_SEARCHES:
                     content = "Search budget exhausted. Call final_answer now."
                 else:
                     content = f"Unknown tool {name}."
@@ -331,7 +289,7 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", required=True)
     ap.add_argument("--tasks", default=str(HERE / "tasks.yaml"))
-    ap.add_argument("--conds", default="A,B,C,D")
+    ap.add_argument("--conds", default="A,G")
     ap.add_argument("--limit", type=int, default=None, help="first N tasks of a stratified order")
     ap.add_argument("--ids", default=None, help="comma-separated task ids")
     ap.add_argument("--repeats", type=int, default=1)
@@ -365,16 +323,12 @@ def main() -> None:
     conds = args.conds.split(",")
     from env import Env
 
-    retr = set()
-    for c in conds:
-        r = CONDITIONS[c]["retriever"]
-        retr |= {"bm25"} if r == "lexical" else set() if r == "grep" else {r}
-    retr = tuple(sorted(retr))
-    env = Env(retr)
+    assert set(conds) <= set(CONDITIONS), f"conditions: {sorted(CONDITIONS)}"
+    env = Env(("mlateon",) if "A" in conds else ())
     run_dir = HERE / "runs" / args.run
     run_dir.mkdir(parents=True, exist_ok=True)
     (run_dir / "config.json").write_text(json.dumps({**vars(args), "git": git, "model": MODEL, "max_searches": MAX_SEARCHES,
-                                                     "system": SYSTEM, "system_lexical": SYSTEM_LEXICAL, "system_grep": SYSTEM_GREP,
+                                                     "system": SYSTEM, "system_grep": SYSTEM_GREP,
                                                      "conditions": CONDITIONS}, indent=1))
     total = Runner(env, run_dir, args.temperature, args.effort).run(tasks, conds, args.repeats, args.workers, args.budget)
     print(f"done; cost this invocation ${total:.3f}")

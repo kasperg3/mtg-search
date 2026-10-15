@@ -35,15 +35,8 @@ INSTRUCTIONS = {
 N_PICKS = {"cut": 10, "add": 20, "swap": 10}
 
 TOOLS_TEXT = {
-    "mcp": ("You can use a card search engine over all Magic cards: `search_cards` (natural-language search with "
-            "optional filters such as color_identity, format, types and mana value), `find_similar` (cards that play "
-            "like a given card) and `get_card` (full text, rulings and legality of one card). Results show only "
-            "rules text and printed facts."),
-    "lexical": ("You can use two lexical tools over the full text of all Magic cards: `grep` (case-insensitive "
-                "regular expression; returns the match count and 15 matching cards ordered by keyword relevance) and "
-                "`bm25` (keyword search, top 15). Both accept optional filters such as color_identity and format."),
     "none": "You have no tools: answer from your own knowledge of Magic cards.",
-    # EXP-009: the connected MCP server describes itself (instructions + tool descriptions), as in real use
+    # the connected MCP server describes itself (instructions + tool descriptions), as in real use
     "shipped": "",
 }
 

@@ -1,21 +1,19 @@
-"""Artifacts the MCP server image needs, from the private HF dataset ``kasper-cbx/mtg-search-index``.
+"""Artifacts from the private HF dataset ``kasper-cbx/mtg-search-index``.
 
 Layout (same as the dataset repo)::
 
-    data/cards.parquet, data/tags.parquet, data/rulings.parquet, data/manifest.json
-    eval/popularity.parquet   # part "eval": offline evaluation only, never requested by the image build
-    embeddings/late/lightonai__mLateOn/{tokens.npy, offsets.npy, meta.json}   # doc tokens (GPU)
-    models/lightonai__mLateOn-int8rr/{...}   # legacy NextPlaid int8 encoder (part "model-int8")
+    data/cards.parquet, data/tags.parquet, data/rulings.parquet, data/manifest.json   # part "data"
+    embeddings/late/lightonai__mLateOn/{tokens.npy, offsets.npy, meta.json}            # part "embeddings"
+    eval/popularity.parquet       # part "eval": offline evaluation only, never requested by the image build
 
-The shipped query encoder (part "model", EXP-012) is mLateOn's published fp32 ``model.onnx`` from the
-public model repo ``lightonai/mLateOn`` at the revision the doc embeddings were encoded with, written to
-``models/lightonai__mLateOn-fp32/`` with a ``source.json`` (repo, revision, sha256). The exact backend
-(``exact.py``) refuses to start if that revision differs from the embeddings' ``meta.json``.
+The query encoder (part "model", EXP-012) is mLateOn's published fp32 ``model.onnx`` from the public model
+repo ``lightonai/mLateOn`` at the revision the doc embeddings were encoded with, written to
+``models/lightonai__mLateOn-fp32/`` with a ``source.json`` (repo, revision, sha256). ``mlateon.MLateOn``
+refuses to start if that revision differs from the embeddings' ``meta.json``.
 
 CLI (used by the Docker builder stage; token from ``HF_TOKEN``)::
 
-    python -m mtg_search.artifacts download --dest /artifacts [--revision main]
-    python -m mtg_search.artifacts check --index-dir /app/index --cards /app/data/cards.parquet
+    python -m mtg_search.artifacts download --dest /artifacts [--revision main] [--parts data,embeddings,model]
 """
 
 from __future__ import annotations
@@ -26,10 +24,9 @@ import sys
 from pathlib import Path
 
 from . import config
+from .mlateon import EMBEDDINGS_SUBDIR, MODEL_SUBDIR
 
-LATE_SLUG = "lightonai__mLateOn"
-MODEL_DIR = "models/lightonai__mLateOn-int8rr"  # legacy NextPlaid encoder
-FP32_MODEL_DIR = "models/lightonai__mLateOn-fp32"
+FP32_MODEL_DIR = MODEL_SUBDIR
 QUERY_MODEL_REPO = "lightonai/mLateOn"
 QUERY_MODEL_REVISION = "bbd883ae1fadb563056ff73b1061ae8172a3fcda"  # = embeddings meta.json revision
 QUERY_MODEL_FILES = {  # file -> sha256 (None = small config, not pinned by hash)
@@ -38,13 +35,10 @@ QUERY_MODEL_FILES = {  # file -> sha256 (None = small config, not pinned by hash
     "onnx_config.json": None,
     "config_sentence_transformers.json": None,
 }
-INDEX_MANIFEST = "mtg_search_index.json"
-DOC_ROWS = "doc_rows.npy"
 
 PATTERNS = {
     "data": ["data/*.parquet", "data/manifest.json"],
-    "embeddings": [f"embeddings/late/{LATE_SLUG}/*"],
-    "model-int8": [f"{MODEL_DIR}/*"],
+    "embeddings": [f"{EMBEDDINGS_SUBDIR}/*"],
     # evaluation-only popularity table; download with --dest data -> data/eval/popularity.parquet
     "eval": ["eval/popularity.parquet"],
 }
@@ -103,31 +97,6 @@ def download(
     return dest
 
 
-def oracle_ids_digest(oracle_ids) -> str:
-    from .retrievers.base import oracle_ids_digest as _d
-
-    return _d(oracle_ids)
-
-
-def read_index_manifest(index_dir: str | Path) -> dict:
-    p = Path(index_dir) / INDEX_MANIFEST
-    return json.loads(p.read_text()) if p.exists() else {}
-
-
-def check_index(index_dir: str | Path, oracle_ids) -> dict:
-    """Raise if the baked index was not built for this exact card table (row order matters)."""
-    m = read_index_manifest(index_dir)
-    if not m:
-        raise RuntimeError(f"{index_dir}/{INDEX_MANIFEST} missing; was the index built by docker/build_index.py?")
-    oids = list(oracle_ids)
-    if m.get("card_count") != len(oids) or m.get("oracle_ids_sha256") != oracle_ids_digest(oids):
-        raise RuntimeError(
-            f"index/card table mismatch: index has {m.get('card_count')} cards "
-            f"(sha {str(m.get('oracle_ids_sha256'))[:12]}), cards.parquet has {len(oids)}"
-        )
-    return m
-
-
 def main(argv: list[str] | None = None) -> None:
     ap = argparse.ArgumentParser(prog="python -m mtg_search.artifacts")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -135,18 +104,9 @@ def main(argv: list[str] | None = None) -> None:
     d.add_argument("--dest", required=True)
     d.add_argument("--revision", default="main")
     d.add_argument("--parts", default="data,embeddings,model")
-    c = sub.add_parser("check")
-    c.add_argument("--index-dir", required=True)
-    c.add_argument("--cards", required=True)
     a = ap.parse_args(argv)
-    if a.cmd == "download":
-        out = download(a.dest, revision=a.revision, parts=tuple(a.parts.split(",")))
-        print(f"downloaded {config.HF_REPO}@{a.revision} -> {out}", file=sys.stderr)
-    else:
-        import polars as pl
-
-        oids = pl.read_parquet(a.cards, columns=["oracle_id"])["oracle_id"].to_list()
-        print(json.dumps(check_index(a.index_dir, oids)), file=sys.stderr)
+    out = download(a.dest, revision=a.revision, parts=tuple(a.parts.split(",")))
+    print(f"downloaded {config.HF_REPO}@{a.revision} -> {out}", file=sys.stderr)
 
 
 if __name__ == "__main__":
