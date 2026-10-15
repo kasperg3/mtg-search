@@ -3,7 +3,7 @@
 **Question.** Given a Commander precon as card text, how well does an LLM agent with the popularity-free mtg-search MCP choose cards to cut, cards to add, and swaps? The grading is against EDHREC cut/add rates. Do the search tools help compared with no tools?
 
 **Answer (small run, n = 14 precons, 1 repeat, wide CIs).**
-- Sonnet 5.5 beats the text heuristic and matches or beats the popularity-oracle reference on ADD (nDCG@10 0.19–0.24 vs 0.16 heuristic, 0.19 oracle). On CUT it is only slightly above random (0.33–0.36 vs 0.28; oracle 0.66).
+- Sonnet 5.5 beats the text heuristic and matches or beats the popularity-oracle reference on ADD (nDCG@10 0.19–0.24 vs 0.16 heuristic, 0.20 oracle). On CUT it is only slightly above random and level with the text heuristic (0.35–0.38 vs 0.31 random, 0.35 heuristic; oracle 0.67). These CUT numbers are rescored (review m3, see below).
 - **Given the search tools, it does not use them**: 0 tool calls in 42 episodes. It answers from its own card knowledge.
 - **Told to use the tools (one added sentence), it makes 1–2 calls per episode.** ADD validity rises from 90.4% to 98.2% (+7.9 points [+2.1, +14.3]), and its adds become much less popularity-biased at equal or better quality. The quality differences are not significant at n=14.
 - **Contamination looks low.** The forced-guess memorisation probe scores the same on the test precons as on older dev precons (overlapping CIs), at the level of a generic "popular staples" prior.
@@ -42,12 +42,14 @@ Sonnet 5.5's training cutoff is June 2026. Under the plan's rule (test = release
 
 | system | CUT nDCG@10 | CUT F1@10 | ADD nDCG@10 | ADD nDCG@20 | ADD R@20 | ADD validity | ADD popularity drift | SWAP cut nDCG@10 | SWAP add nDCG@10 | SWAP add validity |
 |---|---|---|---|---|---|---|---|---|---|---|
-| random-legal | 0.279 | 0.193 | 0.001 | 0.001 | 0.000 | 1.000 | 4.07 | 0.216 | 0.013 | 1.000 |
-| text heuristic (mLateOn) | 0.295 | 0.176 | 0.161 | 0.124 | 0.069 | 1.000 | 3.94 | 0.295 | 0.161 | 1.000 |
-| popularity oracle (reference) | 0.659 | 0.427 | 0.194 | 0.152 | 0.097 | 1.000 | 1.38 | 0.659 | 0.156 | 1.000 |
-| Sonnet 5.5, `none` | 0.342 | 0.246 | 0.189 | 0.162 | 0.099 | 0.904 | 2.42 | 0.311 | 0.118 | 0.898 |
-| Sonnet 5.5, `mcp` (0 tool calls) | 0.325 | 0.241 | 0.209 | 0.184 | 0.115 | 0.918 | 2.41 | 0.337 | 0.175 | 0.950 |
-| Sonnet 5.5, `mcp-hint` | **0.362** [0.26, 0.47] | **0.267** | **0.235** [0.16, 0.31] | **0.192** | 0.094 | **0.982** | **3.48** | 0.327 | 0.176 | **0.971** |
+| random-legal | 0.314 (0.279) | 0.206 (0.193) | 0.001 | 0.001 | 0.000 | 1.000 | 4.07 | 0.259 (0.216) | 0.013 | 1.000 |
+| text heuristic (mLateOn) | 0.349 (0.295) | 0.194 (0.176) | 0.161 | 0.129 (0.124) | 0.069 | 1.000 | 3.94 | 0.349 (0.295) | 0.161 | 1.000 |
+| popularity oracle (reference) | 0.674 (0.659) | 0.433 (0.427) | 0.197 (0.194) | 0.188 (0.152) | 0.097 | 1.000 | 1.38 | 0.674 (0.659) | 0.194 (0.156) | 1.000 |
+| Sonnet 5.5, `none` | 0.376 (0.342) | 0.259 (0.246) | 0.189 | 0.164 (0.162) | 0.099 | 0.904 | 2.42 | 0.366 (0.311) | 0.134 (0.118) | 0.898 |
+| Sonnet 5.5, `mcp` (0 tool calls) | 0.351 (0.325) | 0.251 (0.241) | 0.209 | 0.186 (0.184) | 0.115 | 0.918 | 2.41 | 0.376 (0.337) | 0.182 (0.175) | 0.950 |
+| Sonnet 5.5, `mcp-hint` | **0.383** [0.27, 0.50] (0.362) | **0.278** (0.267) | **0.235** [0.16, 0.31] | **0.196** (0.192) | 0.094 | **0.982** | **3.48** | 0.360 (0.327) | 0.178 (0.176) | **0.971** |
+
+**Rescored 2026-10-15 (review m3).** Land picks no longer cost headline slots: with S requested picks and L land picks, headline metrics @k use k' = min(k, S − L). Values in parentheses are the original scores. ADD nDCG@10 changes for no agent arm. The rescore uses the stored outputs, with no new model calls (`bench/precon/rescore.py`; before/after of every reported comparison in `bench/precon/runs/rescore_m3_compare.json`).
 
 The baselines are restricted to the same 14 test precons (`slices.split.test` of the all-precon runs). Lower popularity drift means more popular picks; random is 4.07.
 
@@ -55,10 +57,10 @@ Paired differences vs `none` (14 precons):
 
 | metric | `mcp` − `none` | `mcp-hint` − `none` |
 |---|---|---|
-| CUT nDCG@10 | −1.7 [−5.2, +1.6] | +2.0 [−1.4, +5.4] |
+| CUT nDCG@10 (rescored; was −1.7 / +2.0) | −2.5 [−6.7, +1.5] | +0.8 [−3.2, +4.7] |
 | ADD nDCG@10 | +2.0 [−2.6, +6.9] | +4.6 [−9.5, +18.7] |
 | ADD validity | +1.4 [−3.2, +6.4] | **+7.9 [+2.1, +14.3]** (sign test p=0.11) |
-| SWAP add nDCG@10 | +5.7 [−1.1, +12.9] | +5.8 [−0.6, +12.9] |
+| SWAP add nDCG@10 (rescored; was +5.7 / +5.8) | +4.7 [−2.8, +12.0] | +4.4 [−3.1, +12.0] |
 | SWAP add validity | +5.2 [−0.7, +11.9] | +7.4 [−0.0, +14.8] |
 
 Invalid ADD picks by reason (out of 280):
@@ -78,7 +80,7 @@ Tool use in `mcp-hint`: 0.8 calls per CUT episode, 0.9 per ADD and 2.1 per SWAP 
 From the independent review ([`docs/review_2026-10-14.md`](../../docs/review_2026-10-14.md)):
 - **Retrieval path.** All conditions used the exact in-process mLateOn ranker, not the shipped NextPlaid/int8 path (top-10 overlap with exact 72–85%).
 - **Validity gain.** The `mcp-hint` validity gain has bootstrap CI > 0 but sign test p=0.11. The popularity-drift shift is robust (sign test p=0.002).
-- **Land picks.** Land picks fill headline ADD slots with zero gain (lands are scored separately). Tool-using arms pick slightly more lands, a small bias against them.
+- **Land picks (fixed, rescored 2026-10-15).** Land picks used to fill headline slots with zero gain, a small bias against arms that pick lands. They now shrink the headline cut-off instead; see the note under the results table. No conclusion changed.
 - **Name resolution.** The name-resolution bug fixed in `eaa0919` was live during these runs.
 
 ## Reading
@@ -86,7 +88,7 @@ From the independent review ([`docs/review_2026-10-14.md`](../../docs/review_202
 - **A strong model does not reach for the search tools by default.** In the shipped MCP, the tool descriptions and server instructions should say when to use them: to find candidates and to check colour identity and legality.
 - **Using the tools mostly fixes validity.** Off-identity adds drop from 20 to 1. The remaining errors (Game Changer limit, already in deck) need deck context that no current tool has.
 - **Searching shifts adds away from staples** (popularity drift 2.4 → 3.5) without losing nDCG. That matches the project's no-hype goal.
-- **CUT is hard for every non-oracle system.** The community's cuts are largely the weakest *popular-knowledge* cards, which the popularity oracle captures and text-only reasoning only partly does.
+- **CUT is hard for every non-oracle system.** The community's cuts are largely the weakest *popular-knowledge* cards, which the popularity oracle captures and text-only reasoning only partly does. After the rescore, the text heuristic, which cuts tapped lands first, is level with the agents on CUT (0.349 vs 0.351–0.383).
 - **Limits:**
   - n=14 and one repeat;
   - one model;

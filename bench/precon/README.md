@@ -116,11 +116,13 @@ Macro mean over precons, 95% bootstrap CI. Random uses 3 seeds. No LLM was calle
 
 | system | CUT nDCG@10 | CUT F1@10 | ADD nDCG@10 | ADD nDCG@20 | ADD R@20 | SWAP cut nDCG@10 | SWAP add nDCG@10 |
 |---|---|---|---|---|---|---|---|
-| random-legal | 0.250 [0.24, 0.26] | 0.169 | 0.002 | 0.002 | 0.001 | 0.243 | 0.003 |
-| text heuristic (mLateOn) | 0.320 [0.29, 0.35] | 0.204 | 0.148 [0.12, 0.18] | 0.116 | 0.059 | 0.320 | 0.147 |
-| popularity oracle (reference only) | 0.681 [0.65, 0.70] | 0.450 | 0.231 [0.21, 0.25] | 0.173 | 0.083 | 0.681 | 0.201 |
+| random-legal | 0.293 [0.28, 0.31] | 0.182 | 0.002 | 0.002 | 0.001 | 0.285 | 0.003 |
+| text heuristic (mLateOn) | 0.391 [0.36, 0.43] | 0.226 | 0.148 [0.12, 0.18] | 0.120 | 0.059 | 0.391 | 0.148 |
+| popularity oracle (reference only) | 0.689 [0.66, 0.71] | 0.453 | 0.240 [0.22, 0.26] | 0.227 | 0.083 | 0.689 | 0.257 |
 
-- Random cuts already score 0.25 nDCG@10, because many precon cards have a cut label. The scale for cuts therefore starts well above 0.
+Rescored 2026-10-15 (review m3: land picks no longer cost headline slots; `python -m bench.precon.rescore`). The original values were CUT nDCG@10 0.250 / 0.320 / 0.681 and ADD nDCG@10 0.002 / 0.148 / 0.231. The heuristic gains most, because it cuts tapped lands first.
+
+- Random cuts already score 0.29 nDCG@10, because many precon cards have a cut label. The scale for cuts therefore starts well above 0.
 - Adds are the hard side. Random is ≈0 against about 50 labelled adds out of ~30k legal cards.
 - The popularity oracle orders by EDHREC rank, so it is the ceiling a popularity-following system could reach. It is never exposed to the agent.
 - All picks were valid for the three baselines (validity 1.0).

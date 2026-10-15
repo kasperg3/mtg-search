@@ -18,7 +18,7 @@ This run follows the benchmark plan's rule instead: select on dev, freeze, run t
 - **Code.** Git commit recorded in each run JSON; runs are started from a clean tree. `--experiment EXP-011`.
 - **Known, accepted biases**, applied equally to all arms:
   - the `find_similar` description example names *Rhystic Study*, a dev label (review m1);
-  - land picks score 0 on the headline ADD metric (review m3).
+  - land picks score 0 on the headline ADD metric (review m3; fixed and rescored 2026-10-15, primary metric unchanged).
 
 ## Phase 1: selection on dev
 
@@ -74,14 +74,16 @@ Secondary (exploratory):
 | metric | v1 | shipped | shipped − v1 | sign p |
 |---|---|---|---|---|
 | ADD nDCG@10 (primary) | 0.174 | 0.262 | +0.087 [+0.015, +0.168] | 0.057 |
-| ADD nDCG@20 | — | — | +0.067 [+0.010, +0.129] | 0.057 |
+| ADD nDCG@20 | 0.158 | 0.223 | +0.066 [+0.008, +0.129] | 0.057 |
 | ADD R@20 | — | — | +0.030 [−0.002, +0.068] | 0.039 |
 | **ADD validity** | 0.868 | 0.970 | **+0.102 [+0.062, +0.152]** | **0.002** |
 | ADD popularity drift | 2.48 | 3.01 | +0.54 [+0.21, +0.92] | 0.18 |
-| CUT nDCG@10 | 0.340 | 0.336 | −0.004 [−0.029, +0.019] | 0.79 |
-| SWAP add nDCG@10 | 0.208 | 0.215 | +0.007 [−0.072, +0.090] | 0.42 |
+| CUT nDCG@10 | 0.362 | 0.356 | −0.007 [−0.033, +0.018] | 0.79 |
+| SWAP add nDCG@10 | 0.219 | 0.217 | −0.002 [−0.085, +0.085] | 0.42 |
 | SWAP add validity | 0.950 | 0.990 | +0.040 [+0.007, +0.079] | 0.070 |
 | **episodes with a tool call**, ADD / SWAP / CUT | 0 / 0 / 0 of 42 | 17 / 36 / 0 of 42 | Fisher p = 2e-6 (ADD), 1.5e-17 (SWAP) | |
+
+ADD nDCG@20, CUT and SWAP are **rescored 2026-10-15** (review m3: land picks no longer cost headline slots). Before, they read +0.067 [+0.010, +0.129]; 0.340 / 0.336, −0.004; and 0.208 / 0.215, +0.007. The primary metric, the dev selection and every conclusion are unchanged.
 
 Repeat-to-repeat SD of the macro mean is small: ADD nDCG@10 0.010 (v1) and 0.019 (shipped). The variance is between precons, not between repeats. All 53 tool calls were `search_cards`.
 

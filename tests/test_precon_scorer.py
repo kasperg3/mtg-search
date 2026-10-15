@@ -175,9 +175,10 @@ def test_cut_episode(db, deck):
     dc = 0.60 + 0.20 / L2(3) + 0.35 / L2(6)
     ic = 0.60 + 0.55 / L2(3) + 0.35 / L2(4) + 0.20 / L2(5)
     assert m["cut.ndcg@10.cont"] == pytest.approx(dc / ic)
-    assert m["cut.p@10"] == pytest.approx(0.3)
+    # the land pick (Tapped Grove) does not cost a headline slot: 10 slots - 1 land -> headline @9 (review m3)
+    assert m["cut.p@10"] == pytest.approx(3 / 9)
     assert m["cut.r@10"] == pytest.approx(2 / 3)  # G2 = {Alpha, Delta, Gamma}
-    assert m["cut.f1@10"] == pytest.approx(2 * 0.2 * (2 / 3) / (0.2 + 2 / 3))
+    assert m["cut.f1@10"] == pytest.approx(2 * (2 / 9) * (2 / 3) / (2 / 9 + 2 / 3))
     assert m["cut.n_g2"] == 3
     # land side: [Tapped Grove g2] vs labels Tapped Grove .40 (g2), Forest .16 (g1)
     assert m["cut_land.ndcg@10"] == pytest.approx(2 / (2 + 1 / L2(3)))
@@ -208,7 +209,8 @@ def test_add_episode(db, deck):
     assert m["add.ndcg@10"] == pytest.approx(d / ideal)
     assert m["add.ndcg@10"] == pytest.approx(0.620456, abs=1e-6)
     assert m["add.ndcg@20"] == pytest.approx(d / ideal)
-    assert m["add.p@10"] == pytest.approx(0.3) and m["add.p@20"] == pytest.approx(0.15)
+    # 20 slots - 1 land pick (Island) -> headline @19 for the @20 metrics (review m3)
+    assert m["add.p@10"] == pytest.approx(0.3) and m["add.p@20"] == pytest.approx(3 / 19)
     assert m["add.r@20"] == pytest.approx(0.5)  # G2 = {Xsix, Xone, Xtwo, Xfour}; hit Xone, Xfour
     # synergy-filtered: Xfour (syn<0) drops to 0; ideal Xsix 3, Xone 3, Xtwo 2, Xfive 1
     ds, isyn = 3 + 1 / L2(5), 3 + 3 / L2(3) + 2 / L2(4) + 1 / L2(5)
@@ -339,3 +341,12 @@ def test_popularity_oracle_order(db, deck):
     # best global rank first, in identity, not in deck; GC limit: deck has 1 GC -> Xfour (1), Xsix (5) ok
     assert adds[:4] == ["Xfour", "Xsix", "Xone", "Xtwo"] and "Xfive" not in adds  # 3rd GC over the limit
     assert po.propose("cut", deck)["cuts"][-1] == "Alpha"  # ranked cards last (worst rank cut first)
+
+
+def test_land_picks_do_not_cost_headline_slots(db, deck):
+    """Review m3: lands are allowed, so a land pick shrinks the headline cut-off; an empty slot does not."""
+    with_land = score_episode("cut", {"cuts": ["Alpha", "Tapped Grove", "Beta"]}, deck, CUT_LABELS, db)
+    without = score_episode("cut", {"cuts": ["Alpha", "Beta"]}, deck, CUT_LABELS, db)
+    # same 2 headline picks; with a land pick the headline is scored @9, with an empty slot @10
+    assert with_land["cut.p@10"] == pytest.approx(2 / 9)
+    assert without["cut.p@10"] == pytest.approx(2 / 10)

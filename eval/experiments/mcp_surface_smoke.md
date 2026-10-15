@@ -77,6 +77,8 @@ From EXP-006 (GLM-5.3, deck needs, forced 5-search budget; no wall time was reco
 
 ## Review caveats
 
+- **Rescore (review m3, 2026-10-15).** Land picks no longer cost headline slots. Every number in this write-up is ADD nDCG@10, validity, search rate or cost, and none of them changed. Only ADD @20 metrics moved, by ≤ 0.012 (`bench/precon/runs/rescore_m3_compare.json`).
+
 From [`docs/review_2026-10-14.md`](../../docs/review_2026-10-14.md), M1–M3:
 - **e6desc_slim was picked as the best of 7 arms on the same 14 test precons.** Its ADD nDCG@10 vs shipped is +0.021 [−0.091, +0.129], sign test p=0.79. The quality ranking between arms is noise-level.
 - **The robust finding is the trigger rate.** e1desc 14/14 vs shipped 13/28 over both runs, Fisher p=0.0005. Separately, check_cards replaces searching in all 28 episodes.

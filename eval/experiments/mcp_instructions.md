@@ -37,15 +37,17 @@ Research behind the rewrite: [`docs/mcp_instructions_research.md`](../../docs/mc
 
 | arm | loading | episodes with ≥1 call | calls/ep (ADD / SWAP) | CUT nDCG@10 | ADD nDCG@10 | ADD validity | ADD popularity drift | SWAP add nDCG@10 | SWAP add validity | prompt tok/ep |
 |---|---|---|---|---|---|---|---|---|---|---|
-| v1 (shipped) | upfront | 0% | 0 / 0 | 0.345 | 0.185 | 0.907 | 2.50 | 0.174 | 0.936 | 37.8k |
-| v1, budget line in prompt | upfront | 0% | 0 / 0 | 0.333 | 0.173 | 0.911 | 2.45 | 0.160 | 0.936 | 36.0k |
-| v2 | upfront | 2% | 0.07 / 0 | 0.346 | 0.232 | 0.961 | 2.57 | 0.214 | 0.971 | 35.0k |
-| **v3** | upfront | **29%** | 0.64 / 0.21 | 0.331 | **0.324** | 0.986 | 3.36 | 0.247 | 0.964 | 42.5k |
-| v2 + hint in **system prompt** | upfront | 57% | 0.93 / 2.64 | 0.334 | 0.285 | **0.996** | **3.71** | 0.247 | 0.979 | 50.0k |
-| v2 | deferred | 0% | 0 / 0 | 0.334 | 0.195 | 0.896 | 2.47 | 0.206 | 0.979 | 39.4k |
-| v3 | deferred | 5% | 0 / 0.14 | 0.335 | 0.190 | 0.900 | 2.36 | 0.211 | 0.943 | 41.0k |
-| **v3 + alwaysLoad** | deferred | **45%** | 0.43 / 1.0 | 0.338 | 0.275 | 0.964 | 2.97 | 0.143 | **0.986** | 51.8k |
-| *ref: no tools (EXP-007)* | — | — | — | 0.342 | 0.189 | 0.904 | 2.42 | 0.118 | 0.898 | 11.4k |
+| v1 (shipped) | upfront | 0% | 0 / 0 | 0.364 | 0.185 | 0.907 | 2.50 | 0.195 | 0.936 | 37.8k |
+| v1, budget line in prompt | upfront | 0% | 0 / 0 | 0.357 | 0.173 | 0.911 | 2.45 | 0.167 | 0.936 | 36.0k |
+| v2 | upfront | 2% | 0.07 / 0 | 0.358 | 0.232 | 0.961 | 2.57 | 0.219 | 0.971 | 35.0k |
+| **v3** | upfront | **29%** | 0.64 / 0.21 | 0.342 | **0.324** | 0.986 | 3.36 | 0.249 | 0.964 | 42.5k |
+| v2 + hint in **system prompt** | upfront | 57% | 0.93 / 2.64 | 0.352 | 0.285 | **0.996** | **3.71** | 0.251 | 0.979 | 50.0k |
+| v2 | deferred | 0% | 0 / 0 | 0.355 | 0.195 | 0.896 | 2.47 | 0.216 | 0.979 | 39.4k |
+| v3 | deferred | 5% | 0 / 0.14 | 0.354 | 0.190 | 0.900 | 2.36 | 0.223 | 0.943 | 41.0k |
+| **v3 + alwaysLoad** | deferred | **45%** | 0.43 / 1.0 | 0.359 | 0.275 | 0.964 | 2.97 | 0.144 | **0.986** | 51.8k |
+| *ref: no tools (EXP-007)* | — | — | — | 0.376 | 0.189 | 0.904 | 2.42 | 0.134 | 0.898 | 11.4k |
+
+CUT nDCG@10 and SWAP add nDCG@10 are **rescored 2026-10-15** (review m3: land picks no longer cost headline slots). Every CUT value rose by 0.01–0.03, and the arms stay within 0.03 of each other. The ADD columns are unchanged. Before/after for every comparison: `bench/precon/runs/rescore_m3_compare.json`.
 
 - No arm called a tool on CUT. Cuts come from reading the deck, which needs no search.
 - Popularity drift is the mean log10 EDHREC rank of the adds; higher means fewer staples.
@@ -95,7 +97,7 @@ The input schemas are now the largest part, about 950 tokens each for the two fi
 - **The agent knows about the tools and chooses not to use them.** In v1/v2 episodes it typically ends with "I picked them from memory and ran no searches; I didn't check colour identity or legality". Descriptions that say *what* a tool is good for don't change that.
 - **What changes it is a procedural instruction placed at the decision point** ("Before you answer…, use the tools: search… and check…"). This matches Anthropic's note that Sonnet 5.5 tends to answer from training knowledge. Exhortations ("even when you feel sure") and capability claims did not work here.
 - **Under deferred loading, `instructions` alone do not get the tools loaded.** The model would first have to decide to call `ToolSearch`, which it rarely does for a task it believes it can answer. `alwaysLoad` on the two core tools removes that step.
-- **Using the tools pays off on ADD:** higher nDCG, near-perfect validity, fewer staples. On SWAP the add-side quality is noisy: v3 + alwaysLoad −0.031 n.s. vs v1, while validity improves.
+- **Using the tools pays off on ADD:** higher nDCG, near-perfect validity, fewer staples. On SWAP the add-side quality is noisy: v3 + alwaysLoad −0.051 [−0.160, +0.060] n.s. vs v1 (rescored; was −0.031), while validity improves.
 - **Limits:**
   - one model (Sonnet 5.5) and one client (Claude Code);
   - n=14 precons × 1 repeat, so the tool-use rates have wide uncertainty (29% vs 45% are not distinguishable);

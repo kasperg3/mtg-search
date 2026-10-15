@@ -23,6 +23,9 @@ Headline vs land: picks are partitioned, order preserved, into a headline (nonla
 land list; each list is scored against labels of the matching kinds (``cut``/``add`` vs
 ``cut_land``/``add_land``). A pick's side is the side of its label if it is labelled for this
 precon, else whether its front face is a Land. Unresolved names count on the headline side.
+Land picks are allowed by the prompt, so they do not cost headline slots (review m3, rescored
+2026-10-15): with S requested slots and L land picks, headline metrics @k use k' = min(k, S - L)
+(slots the agent left empty still count as misses). Land-side metrics keep k.
 
 Metrics on a ranked list g_1..g_n (n may be < k; missing slots gain 0):
   DCG@k   = sum_{i<=k} g_i / log2(i+1)  (linear gain)
@@ -216,14 +219,21 @@ def _gain_fns(kind_family: str, cfg: ScoreConfig) -> dict[str, Callable[[dict], 
 
 
 def score_side(picks: Sequence[Pick], labels: Sequence[dict], family: str, ks: Sequence[int],
-               cfg: ScoreConfig, prefix: str, recall_k: int, f1_k: int | None = None) -> dict:
+               cfg: ScoreConfig, prefix: str, recall_k: int, f1_k: int | None = None,
+               n_slots: int | None = None) -> dict:
     """Score one ranked list (already validated) for one task family (``cut``|``add``),
-    separately on the headline and the land side."""
+    separately on the headline and the land side. ``n_slots`` = picks requested; land picks then
+    shrink the headline cut-off instead of costing headline slots (review m3)."""
     kinds = CUT_KINDS if family == "cut" else ADD_KINDS
     th = cfg.cut_thresholds if family == "cut" else cfg.add_thresholds
+    n_land = sum(1 for p in picks if p.side == "land")
     out: dict = {}
     for side, kind in kinds.items():
         p_side = [p for p in picks if p.side == side]
+
+        def kk(k: int, side=side) -> int:
+            return min(k, n_slots - n_land) if (side == "headline" and n_slots is not None) else k
+
         labs = {lab["oracle_id"]: lab for lab in labels if lab["kind"] == kind}
         pre = prefix if side == "headline" else f"{prefix}_land"
         out[f"{pre}.n_picks"] = len(p_side)
@@ -235,12 +245,12 @@ def score_side(picks: Sequence[Pick], labels: Sequence[dict], family: str, ks: S
             gains = [fn(labs[p.oid]) if p.valid and p.oid in labs else 0.0 for p in p_side]
             ideal = [fn(lab) for lab in labs.values()]
             for k in ks:
-                out[f"{pre}.ndcg@{k}{suffix}"] = ndcg(gains, ideal, k)
+                out[f"{pre}.ndcg@{k}{suffix}"] = ndcg(gains, ideal, kk(k)) if kk(k) > 0 else None
         for k in ks:
-            out[f"{pre}.p@{k}"] = precision_at(grades, k)
-        out[f"{pre}.r@{recall_k}"] = recall_at(picked, g2, recall_k)
+            out[f"{pre}.p@{k}"] = precision_at(grades, kk(k)) if kk(k) > 0 else None
+        out[f"{pre}.r@{recall_k}"] = recall_at(picked, g2, kk(recall_k)) if kk(recall_k) > 0 else None
         if f1_k:
-            out[f"{pre}.f1@{f1_k}"] = f1_at(picked, g2, f1_k)
+            out[f"{pre}.f1@{f1_k}"] = f1_at(picked, g2, kk(f1_k)) if kk(f1_k) > 0 else None
         out[f"{pre}.n_g2"] = len(g2)
     return out
 
@@ -336,12 +346,12 @@ def score_episode(task: str, output: EpisodeOutput | dict, deck: Deck, labels: S
     if task == "cut":
         cuts = validate_cuts(list(output.cuts)[: cfg.n_cuts], deck, db, cut_l)
         m.update(validity_stats(cuts, cfg.n_cuts, "cut"))
-        m.update(score_side(cuts, labels, "cut", (10,), cfg, "cut", recall_k=10, f1_k=10))
+        m.update(score_side(cuts, labels, "cut", (10,), cfg, "cut", recall_k=10, f1_k=10, n_slots=cfg.n_cuts))
         m["cut.false_cut_rate"] = false_cut_rate(cuts, labels)
     elif task == "add":
         adds = validate_adds(list(output.adds)[: cfg.n_adds], deck, db, add_l, cfg.gc_limit)
         m.update(validity_stats(adds, cfg.n_adds, "add"))
-        m.update(score_side(adds, labels, "add", (10, 20), cfg, "add", recall_k=20))
+        m.update(score_side(adds, labels, "add", (10, 20), cfg, "add", recall_k=20, n_slots=cfg.n_adds))
         m["add.pop_drift"] = popularity_drift(adds, db)
         m["add.gc_final"] = deck_gc_count(deck, db) + sum(1 for p in adds if p.valid and db[p.oid].game_changer)
     elif task == "swap":
@@ -351,8 +361,8 @@ def score_episode(task: str, output: EpisodeOutput | dict, deck: Deck, labels: S
         adds = validate_adds([s.get("add") for s in swaps], deck, db, add_l, cfg.gc_limit, removed)
         m.update(validity_stats(cuts, cfg.n_swaps, "swap.cut"))
         m.update(validity_stats(adds, cfg.n_swaps, "swap.add"))
-        m.update(score_side(cuts, labels, "cut", (10,), cfg, "swap.cut", recall_k=10, f1_k=10))
-        m.update(score_side(adds, labels, "add", (10,), cfg, "swap.add", recall_k=10))
+        m.update(score_side(cuts, labels, "cut", (10,), cfg, "swap.cut", recall_k=10, f1_k=10, n_slots=cfg.n_swaps))
+        m.update(score_side(adds, labels, "add", (10,), cfg, "swap.add", recall_k=10, n_slots=cfg.n_swaps))
         m["swap.cut.false_cut_rate"] = false_cut_rate(cuts, labels)
         m["swap.add.pop_drift"] = popularity_drift(adds, db)
         m["swap.pair_coherence"] = pair_coherence(list(zip(cuts, adds, strict=True)), db)
