@@ -216,8 +216,40 @@ def test_ingest_local_backfills_fingerprint(tmp_path, monkeypatch):
     monkeypatch.setattr(refresh, "read_local_manifest", lambda *a, **k: json.loads(mpath.read_text()))
     monkeypatch.setattr(refresh, "sh", lambda *a, **k: None)
     monkeypatch.setattr(refresh, "local_fingerprint", lambda: fp)
+    pre = {"precons_hash": "p", "precons": {"decks": 3}}
+    monkeypatch.setattr(refresh, "build_precons", lambda: pre)
     manifest, got = refresh.ingest_local(force=False)
-    assert got == fp and json.loads(mpath.read_text())["text_hash"] == "t" and manifest["aux_hash"] == "a"
+    assert got == {**fp, "precons_hash": "p"} and json.loads(mpath.read_text())["text_hash"] == "t"
+    assert manifest["aux_hash"] == "a" and manifest["precons"] == {"decks": 3}
+
+
+def test_precon_list_change_is_metadata_only(raw_cards, raw_tags, raw_rulings):
+    base = {**_fp(raw_cards, raw_tags, raw_rulings), "precons_hash": "old"}
+    tier, reasons = refresh.classify({**base, "precons_hash": "new"}, base)
+    assert tier == refresh.TIER_METADATA and reasons == ["official precon lists changed (precons_hash: MTGJSON)"]
+    tier, _ = refresh.classify({**base, "precons_hash": "new"}, {k: v for k, v in base.items() if k != "precons_hash"})
+    assert tier == refresh.TIER_METADATA  # the first snapshot with precons
+
+
+def test_build_precons(tmp_path, monkeypatch):
+    import io
+    import tarfile
+
+    deck = json.loads((Path(__file__).parent / "fixtures" / "mtgjson_deck.json").read_text())
+    deck["meta"] = {"date": "2026-10-13", "version": "5.3.0+20261013"}
+    arc = tmp_path / "raw" / "mtgjson" / "AllDeckFiles.tar.gz"
+    arc.parent.mkdir(parents=True)
+    with tarfile.open(arc, "w:gz") as tf:
+        b = json.dumps(deck).encode()
+        info = tarfile.TarInfo("AllDeckFiles/TestProliferation_TST.json")
+        info.size = len(b)
+        tf.addfile(info, io.BytesIO(b))
+    monkeypatch.setattr(refresh.config, "RAW_DIR", tmp_path / "raw")
+    monkeypatch.setattr(refresh.config, "DATA_DIR", tmp_path)
+    got = refresh.build_precons()  # the archive is fresh: reused, not downloaded
+    assert got["precons"]["decks"] == 1 and got["precons"]["mtgjson_version"] == "5.3.0+20261013"
+    assert len(got["precons_hash"]) == 64 and (tmp_path / "precons.parquet").exists()
+    assert "precons.parquet" in refresh.DATA_FILES
 
 
 def test_tag_name():

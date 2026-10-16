@@ -150,21 +150,24 @@ sideboard (15):
 To find cards for this deck, call search_cards with format="modern".
 ```
 
-## Shipping it (not done)
+## Shipping it
 
-1. `scripts/refresh.py`:
-   - build `precons.parquet` with `python -m mtg_search.precons`;
-   - add the file to `DATA_FILES`;
-   - decide whether a precon-only change triggers a metadata-only publish (add a hash to the manifest
-     fingerprint).
-2. `docker/Dockerfile` and `.dockerignore`: copy `data/precons.parquet` (both copy explicit file lists).
-3. `docs/datasets/mtg-search-index.md`: MTGJSON as a source, with its MIT notice ("Copyright © 2018 – Present,
-   Zach Halpern").
-4. README: a row in the tools table.
-5. Benchmark runs: a precon lookup returns the deck's name, set and date, which the benchmark hides (leakage
-   control T2b). `bench/precon/harness/tools.py` does not pass `precons_path`, so lookups stay off in benchmark
-   runs unless an arm turns them on. The `shipped` surface now lists `get_deck`; `three_tools` reproduces the
-   EXP-014 surface.
+Done on 2026-10-16:
+
+1. **`scripts/refresh.py`** builds `data/precons.parquet` on every refresh (`build_precons`: MTGJSON's
+   AllDeckFiles, re-requested only when MTGJSON has a newer build) and uploads it with the other tables. The
+   manifest records `precons_hash` and the MTGJSON build; a precon-only change is a metadata-only refresh.
+2. **Docker:** `docker/Dockerfile`, `.dockerignore` and `docker/build.sh` copy `data/precons.parquet`.
+3. **Dataset card** (`docs/datasets/mtg-search-index.md`): MTGJSON as a source, with its MIT notice
+   ("Copyright © 2018-Present Zachary Halpern"), the `precons` config and its schema.
+4. **README:** a row in the tools table.
+5. **First published snapshot with precons:** `kasper-cbx/mtg-search-index@scryfall-20261015210157`.
+
+Still to do: point the package at that snapshot and release it (a version bump on `main`).
+
+Benchmark runs: a precon lookup returns the deck's name, set and date, which the pasted-deck prompts hide
+(leakage control T2b), so `bench/precon/harness/tools.py` turns lookups on only for named-deck runs
+(`--deck-input named`). The `shipped` surface lists `get_deck`; `three_tools` reproduces the EXP-014 surface.
 
 ## Limitations
 

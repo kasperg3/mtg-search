@@ -15,7 +15,8 @@ is then compared with the published manifest:
 
 * ``text_hash`` / ``oracle_ids_sha256`` changed (oracle text, cards added/removed/reordered)
   -> **re-encode**: upload tables, HF encode job, verify, eval smoke, tag.          exit 11
-* only ``gameplay_hash`` / ``aux_hash`` changed (legalities/bans, tags, rulings, ...)
+* only ``gameplay_hash`` / ``aux_hash`` / ``precons_hash`` changed (legalities/bans, tags, rulings,
+  official precon lists from MTGJSON's AllDeckFiles, ...)
   -> **metadata-only**: upload tables + manifest, reuse the published embeddings
   (still row-aligned; checked via ``oracle_ids_sha256``), tag. No encode job.      exit 10
 * nothing changed (only prices, EDHREC rank, printing metadata, ...)
@@ -74,7 +75,7 @@ ENCODE_CMD = [
     "--model", LATE_MODEL,
     "--require-gpu",
 ]  # fmt: skip
-DATA_FILES = ["cards.parquet", "tags.parquet", "rulings.parquet", "manifest.json"]
+DATA_FILES = ["cards.parquet", "tags.parquet", "rulings.parquet", "precons.parquet", "manifest.json"]
 POLL_SECONDS = 30
 JOB_TIMEOUT_SECONDS = 75 * 60
 
@@ -172,6 +173,8 @@ def classify(local_fp: dict, hub: dict | None) -> tuple[str, list[str]]:
         reasons.append("gameplay fields changed (gameplay_hash: legalities, tags, ...)")
     if local_fp["aux_hash"] != hub.get("aux_hash"):
         reasons.append("tags.parquet / rulings.parquet changed (aux_hash)")
+    if local_fp.get("precons_hash") != hub.get("precons_hash"):
+        reasons.append("official precon lists changed (precons_hash: MTGJSON)")
     if reasons:
         return TIER_METADATA, reasons
     return TIER_NONE, ["only volatile fields changed (prices, EDHREC rank, printing metadata, ...)"]
@@ -183,19 +186,35 @@ def local_fingerprint() -> dict:
     return fingerprint_dir(config.DATA_DIR)
 
 
+def build_precons() -> dict:
+    """``data/precons.parquet`` from MTGJSON's AllDeckFiles (downloaded into data/raw/mtgjson/ only when MTGJSON
+    has a newer build) and its manifest fields: ``precons_hash`` and ``precons`` (source, MTGJSON build, decks)."""
+    from mtg_search import precons
+
+    src = precons.fetch_archive(config.RAW_DIR / "mtgjson")
+    df = precons.build_table(precons.read_archive(src))
+    df.write_parquet(config.DATA_DIR / "precons.parquet", compression="zstd")
+    meta = precons.archive_meta(src)
+    log(f"precons.parquet: {df.height} decks from MTGJSON {meta.get('version', '?')}")
+    return {"precons_hash": precons.fingerprint(df),
+            "precons": {"source": precons.MTGJSON + precons.ARCHIVE, "mtgjson_version": meta.get("version"),
+                        "mtgjson_date": meta.get("date"), "decks": df.height}}
+
+
 def ingest_local(force: bool) -> tuple[dict, dict]:
-    """Ingest into data/ (a no-op if data/ already has this Scryfall snapshot) and return
+    """Ingest into data/ (a no-op if data/ already has this Scryfall snapshot), build the precon table and return
     (manifest, fingerprint). The fingerprint is recomputed from the parquet files and
     written into the local manifest, so an older manifest without one gets it too."""
     sh(["uv", "run", "python", "-m", "mtg_search.ingest"] + (["--force"] if force else []))
+    pre = build_precons()
     manifest = read_local_manifest()
     if not manifest or manifest_updated_at(manifest) is None:
         raise RuntimeError("ingest produced no manifest")
     if not 33_000 <= manifest.get("card_count", 0) <= 36_000:
         raise RuntimeError(f"card_count {manifest.get('card_count')} outside the sane range 33k-36k")
-    fp = local_fingerprint()
-    if any(manifest.get(k) != v for k, v in fp.items()):
-        manifest.update(fp)
+    fp = {**local_fingerprint(), "precons_hash": pre["precons_hash"]}
+    if any(manifest.get(k) != v for k, v in fp.items()) or manifest.get("precons") != pre["precons"]:
+        manifest.update(fp, precons=pre["precons"])
         config.MANIFEST_JSON.write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest, fp
 
@@ -315,7 +334,7 @@ def eval_smoke(rebuild_labels: bool) -> None:
         # Regex-labelled handwritten set + paraphrase set (copies labels from originals).
         sh(["uv", "run", "python", "eval/build_handwritten.py"])
         sh(["uv", "run", "python", "eval/build_paraphrase.py"])
-    sh(["uv", "run", "--extra", "models", "python", "scripts/eval_smoke.py"])
+    sh(["uv", "run", "python", "scripts/eval_smoke.py"])  # the ONNX query encoder is a core dependency now
 
 
 def build_image() -> None:
