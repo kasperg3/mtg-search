@@ -1,8 +1,12 @@
 # `get_deck`: decklists for the agent (prototype)
 
-**Status: prototype, not shipped, not yet tested with an agent.** Plan for that test:
+**Status: prototype, not shipped.** Test: EXP-020,
 [`eval/experiments/deck_tool_plan.md`](../eval/experiments/deck_tool_plan.md). Code: `src/mtg_search/decks.py`
-(parsing, rules, rendering), `src/mtg_search/precons.py` (MTGJSON table), `CardService.get_deck` in `server.py`.
+(parsing, rules, rendering), `src/mtg_search/deck_links.py` (Moxfield and Archidekt links),
+`src/mtg_search/precons.py` (MTGJSON table), `CardService.get_deck` in `server.py`.
+
+`get_deck` gathers data for the work the user asks for (cutting, adding, swapping cards): it loads the real list,
+and the agent then searches for cards as before.
 
 ## The problem
 
@@ -24,15 +28,18 @@ the list, so it works from memory. What exists today:
 get_deck(deck: str, format: str | None = None) -> str
 ```
 
-- **`deck`:** "An official precon's name or its commander's name, or a whole decklist as text (one card per line)."
+- **`deck`:** "A Moxfield or Archidekt deck link, an official precon's name or its commander's name, or a whole
+  decklist as text (one card per line)."
 - **`format`:** "Format to check the deck against, e.g. 'commander', 'modern', 'brawl'. Leave empty to detect it."
-- **Description:** `GET_DECK_DOC` in `server.py`, 1,046 characters, written like the other two trigger-first
-  descriptions. It opens "Before working on a deck the user names or pastes, call this to load its exact list
-  instead of recalling it from memory." and says "It does not suggest cards: call search_cards with the deck's
-  colour identity and format for that."
-- **Registration:** read-only, no network, **deferred** (no `alwaysLoad`), like `find_similar`. The three existing
-  tool descriptions and the server instructions are unchanged. The surface key `omit` leaves the tool out, and
-  `surfaces.SURFACES["three_tools"]` is the pre-`get_deck` surface for A/B runs.
+- **Description:** `GET_DECK_DOC` in `server.py`, written like the other two trigger-first descriptions. It
+  opens "Before adding, cutting or swapping cards in a deck the user names, links or pastes, call this to load its
+  exact list instead of recalling it from memory." and says "It does not suggest cards: call search_cards with the
+  deck's colour identity and format for that." Its examples name no real precon and no benchmark gold card (the
+  leakage pre-flight checks tool text).
+- **Registration:** read-only, **deferred** (no `alwaysLoad`), like `find_similar`; `openWorldHint` when the
+  service can open links. The three existing tool descriptions and the server instructions are unchanged. The
+  surface key `omit` leaves the tool out (`surfaces.SURFACES["three_tools"]` is the pre-`get_deck` surface), and
+  `always_load` loads it up front (`deck_always`).
 
 **Why a fourth tool and not a parameter.** EXP-010 and EXP-014 found that extra tools and parameters cut
 searching. Folding decks into `search_cards` or `get_card` would change the two always-loaded schemas that the
@@ -56,13 +63,16 @@ the `search_cards` call to make.
 | Pasted text | yes | Arena, MTGO `.txt` and `.dek` XML, Moxfield and Archidekt text exports, Forge `.dck`, CSV with name and count columns, `1x Name (SET) 123`, `SB:` prefixes, `*F*`/`*CMDR*` markers, Archidekt `[Category]` tags (Commander, Sideboard, Maybeboard), section headers and type-group headers |
 | MTGJSON precons | yes, bundled | MIT licence. `AllDeckFiles.tar.gz` becomes `precons.parquet`: 1,871 decks, 0.9 MB, built at index time. The server never calls MTGJSON. MTGJSON's `robots.txt` has `Disallow: /api/v5/*.json`. The archive and its `.sha256` are outside that rule, and the MTGJSON FAQ recommends the compressed files. A per-deck JSON fetch at tool time would fall under the rule. |
 | MTGJSON deck URL | yes | `mtgjson.com/api/v5/decks/<file>.json` maps to the bundled table; nothing is fetched |
-| Moxfield URL | no | `api.moxfield.com/robots.txt` and `api2.moxfield.com/robots.txt` say `Disallow: /`, and the deck pages load from that API. The terms page is JavaScript-only and could not be read without rendering it. |
-| Archidekt URL | no | Terms (effective 2018-09-07) grant use "solely for your own personal, noncommercial use" and forbid using "automated agents or scripts … to generate automated searches, requests, or queries to the Site". Its `robots.txt` does not block deck pages; the terms do. |
+| Moxfield link | yes | the user's own request: one GET to the JSON the deck page loads (`api2.moxfield.com/v3/decks/all/<id>`), identifying User-Agent, nothing cached. Boards: commanders, companions, mainboard, sideboard, maybeboard (counted, not checked); the format comes from the deck. |
+| Archidekt link | yes | as Moxfield (`archidekt.com/api/decks/<id>/`). A card's first category decides its section: Commander, the companion flag, categories marked not in the deck (Sideboard, Maybeboard). `deckFormat` ids 1–6, 9, 10 map to formats (checked on public decks 2026-10-16); others are detected. Archidekt rate-limits bursts (HTTP 429), which the tool reports. |
+| MTGGoldfish, TappedOut links | no | both answer scripted requests with a Cloudflare challenge (HTTP 403, 2026-10-16); the tool asks for the exported text |
 | EDHREC | no | not a deck source for this tool |
 | Local files | no | the Docker image cannot see them; the agent reads the file and passes the text |
 
-For any URL other than MTGJSON's, the tool answers: "This server does not open web pages. Export the deck from
-<host> as text … and pass that text as deck".
+For any other site the tool answers: "This server reads Moxfield and Archidekt deck links, not <host>. Export the
+deck from <host> as text … and pass that text as deck". A private or missing deck (HTTP 401/403/404), a rate
+limit or a network error gets the same advice. The benchmark's server has no link fetcher (leakage rule T9), so
+there every link gets "This server does not open deck links here".
 
 ## Format rules
 
@@ -159,8 +169,10 @@ To find cards for this deck, call search_cards with format="modern".
 ## Limitations
 
 - Printing details (set code, collector number, foil) are dropped; everything is checked per card name.
-- Precons are found by deck name or commander name, not by product type ("the Pioneer Challenger deck").
-  MTGJSON lists each Duel Deck half as its own deck ("Jace", "Chandra").
+- Precons are found by deck name, commander name or the name of another legendary creature in the deck (EDHREC
+  and MTGJSON sometimes pick different face commanders), not by product type ("the Pioneer Challenger deck").
+  MTGJSON lists each Duel Deck half as its own deck ("Jace", "Chandra"). The list shows MTGJSON's commander.
+- Links are read once per call; a deck the user edits after the call is not reread unless asked again.
 - The commander section must be marked unless the list follows one of the layouts detection knows (commander
   first or last, after a blank line).
 - The token figure is estimated from character counts, not measured with a tokenizer.

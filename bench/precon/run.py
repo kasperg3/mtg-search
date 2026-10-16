@@ -133,7 +133,7 @@ class AgentSystem:
         self.args, self.bench, self.db = args, bench, db
         self.llm = make_llm(args)
         self.budget = Budget(args.max_usd)
-        kw = {"surface": args.surface} if args.tools == "shipped" else {}
+        kw = {"surface": args.surface, "precons": args.deck_input == "named"} if args.tools == "shipped" else {}
         self.toolset = make_toolset(args.tools, bench.denylist, backend=args.backend, **kw) if args.system == "agent" else None
         self.service = None
         if args.llm == "claude-code" and self.toolset is not None and self.toolset.schemas():
@@ -151,12 +151,13 @@ class AgentSystem:
     def config(self) -> dict:
         return {"llm": self.llm.config(), "toolset": self.toolset.config() if self.toolset else None,
                 "max_usd": self.args.max_usd, "anonymise_commander": self.args.anonymise_commander,
-                "tool_hint": self.args.tool_hint}
+                "tool_hint": self.args.tool_hint, "deck_input": self.args.deck_input}
 
     def run(self, task: str, deck, rep: int) -> dict:
         from bench.precon.harness.agent import run_episode
-        from bench.precon.harness.leakage import preflight, tool_text
-        from bench.precon.harness.prompts import final_answer_tool, prompt_hash, render_deck, system_prompt, user_prompt
+        from bench.precon.harness.leakage import identifying_strings, preflight, tool_text
+        from bench.precon.harness.prompts import (final_answer_tool, prompt_hash, render_deck, system_prompt, user_prompt,
+                                                  user_prompt_named)
 
         tpath = self.tdir / f"{deck.precon_id}__{task}__r{rep}.jsonl"
         if self.args.system == "probe":
@@ -168,13 +169,21 @@ class AgentSystem:
             return run_probe(self.llm, meta.get("deck_name", ""), meta.get("product", ""), budget=self.budget,
                              transcript_path=tpath)
         ci = "".join(c for c in "WUBRG" if c in deck.color_identity)
-        system = system_prompt(task, self.args.tools, ci, gc_limit=self.args.gc_limit, tool_hint=self.args.tool_hint)
-        user = user_prompt(task, render_deck(deck, self.rows, self.args.anonymise_commander))
+        named = self.args.deck_input == "named"
+        system = system_prompt(task, self.args.tools, ci, gc_limit=self.args.gc_limit, tool_hint=self.args.tool_hint,
+                               named=named)
+        identifying = self.identifying
+        if named:  # the user names this deck by design; every other precon's identifiers stay forbidden
+            meta = self.bench.precons.get(deck.precon_id, {})
+            user = user_prompt_named(task, meta["deck_name"], [self.rows[o]["name"] for o in deck.commander_oids])
+            identifying = self.identifying - identifying_strings({deck.precon_id: meta})
+        else:
+            user = user_prompt(task, render_deck(deck, self.rows, self.args.anonymise_commander))
         deck_names = [self.rows[c["oracle_id"]]["name"] for c in deck.cards if c["oracle_id"] in self.rows]
         schemas = self.toolset.schemas()
         tool_names = [t["function"]["name"] for t in schemas]
         ttext = tool_text(schemas + [final_answer_tool(task)], getattr(self.toolset, "instructions", None))
-        preflight(system, user, deck_names=deck_names, forbidden_gold=self.forbidden, identifying=self.identifying,
+        preflight(system, user, deck_names=deck_names, forbidden_gold=self.forbidden, identifying=identifying,
                   tool_names=tool_names, tool_text=ttext)
         if self.args.llm == "claude-code":
             d = self.llm.episode(task, system, user, tool_url=self.service.url if self.service else None,
@@ -195,7 +204,11 @@ def run(args) -> Path:
         sys.exit("uncommitted changes under bench/precon or src: commit before a model run (or pass --allow-dirty)")
     bench = load_bench(args.data)
     db = CardDB.from_parquet()
-    pids = bench.precon_ids(args.split, scored_only=not args.include_unscored)
+    pids = (args.precon_ids.split(",") if args.precon_ids
+            else bench.precon_ids(args.split, scored_only=not args.include_unscored))
+    unknown = [p for p in pids if p not in bench.decks]
+    if unknown:
+        sys.exit(f"unknown precon ids: {unknown}")
     if args.limit:
         pids = pids[: args.limit]
     tasks = ["probe"] if args.system == "probe" else [t for t in args.tasks.split(",") if t]
@@ -467,6 +480,10 @@ def main(argv=None) -> None:
     ap.add_argument("--workers", type=int, default=4)
     ap.add_argument("--anonymise-commander", action="store_true")
     ap.add_argument("--tool-hint", action="store_true", help="tell the agent to use its tools before answering")
+    ap.add_argument("--deck-input", default="pasted", choices=["pasted", "named"],
+                    help="pasted: the deck's card text is in the prompt; named: the user names the precon and its "
+                         "commander only (get_deck may look the list up)")
+    ap.add_argument("--precon-ids", default=None, help="comma-separated precon ids (overrides --split)")
     ap.add_argument("--experiment", default="EXP-007", help="registry id written into the run record")
     ap.add_argument("--allow-dirty", action="store_true",
                     help="allow a model run with uncommitted changes under bench/precon or src (recorded as dirty_bench)")

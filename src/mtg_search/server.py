@@ -1,8 +1,9 @@
 """MCP server (stdio): search and look up every Magic: The Gathering card.
 
 Read-only tools over ``cards.parquet``: ``search_cards`` (semantic search with lightonai/mLateOn,
-``mlateon.py``), ``find_similar``, ``get_card`` and ``get_deck`` (a pasted decklist or an official precon from
-``precons.parquet``, checked against a format's deck rules: ``decks.py``, ``precons.py``). Results carry only
+``mlateon.py``), ``find_similar``, ``get_card`` and ``get_deck`` (a pasted decklist, a Moxfield or Archidekt link, or an
+official precon from ``precons.parquet``, checked against a format's deck rules: ``decks.py``, ``deck_links.py``,
+``precons.py``). Results carry only
 rules and print facts; nothing is ranked or shown by popularity or price.
 
 Environment:
@@ -22,6 +23,7 @@ import re
 import signal
 import sys
 import time
+from collections.abc import Callable
 from functools import cached_property
 from pathlib import Path
 from typing import Annotated, Any
@@ -63,13 +65,16 @@ class CardService:
     ``search_many(queries, k, allowed_rows)`` (``mlateon.MLateOn``; a stub in tests)."""
 
     def __init__(self, cards: pl.DataFrame, backend: Any, *, tags: pl.DataFrame | None = None,
-                 rulings_path: Path | None = None, precons_path: Path | None = None):
+                 rulings_path: Path | None = None, precons_path: Path | None = None,
+                 fetch_deck: Callable[[str], Any] | None = None):
         self.cards = cards.select(server_columns(cards.columns))
         self.backend = backend
         tags = tags if tags is not None else pl.DataFrame({"slug": [], "card_count": []})
         self.tag_filter = TagFilter.from_frame(tags)
         self.rulings_path = rulings_path
         self.precons_path = precons_path
+        # reads a Moxfield / Archidekt link (deck_links.fetch); None: links are not opened (tests, the benchmark)
+        self.fetch_deck = fetch_deck
         self._rows: dict[int, dict] = {}
 
     def row(self, i: int) -> dict:
@@ -211,21 +216,30 @@ class CardService:
         return pl.read_parquet(p) if p is not None and Path(p).exists() else None
 
     @cached_property
-    def _precon_keys(self) -> list[tuple[str, list[str], tuple]]:
-        """Per precon: normalised name, normalised commander names (and their faces), tie-break key."""
+    def _precon_keys(self) -> list[tuple[str, list[str], tuple, frozenset[str]]]:
+        """Per precon: normalised name, normalised commander names (and their faces), tie-break key, and the
+        normalised names of the other legendary creatures in the 99 (a precon's alternative commanders: EDHREC
+        files World Shaper under Szarel, MTGJSON under Hearthhull)."""
         df, out = self._precons, []
-        for name, cmds, typ, date in zip(df["name"].to_list(), df["commanders"].to_list(), df["type"].to_list(),
-                                         df["release_date"].to_list(), strict=True):
+        for name, cmds, typ, date, cards in zip(df["name"].to_list(), df["commanders"].to_list(), df["type"].to_list(),
+                                                df["release_date"].to_list(), df["cards"].to_list(), strict=True):
             keys = {_norm_name(k) for c in cmds or [] for k in [c, *c.split(" // ")]}
+            legends = set()
+            for c in cards or []:
+                r = self._oid_rows.get(c["oracle_id"]) if c["section"] == "main" and c["oracle_id"] else None
+                tl = (self.row(r).get("type_line") or "").split("//")[0] if r is not None else ""
+                if "Legendary" in tl and "Creature" in tl:
+                    legends.add(_norm_name(self.row(r)["name"]))
             # official Commander decks first, regular before Collector's Edition lists (same cards), newest first
             tie = (typ not in ("Commander Deck", "MTGO Commander Deck"), "collector" in name.lower(),
                    tuple(-ord(ch) for ch in date or ""))
-            out.append((_norm_name(name), sorted(keys), tie))
+            out.append((_norm_name(name), sorted(keys), tie, frozenset(legends)))
         return out
 
     def find_precons(self, query: str) -> list[int]:
         """Precon rows matching ``query`` by deck name or commander name, best first: exact, then prefix, then
-        whole word, then fuzzy (score >= 88). Retried without "my", "precon", "deck" and the like."""
+        whole word, then the exact name of another legendary creature in the deck, then a misspelling (edit
+        similarity >= 85). Retried without "my", "precon", "deck" and the like."""
         from rapidfuzz import fuzz
 
         keys = self._precon_keys
@@ -235,7 +249,7 @@ class CardService:
                 continue
             pat = re.compile(r"(^|\s)" + re.escape(q) + r"(\s|$)")
             tiers: dict[int, int] = {}
-            for i, (name, cmds, _tie) in enumerate(keys):
+            for i, (name, cmds, _tie, _leg) in enumerate(keys):
                 if q == name or q in cmds:
                     tiers[i] = 0
                 elif len(q) >= 3 and (name.startswith(q) or any(c.startswith(q) for c in cmds)):
@@ -243,9 +257,11 @@ class CardService:
                 elif len(q) >= 3 and (pat.search(name) or any(pat.search(c) for c in cmds)):
                     tiers[i] = 2
             if not tiers:
-                for i, (name, cmds, _tie) in enumerate(keys):
-                    if max(fuzz.WRatio(q, k) for k in [name, *cmds]) >= 88:
-                        tiers[i] = 3
+                tiers = {i: 3 for i, k in enumerate(keys) if any(g == q or g.startswith(q + " ") for g in k[3])}
+            if not tiers:
+                for i, (name, cmds, _tie, _leg) in enumerate(keys):
+                    if max(fuzz.ratio(q, k) for k in [name, *cmds]) >= 85:
+                        tiers[i] = 4
             if tiers:
                 return sorted(tiers, key=lambda i: (tiers[i], keys[i][2]))
         return []
@@ -266,9 +282,7 @@ class CardService:
         if not text:
             raise ValueError('give a precon name or a decklist, e.g. deck="Calling All Angels" or '
                              'deck="1 Sol Ring\\n1 Arcane Signet\\n..."')
-        known = ([f.name for f in self.cards.schema["legalities"].fields] if "legalities" in self.cards.columns
-                 else list(decks.RULES))
-        fmt = decks.normalize_format(format, known)
+        fmt = decks.normalize_format(format, self._formats())
         one_line = "\n" not in text
         if one_line and re.match(r"https?://", text):
             m = re.match(r"https?://(?:www\.)?mtgjson\.com/api/v5/decks/([^/?#]+?)\.json", text)
@@ -276,9 +290,7 @@ class CardService:
                 hits = [i for i, f in enumerate(self._precons["file"].to_list()) if f == m.group(1)]
                 if hits:
                     return self._precon_deck(hits, fmt)
-            host = re.sub(r"^www\.", "", re.match(r"https?://([^/?#]+)", text).group(1))
-            return (f"This server does not open web pages. Export the deck from {host} as text (one card per line, "
-                    'e.g. "1 Sol Ring") and pass that text as deck, or give an official precon\'s name.')
+            return self._linked_deck(text, fmt)
         named = one_line and self._precons is not None and any(k[0] == _norm_name(text) for k in self._precon_keys)
         if named or (one_line and not re.match(r"(SB:\s*)?\d", text, re.I) and not text.startswith("<")):
             return self._precon_lookup(text, fmt)  # "20 Ways to Win" is a deck name, not 20 copies of a card
@@ -322,10 +334,38 @@ class CardService:
         extra = ["other matches: " + "; ".join(others)] if others else []
         return self._deck_report(entries, fmt, SOURCE_FORMATS.get(d["type"]), title, extra=extra, unresolved=unresolved)
 
+    def _linked_deck(self, url: str, fmt: str | None) -> str:
+        from .deck_links import LinkError
+
+        host = re.sub(r"^www\.", "", re.match(r"https?://([^/?#]+)", url).group(1))
+        if self.fetch_deck is None:
+            return (f"This server does not open deck links here. Export the deck from {host} as text (one card per "
+                    'line, e.g. "1 Sol Ring") and pass that text as deck.')
+        try:
+            linked = self.fetch_deck(url)
+        except LinkError as e:
+            return str(e)
+        if not linked.decklist.lines:
+            return f"The {linked.site} deck at {url} has no cards."
+        try:
+            source = decks.normalize_format(linked.format, list(decks.RULES) + self._formats())
+        except ValueError:
+            source = None
+        return self._listed_deck(linked.decklist, fmt, f"{linked.name} · {linked.site} · {url}",
+                                 source_format=source, source_label=linked.site)
+
+    def _formats(self) -> list[str]:
+        return ([f.name for f in self.cards.schema["legalities"].fields] if "legalities" in self.cards.columns
+                else list(decks.RULES))
+
     def _pasted_deck(self, text: str, fmt: str | None) -> str:
         parsed = decks.parse_decklist(text)
         if not parsed.lines:
             raise ValueError('no card lines found; give one card per line, e.g. "4 Lightning Bolt"')
+        return self._listed_deck(parsed, fmt, parsed.name or "pasted list")
+
+    def _listed_deck(self, parsed: decks.Decklist, fmt: str | None, title: str, *, source_format: str | None = None,
+                     source_label: str = "the deck type") -> str:
         merged: dict[tuple[str, str], decks.Entry] = {}
         unresolved, read_as, ignored = [], [], list(parsed.ignored)
         for ln in parsed.lines:
@@ -341,14 +381,17 @@ class CardService:
             if fuzzy:
                 read_as.append((ln.name, card["name"]))
             merged.setdefault((card["name"], ln.section), decks.Entry(0, ln.section, card["name"], card)).qty += ln.qty
-        return self._deck_report(list(merged.values()), fmt, None, parsed.name or "pasted list",
+        return self._deck_report(list(merged.values()), fmt, source_format, title, source_label=source_label,
                                  unresolved=unresolved, read_as=read_as, ignored=ignored)
 
-    def _deck_report(self, entries, fmt, source_format, title, *, extra=(), unresolved=(), read_as=(), ignored=()) -> str:
+    def _deck_report(self, entries, fmt, source_format, title, *, source_label="the deck type", extra=(),
+                     unresolved=(), read_as=(), ignored=()) -> str:
         if fmt:
             rules, how = decks.RULES.get(fmt), "given"
+        elif source_format and source_format not in decks.RULES:  # e.g. a Moxfield Oathbreaker deck: legality only
+            fmt, rules, how = source_format, None, f"from {source_label}"
         else:
-            fmt, rules, how = decks.detect(entries, source_format)
+            fmt, rules, how = decks.detect(entries, source_format, source_label)
         rep = decks.check(entries, fmt, rules, how)
         return decks.render(rep, title=title, extra=extra, unresolved=unresolved, read_as=read_as, ignored=ignored,
                             tag_counts=self.tag_filter)
@@ -395,9 +438,9 @@ SIMILAR_DOC = """Find Magic: The Gathering cards that do what a given card does:
 
 GET_DOC = """Before recommending a card you know only from memory, call this to check its current text, colour identity and legality. Shows one Magic: The Gathering card in full, by name (fuzzy: "fire ice", "jace mind sculptor" or one face of a double-faced card all work). Returns the complete current rules text of every face, mana cost and mana value, type line, power/toughness, colours and colour identity, legality in every format, markers (Game Changer, Reserved, Commander-eligible), roles, official rulings and the Scryfall link. Also use it when exact wording, a ruling or legality decides the answer. Cards from a search_cards call with color_identity and format set need no second check."""
 
-GET_DECK_DOC = """Before working on a deck the user names or pastes, call this to load its exact list instead of recalling it from memory. Reads one Magic: The Gathering deck: an official preconstructed deck by its name or its commander's name (e.g. "Calling All Angels" or "Giada"), or a decklist as text, one card per line ("1 Sol Ring", "4 Lightning Bolt (2X2) 117"; Arena, MTGO, Moxfield and Archidekt exports with Commander, Companion and Sideboard sections all work). For a deck on a website or in a file, pass its exported text.
+GET_DECK_DOC = """Before adding, cutting or swapping cards in a deck the user names, links or pastes, call this to load its exact list instead of recalling it from memory. Reads one Magic: The Gathering deck: a Moxfield or Archidekt deck link, an official preconstructed deck by its name or its commander's name, or a decklist as text, one card per line ("1 Sol Ring", "20 Island (M21) 264"; Arena, MTGO, Moxfield and Archidekt exports with Commander, Companion and Sideboard sections all work). For a deck on another site or in a file, pass its exported text.
 
-Returns every card with mana cost, type line and roles, grouped by section, the commander's full text, the format (as given, from the precon's type, or detected from the deck's size and sections) and every rule the deck breaks in that format: deck size, copies, sideboard size, commander and partner rules, colour identity, banned, restricted or not legal cards, and the Game Changer count. It does not suggest cards: call search_cards with the deck's colour identity and format for that. A 100-card deck is about 2,500 tokens."""
+Returns every card with mana cost, type line and roles, grouped by section, the commander's full text, the format (as given, from the deck's source, or detected from its size and sections) and every rule the deck breaks in that format: deck size, copies, sideboard size, commander and partner rules, colour identity, banned, restricted or not legal cards, and the Game Changer count. It does not suggest cards: call search_cards with the deck's colour identity and format for that. A 100-card deck is about 2,500 tokens."""
 
 
 def _as_list(v: Any) -> Any:
@@ -416,7 +459,8 @@ MvMin = Annotated[float | None, Field(description="Minimum mana value.")]
 MvMax = Annotated[float | None, Field(description="Maximum mana value.")]
 Limit = Annotated[int, Field(ge=1, le=MAX_LIMIT, description=f"Number of cards to return (1-{MAX_LIMIT}).")]
 DeckText = Annotated[str, Field(
-    description="An official precon's name or its commander's name, or a whole decklist as text (one card per line).")]
+    description="A Moxfield or Archidekt deck link, an official precon's name or its commander's name, or a whole "
+                "decklist as text (one card per line).")]
 DeckFormat = Annotated[str | None, Field(
     description="Format to check the deck against, e.g. 'commander', 'modern', 'brawl'. Leave empty to detect it.")]
 
@@ -424,7 +468,8 @@ DeckFormat = Annotated[str | None, Field(
 def build_mcp(service: CardService, surface: dict[str, str] | None = None):
     """The MCP server. ``surface`` overrides the model-facing text for A/B tests on the precon benchmark
     (``bench/precon/harness/surfaces.py``): keys ``instructions``, ``search_cards``, ``find_similar``, ``get_card``,
-    ``get_deck`` (tool descriptions) and ``omit`` (comma-separated names of tools to leave out)."""
+    ``get_deck`` (tool descriptions), ``omit`` (comma-separated names of tools to leave out) and ``always_load``
+    (deferred tools to load up front)."""
     from mcp.server.mcpserver import MCPServer
     from mcp.server.mcpserver.exceptions import ToolError
     from mcp.types import ToolAnnotations
@@ -464,6 +509,7 @@ def build_mcp(service: CardService, surface: dict[str, str] | None = None):
     # for a task it thinks it can answer from memory (EXP-009: 5% vs 45% of episodes with a tool call).
     always = {"anthropic/alwaysLoad": True}
     omit = {t.strip() for t in surface.get("omit", "").split(",") if t.strip()}
+    load = {t.strip() for t in surface.get("always_load", "").split(",") if t.strip()}
     # get_deck is deferred, like find_similar: an extra always-loaded tool can cost searching (EXP-010's check_cards
     # replaced it; EXP-014's slimmer surface searched less). Test before changing: eval/experiments/deck_tool_plan.md
     for fn, title, doc, meta in ((search_cards, "Search cards", SEARCH_DOC, always), (get_card, "Get card", GET_DOC, always),
@@ -471,9 +517,12 @@ def build_mcp(service: CardService, surface: dict[str, str] | None = None):
                                  (get_deck, "Get deck", GET_DECK_DOC, None)):
         if fn.__name__ in omit:
             continue
-        mcp.add_tool(fn, title=title, description=surface.get(fn.__name__, doc), structured_output=False, meta=meta,
+        # get_deck opens the Moxfield / Archidekt link it is given (when the service has a fetcher)
+        web = fn is get_deck and service.fetch_deck is not None
+        mcp.add_tool(fn, title=title, description=surface.get(fn.__name__, doc), structured_output=False,
+                     meta=always if fn.__name__ in load else meta,
                      annotations=ToolAnnotations(title=title, read_only_hint=True, destructive_hint=False,
-                                                 idempotent_hint=True, open_world_hint=False))
+                                                 idempotent_hint=not web, open_world_hint=web))
     return mcp
 
 
@@ -512,8 +561,10 @@ def load_service(backend: Any = None, *, data_dir: str | Path | None = None, emb
         backend = MLateOn(cards["oracle_id"].to_list(),
                           embeddings_dir=embeddings_dir or os.environ.get("MTG_SEARCH_EMBEDDINGS_DIR", "/app/embeddings"),
                           model_dir=model_dir or os.environ.get("MTG_SEARCH_MODEL_DIR", "/app/model"))
+    from .deck_links import fetch
+
     return CardService(cards, backend, tags=tags, rulings_path=data / "rulings.parquet",
-                       precons_path=data / "precons.parquet"), backend
+                       precons_path=data / "precons.parquet", fetch_deck=fetch), backend
 
 
 def main(argv: list[str] | None = None) -> None:

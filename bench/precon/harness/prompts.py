@@ -46,6 +46,14 @@ SYSTEM = """You are an expert Magic: The Gathering Commander deck builder. You a
 You may make at most {max_calls} tool calls. {final}
 
 {rules}"""
+# named-deck prompts (deck_tool_plan.md): the user names the precon and its commander and gives no list
+SYSTEM_NAMED = """You are an expert Magic: The Gathering Commander deck builder. The user names the official preconstructed Commander deck they own, unchanged from the box, and asks you to improve it.
+
+{tools}
+You may make at most {max_calls} tool calls. {final}
+
+{rules}"""
+NAMED_DECK = 'My deck is the official precon "{deck}" (commander{s}: {commanders}), unchanged from the box.'
 
 TOOL_HINT = ("Before you answer, use the tools: search for candidate cards and check exact card text, colour identity "
              "and legality of your picks. ")
@@ -111,17 +119,23 @@ def render_deck(deck, card_rows: dict[str, dict], anonymise_commander: bool = Fa
 
 
 def system_prompt(task: str, tools: str, color_identity: str, bracket: int = 3, gc_limit: int = 3,
-                  tool_hint: bool = False) -> str:
+                  tool_hint: bool = False, named: bool = False) -> str:
     """``tool_hint`` adds one sentence telling the agent to use its tools (added after Sonnet 5.5
-    answered all 42 MCP episodes without a single tool call)."""
+    answered all 42 MCP episodes without a single tool call). ``named``: the deck is named, not shown."""
     max_calls = BUDGETS[task][0] if tools != "none" else 0
-    return SYSTEM.format(
+    return (SYSTEM_NAMED if named else SYSTEM).format(
         tools=TOOLS_TEXT[tools], max_calls=max_calls,
         final=(TOOL_HINT if tool_hint else "") + FINAL_TOOL if tools != "none" else FINAL_TEXT.format(shape=SHAPES[task]),
         rules=RULES.format(ci=color_identity or "colourless", bracket=bracket, gc_limit=gc_limit),
     ).replace("You may make at most 0 tool calls. ", "").replace(
         # EXP-009: no client states a call budget; the proxy still enforces it
         "\nYou may make at most {} tool calls. ".format(max_calls) if tools == "shipped" else "\x00", "\n")
+
+
+def user_prompt_named(task: str, deck_name: str, commanders: list[str]) -> str:
+    """The deck by name only: no card list (the agent can load it with get_deck, or recall it)."""
+    deck = NAMED_DECK.format(deck=deck_name, s="s" if len(commanders) > 1 else "", commanders=" and ".join(commanders))
+    return deck + "\n\nTASK: " + INSTRUCTIONS[task].format(n=N_PICKS[task]).replace("in the deck below", "in the deck")
 
 
 def user_prompt(task: str, deck_text: str, few_shots: list[str] | None = None) -> str:

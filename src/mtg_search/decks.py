@@ -371,10 +371,12 @@ def _singleton(entries: Sequence[Entry]) -> bool:
     return all(v <= 1 for v in seen.values())
 
 
-def detect(entries: list[Entry], source_format: str | None = None) -> tuple[str | None, Rules | None, str]:
-    """(format, rules, how it was found) when the caller gave none."""
+def detect(entries: list[Entry], source_format: str | None = None,
+           source_label: str = "the deck type") -> tuple[str | None, Rules | None, str]:
+    """(format, rules, how it was found) when the caller gave none. ``source_format``: the format the deck's
+    source names (a precon's type, a deck site's format field), named in the output as ``source_label``."""
     if source_format in RULES:
-        return source_format, RULES[source_format], "from the deck type"
+        return source_format, RULES[source_format], f"from {source_label}"
     n_cmd, n_main, n_side = _qty(entries, "commander"), _qty(entries, "main"), _qty(entries, "sideboard")
     if n_cmd:
         total = n_cmd + n_main

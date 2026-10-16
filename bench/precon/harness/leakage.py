@@ -20,7 +20,9 @@ from collections.abc import Iterable
 
 from .tools import LEAK
 
-ALLOWED_TOOLS = {"search_cards", "find_similar", "get_card", "list_tags", "check_cards", "grep", "bm25", "final_answer"}
+# get_deck is allowed without its link fetcher: ShippedToolset never gives the benchmark's server one (T9)
+ALLOWED_TOOLS = {"search_cards", "find_similar", "get_card", "get_deck", "list_tags", "check_cards", "grep", "bm25",
+                 "final_answer"}
 
 
 class PromptLeak(AssertionError):

@@ -12,4 +12,6 @@ SURFACES: dict[str, dict[str, str]] = {
     "shipped": {},
     # the three-tool surface of EXP-014, before get_deck (control arm of eval/experiments/deck_tool_plan.md)
     "three_tools": {"omit": "get_deck"},
+    # get_deck loaded up front instead of deferred (arm C of deck_tool_plan.md, only if B rarely calls it)
+    "deck_always": {"always_load": "get_deck"},
 }

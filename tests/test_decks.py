@@ -235,11 +235,26 @@ def test_precon_name_starting_with_a_number(cards_df, tmp_path):
     assert s.get_deck("4 Lightning Bolt").startswith("deck: pasted list")
 
 
+def test_precon_by_another_legend_in_the_deck(cards_df, tmp_path):
+    # EDHREC may file a precon under a legend that MTGJSON lists in the 99 (World Shaper: Szarel vs Hearthhull)
+    oid = dict(zip(cards_df["name"].to_list(), cards_df["oracle_id"].to_list(), strict=True))
+    data = {**DECK_JSON["data"], "name": "Swapped Faces",
+            "commander": [{"name": "Thrasios, Triton Hero", "count": 1,
+                           "identifiers": {"scryfallOracleId": oid["Thrasios, Triton Hero"]}}],
+            "mainBoard": DECK_JSON["data"]["commander"] + DECK_JSON["data"]["mainBoard"]}
+    p = tmp_path / "precons.parquet"
+    precons.build_table([("Swapped_TST", data)]).write_parquet(p)
+    s = server.CardService(cards_df, None, precons_path=p)
+    for q in ("Atraxa, Praetors' Voice", "atraxa", "Thrasios"):
+        assert s.get_deck(q).startswith("deck: Swapped Faces"), q
+    assert s.get_deck("Praetors").startswith('No precon named "Praetors"')  # a legend matches by its name only
+
+
 def test_precon_not_found_sites_and_missing_table(svc, cards_df):
     assert svc.get_deck("Zzqx Wvut").startswith('No precon named "Zzqx Wvut"')
     assert "Sol Ring is a card: get_card shows one card." in svc.get_deck("sol ring")
-    site = svc.get_deck("https://www.moxfield.com/decks/abc123")
-    assert site.startswith("This server does not open web pages. Export the deck from moxfield.com as text")
+    site = svc.get_deck("https://www.moxfield.com/decks/abc123")  # no fetcher: the benchmark, tests
+    assert site.startswith("This server does not open deck links here. Export the deck from moxfield.com as text")
     bare = server.CardService(cards_df, None)
     assert bare.get_deck("Test Proliferation").startswith("Official precon lists are not in this card index.")
     with pytest.raises(ValueError, match="give a precon name or a decklist"):
@@ -256,7 +271,8 @@ def test_get_deck_tool_surface(svc):
     t = tools["get_deck"]
     assert set(t.input_schema["properties"]) == {"deck", "format"} and t.input_schema["required"] == ["deck"]
     assert not (t.meta or {}).get("anthropic/alwaysLoad")  # deferred, like find_similar
-    assert t.description.startswith("Before working on a deck the user names or pastes, call this")
+    assert t.description.startswith("Before adding, cutting or swapping cards in a deck the user names, links or pastes")
+    assert t.annotations.open_world_hint is False  # no fetcher, no links opened
     assert "It does not suggest cards: call search_cards" in t.description
     ok = asyncio.run(mcp.call_tool("get_deck", {"deck": "Test Proliferation"}))
     assert not ok.is_error and ok.content[0].text.startswith("deck: Test Proliferation")
@@ -264,6 +280,87 @@ def test_get_deck_tool_surface(svc):
         asyncio.run(mcp.call_tool("get_deck", {"deck": "1 Sol Ring", "format": "chess"}))
     three = {t.name for t in asyncio.run(server.build_mcp(svc, {"omit": "get_deck"}).list_tools())}
     assert three == {"search_cards", "get_card", "find_similar"}
+
+
+# ------------------------------------------------------------------ deck links (Moxfield, Archidekt)
+
+MOXFIELD_JSON = {"name": "Atraxa Proliferate", "format": "commander", "boards": {
+    "commanders": {"count": 1, "cards": {"a": {"quantity": 1, "card": {"name": "Atraxa, Praetors' Voice"}}}},
+    "mainboard": {"count": 99, "cards": {
+        **{f"m{i}": {"quantity": 1, "card": {"name": n, "prices": {"usd": 9.99}}} for i, n in enumerate(ATRAXA_99)},
+        "isl": {"quantity": 85, "card": {"name": "Snow-Covered Island"}}}},
+    "maybeboard": {"count": 1, "cards": {"x": {"quantity": 1, "card": {"name": "Mana Leak"}}}},
+    "tokens": {"count": 1, "cards": {"t": {"quantity": 1, "card": {"name": "Spirit"}}}}}}
+ARCHIDEKT_JSON = {"name": "Proliferate", "deckFormat": 3,
+                  "categories": [{"name": "Commander", "includedInDeck": True}, {"name": "Ramp", "includedInDeck": True},
+                                 {"name": "Maybeboard", "includedInDeck": False},
+                                 {"name": "Sideboard", "includedInDeck": False}],
+                  "cards": [{"quantity": 1, "categories": ["Commander"], "card": {"oracleCard": {"name": "Atraxa, Praetors' Voice"}}},
+                            *({"quantity": 1, "categories": ["Ramp"], "card": {"oracleCard": {"name": n}}} for n in ATRAXA_99),
+                            {"quantity": 85, "categories": ["Land"], "card": {"oracleCard": {"name": "Snow-Covered Island"}}},
+                            {"quantity": 1, "categories": ["Maybeboard"], "card": {"oracleCard": {"name": "Mana Leak"}}},
+                            {"quantity": 1, "categories": ["Sideboard"], "card": {"oracleCard": {"name": "Ponder"}}},
+                            {"quantity": 1, "categories": ["Ramp"], "deletedAt": "2026-01-01",
+                             "card": {"oracleCard": {"name": "Ponder"}}}]}
+
+
+def link_client(requests: list):
+    import httpx
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        requests.append(req)
+        if req.url.host == "api2.moxfield.com" and req.url.path == "/v3/decks/all/AbC-dEf_123":
+            return httpx.Response(200, json=MOXFIELD_JSON)
+        if req.url.host == "archidekt.com" and req.url.path == "/api/decks/4242/":
+            return httpx.Response(200, json=ARCHIDEKT_JSON)
+        if req.url.path.endswith("/429/"):
+            return httpx.Response(429)
+        return httpx.Response(404)
+
+    return httpx.Client(transport=httpx.MockTransport(handler))
+
+
+def test_deck_links_read_moxfield_and_archidekt(svc, cards_df, raw_tags, precon_path):
+    from mtg_search import deck_links
+    from mtg_search.ingest import build_tags
+
+    reqs: list = []
+    s = server.CardService(cards_df, None, tags=build_tags(raw_tags, set(cards_df["oracle_id"])),
+                           precons_path=precon_path, fetch_deck=lambda u: deck_links.fetch(u, link_client(reqs)))
+    mox = s.get_deck("https://moxfield.com/decks/AbC-dEf_123")
+    assert mox.splitlines()[:3] == ["deck: Atraxa Proliferate · Moxfield · https://moxfield.com/decks/AbC-dEf_123",
+                                    "format: Commander (from Moxfield) · 100 cards · colour identity WUBG",
+                                    "problems: none found"]
+    assert "maybeboard: 1 cards (not part of the deck, not checked)" in mox and "Spirit" not in mox and "9.99" not in mox
+    arc = s.get_deck("https://www.archidekt.com/decks/4242/proliferate")
+    assert arc.splitlines()[1] == "format: Commander (from Archidekt) · 100 cards · colour identity WUBG"
+    assert "problems: none found" in arc and "sideboard (1)" in arc  # Ponder in Sideboard; the deleted copy dropped
+    assert "problems (1):" in s.get_deck("https://moxfield.com/decks/AbC-dEf_123", format="modern")  # given wins
+    assert [str(r.url) for r in reqs[:2]] == ["https://api2.moxfield.com/v3/decks/all/AbC-dEf_123",
+                                             "https://archidekt.com/api/decks/4242/"]
+    assert reqs[0].headers["user-agent"] == precons.USER_AGENT
+    gone = s.get_deck("https://moxfield.com/decks/private1")
+    assert gone.startswith("Moxfield did not return this deck (HTTP 404)") and "export the deck from Moxfield" in gone
+    assert "HTTP 429" in s.get_deck("https://archidekt.com/decks/429/")
+    other = s.get_deck("https://tappedout.net/mtg-decks/some-deck/")
+    assert other.startswith("This server reads Moxfield and Archidekt deck links, not tappedout.net.")
+    t = {t.name: t for t in asyncio.run(server.build_mcp(s).list_tools())}["get_deck"]
+    assert t.annotations.open_world_hint is True and t.annotations.idempotent_hint is False
+
+
+def test_deck_link_formats():
+    from mtg_search import deck_links
+
+    def mox(fmt, n):
+        return deck_links._moxfield({"format": fmt, "boards": {"mainboard": {"cards": {
+            "a": {"quantity": n, "card": {"name": "Island"}}}}}}, "u").format
+
+    assert [mox("pauperEdh", 100), mox("historicBrawl", 100), mox("brawl", 60), mox("brawl", 100),
+            mox("modern", 60)] == ["paupercommander", "brawl", "standardbrawl", "brawl", "modern"]
+    assert deck_links._archidekt({"deckFormat": 7, "cards": []}, "u").format is None  # Custom
+    assert deck_links.site_of("https://moxfield.com/decks/AbC-dEf_123") == "Moxfield"
+    assert deck_links.site_of("https://archidekt.com/decks/1/x") == "Archidekt"
+    assert deck_links.site_of("https://moxfield.com/users/someone") is None
 
 
 # ------------------------------------------------------------------ MTGJSON precon table
