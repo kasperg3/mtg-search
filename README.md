@@ -11,20 +11,31 @@ Write-up: [Does a search engine help a deck-building agent?](https://www.grontve
 
 ## Install
 
-One line, for Claude Code (needs Docker; the image is about 1.8 GB to download and uses about 2.7 GB of RAM):
+One line for Claude Code, with [uv](https://docs.astral.sh/uv/getting-started/installation/) installed. It
+downloads the card index once (about 1.9 GB) and registers the server:
 
 ```bash
-docker pull ghcr.io/kasperg3/mtg-search && claude mcp add --scope user mtg-search -- docker run -i --rm ghcr.io/kasperg3/mtg-search
+uvx mtg-search-mcp --download && claude mcp add --scope user mtg-search -- uvx mtg-search-mcp
 ```
 
-Any other MCP client runs the same command over stdio:
+Any other MCP client runs `uvx mtg-search-mcp` over stdio:
 
 ```json
 {
   "mcpServers": {
-    "mtg-search": { "command": "docker", "args": ["run", "-i", "--rm", "ghcr.io/kasperg3/mtg-search"] }
+    "mtg-search": { "command": "uvx", "args": ["mtg-search-mcp"] }
   }
 }
+```
+
+The server uses about 2.7 GB of RAM and keeps the index in `~/.cache/mtg-search` (set `MTG_SEARCH_HOME` to
+move it). To update, run `uvx mtg-search-mcp@latest --download`; a new card snapshot that has not been
+downloaded yet is fetched in the background while the previous one keeps serving.
+
+**With Docker instead** (no Python needed; the image already contains the index):
+
+```bash
+docker pull ghcr.io/kasperg3/mtg-search && claude mcp add --scope user mtg-search -- docker run -i --rm ghcr.io/kasperg3/mtg-search
 ```
 
 Then ask for cards the way a player would: *"upgrade my Auntie Ool precon"*, *"cheap ways to protect my
@@ -63,7 +74,7 @@ the image at all, so the agent picks cards for what they do, not for how often t
 
 All runs use Claude Sonnet 5.5 in Claude Code, and cards were graded blind by a separate Claude
 model. Details, intervals and every caveat: [write-up](https://www.grontved.xyz/blog/agent-search-vs-grep/)
-and [`eval/experiments/`](eval/experiments/REGISTRY.md).
+and [`eval/experiments/`](https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/REGISTRY.md).
 
 **Search vs grep, same agent, same minimal instructions** (113 tasks; relevance over the 80 deck-need
 and card-attribute tasks):
@@ -80,21 +91,21 @@ and card-attribute tasks):
 0.45 → 0.65 (0 to 1), better on 13 of 14 decks, p = 0.002.
 
 **The engine.** On 46 rules-text queries, nDCG@10 is 70.7 for [`lightonai/mLateOn`](https://huggingface.co/lightonai/mLateOn)
-(late interaction), 61.1 for BM25 and 36.7 for a dense embedding ([EXP-001](eval/experiments/REGISTRY.md)).
+(late interaction), 61.1 for BM25 and 36.7 for a dense embedding ([EXP-001](https://github.com/kasperg3/mtg-search/blob/main/eval/experiments/REGISTRY.md)).
 
 ## How it works
 
 - **Data:** Scryfall's Oracle cards (one entry per card, current official wording), Tagger function
-  tags and the official rulings, refreshed weekly by [`scripts/refresh.py`](scripts/README.md).
+  tags and the official rulings, refreshed weekly by [`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/README.md).
 - **Search:** exact late interaction with mLateOn. Queries go through the model's fp32 ONNX encoder;
   every card is scored by exact MaxSim against its precomputed token vectors, about 100–150 ms per query
   on a 6-core desktop CPU. Nothing is approximated, so the shipped server ranks exactly like the
-  benchmarks' reference ([`docker/README.md`](docker/README.md)).
+  benchmarks' reference ([`docker/README.md`](https://github.com/kasperg3/mtg-search/blob/main/docker/README.md)).
 - **Server:** Python, [MCP](https://modelcontextprotocol.io) over stdio, one Docker image.
 
 ## Datasets
 
-All on Hugging Face; cite a tagged revision ([BibTeX](docs/datasets/README.md)).
+All on Hugging Face; cite a tagged revision ([BibTeX](https://github.com/kasperg3/mtg-search/blob/main/docs/datasets/README.md)).
 
 | dataset | contents |
 |---|---|
@@ -126,9 +137,17 @@ uv run pytest -m docker          # run the built image over stdio
 python docker/mcp_smoke.py       # sample calls with output and latency
 ```
 
-Run the server without Docker from a checkout with the index downloaded
-(`uv run python -m mtg_search.artifacts download --dest index --parts embeddings,model` and
-`--dest . --parts data`); see [`docker/README.md`](docker/README.md).
+Run the server from a checkout with `uv run mtg-search-mcp`; on first run it downloads the index into
+`~/.cache/mtg-search`, like the published package.
+
+## Releases
+
+Every version bump on `main` is published automatically
+([`publish.yml`](https://github.com/kasperg3/mtg-search/blob/main/.github/workflows/publish.yml)): tests,
+then [PyPI](https://pypi.org/project/mtg-search-mcp/), a `vX.Y.Z` GitHub release and the matching Docker
+image. Each release pins one card snapshot; when the index refresh tags a new one,
+[`scripts/bump_index.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/bump_index.py) points the
+package at it and bumps the patch version, which releases it.
 
 ## Data and terms
 
@@ -141,5 +160,5 @@ precon decklists from [MTGJSON](https://mtgjson.com) and precon add/cut rates fr
 
 ## License
 
-The code is MIT licensed ([LICENSE](LICENSE)). The card data and the benchmarks keep their sources'
+The code is MIT licensed ([LICENSE](https://github.com/kasperg3/mtg-search/blob/main/LICENSE)). The card data and the benchmarks keep their sources'
 terms, described above.

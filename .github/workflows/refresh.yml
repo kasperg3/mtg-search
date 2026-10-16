@@ -73,17 +73,37 @@ jobs:
     outputs:
       tier: ${{ steps.check.outputs.tier }}
 
-  # Optional: build and push the Docker image after a refresh (both metadata-only and
-  # re-encode refreshes need a new image: it bakes cards.parquet). docker/build.sh is
-  # maintained separately; enable once a registry (e.g. ghcr.io) is chosen.
-  # image:
-  #   needs: refresh
-  #   if: needs.refresh.outputs.tier != 'none' || inputs.force
-  #   runs-on: ubuntu-latest
-  #   permissions: { contents: read, packages: write }
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: astral-sh/setup-uv@v6
-  #     - uses: docker/login-action@v3
-  #       with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
-  #     - run: uv sync && bash docker/build.sh
+  # After a refresh that tagged a new snapshot: point the package at it (bumping the patch version), commit,
+  # and dispatch publish.yml, which releases it to PyPI and pushes the matching Docker image. A push made
+  # with GITHUB_TOKEN does not trigger other workflows; a workflow_dispatch does.
+  release:
+    needs: refresh
+    if: needs.refresh.outputs.tier != 'none' || inputs.force
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Point the package at the newest snapshot
+        id: bump
+        run: |
+          set +e
+          version=$(uv run python scripts/bump_index.py --latest)
+          code=$?
+          set -e
+          if [ "$code" = 3 ]; then echo "bumped=false" >> "$GITHUB_OUTPUT"; exit 0; fi
+          [ "$code" = 0 ] || exit "$code"
+          echo "bumped=true" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Commit and publish
+        if: steps.bump.outputs.bumped == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "Release ${{ steps.bump.outputs.version }}: index snapshot $(PYTHONPATH=src python3 -c 'from mtg_search import config; print(config.INDEX_REVISION)')"
+          git push
+          gh workflow run publish.yml --ref main

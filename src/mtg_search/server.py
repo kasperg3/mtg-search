@@ -304,8 +304,32 @@ def build_mcp(service: CardService, surface: dict[str, str] | None = None):
     return mcp
 
 
-def load_service(backend: Any = None) -> tuple[CardService, Any]:
-    data = config.DATA_DIR
+def index_paths(revision: str | None = None, home: str | None = None) -> tuple[Path, Path, Path]:
+    """(data, embeddings, model) directories. Explicit MTG_SEARCH_EMBEDDINGS_DIR / MTG_SEARCH_MODEL_DIR (the
+    Docker image, a dev checkout) win; otherwise the pinned index in the user cache, downloaded on first use."""
+    emb, model = os.environ.get("MTG_SEARCH_EMBEDDINGS_DIR"), os.environ.get("MTG_SEARCH_MODEL_DIR")
+    if emb and model:
+        return config.DATA_DIR, Path(emb), Path(model)
+    from . import artifacts
+
+    revision = revision or config.INDEX_REVISION
+    base = Path(home) if home else config.index_base()
+    have = artifacts.complete_revisions(base)
+    if revision not in have and have and artifacts._model_ready(base):
+        # an update pinned a snapshot that is not here yet: serve the newest one we have now (a client
+        # gives a server only seconds to start) and fetch the new one in the background for the next start
+        import threading
+
+        log.warning("index %s not downloaded yet; serving %s and downloading %s in the background", revision, have[-1], revision)
+        threading.Thread(target=artifacts.ensure_index, args=(revision, base), daemon=True).start()
+        revision = have[-1]
+    root, model_dir = artifacts.ensure_index(revision, base)
+    return root / "data", root / config.EMBEDDINGS_SUBDIR, model_dir
+
+
+def load_service(backend: Any = None, *, data_dir: str | Path | None = None, embeddings_dir: str | Path | None = None,
+                 model_dir: str | Path | None = None) -> tuple[CardService, Any]:
+    data = Path(data_dir) if data_dir else config.DATA_DIR
     cards = pl.read_parquet(data / "cards.parquet", columns=server_columns(pl.read_parquet_schema(data / "cards.parquet")))
     tp = data / "tags.parquet"
     tags = pl.read_parquet(tp, columns=["slug", "card_count", "parent_slugs"]) if tp.exists() else None
@@ -313,20 +337,41 @@ def load_service(backend: Any = None) -> tuple[CardService, Any]:
         from .mlateon import MLateOn
 
         backend = MLateOn(cards["oracle_id"].to_list(),
-                          embeddings_dir=os.environ.get("MTG_SEARCH_EMBEDDINGS_DIR", "/app/embeddings"),
-                          model_dir=os.environ.get("MTG_SEARCH_MODEL_DIR", "/app/model"))
+                          embeddings_dir=embeddings_dir or os.environ.get("MTG_SEARCH_EMBEDDINGS_DIR", "/app/embeddings"),
+                          model_dir=model_dir or os.environ.get("MTG_SEARCH_MODEL_DIR", "/app/model"))
     return CardService(cards, backend, tags=tags, rulings_path=data / "rulings.parquet"), backend
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    import argparse
+
+    from . import __version__
+
+    ap = argparse.ArgumentParser(prog="mtg-search-mcp",
+                                 description="MCP server over stdio: semantic search over every Magic: The Gathering card.")
+    ap.add_argument("--download", action="store_true",
+                    help="download the card index (about 1.9 GB, once) and exit; run this before adding the server to a client")
+    ap.add_argument("--index-revision", default=None, help=f"index snapshot to use (default {config.INDEX_REVISION})")
+    ap.add_argument("--home", default=None, help="index directory (default $MTG_SEARCH_HOME, else ~/.cache/mtg-search/<revision>)")
+    ap.add_argument("--version", action="version", version=f"mtg-search-mcp {__version__}")
+    args = ap.parse_args(argv)
     logging.basicConfig(stream=sys.stderr, level=os.environ.get("MTG_SEARCH_LOG", "INFO"),
                         format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    for noisy in ("httpx", "httpx2", "huggingface_hub"):  # one line per HTTP request otherwise
+        logging.getLogger(noisy).setLevel(logging.WARNING)
+    if args.download:
+        from .artifacts import ensure_index
+
+        root, _ = ensure_index(args.index_revision, args.home)
+        print(f"mtg-search: index ready at {root}", file=sys.stderr)
+        return
 
     def _term(signum, _frame):  # PID 1 in Docker: exit cleanly on SIGTERM
         raise SystemExit(128 + signum)
 
     signal.signal(signal.SIGTERM, _term)
-    service, backend = load_service()
+    data, emb, model = index_paths(args.index_revision, args.home)
+    service, backend = load_service(data_dir=data, embeddings_dir=emb, model_dir=model)
     try:
         build_mcp(service).run("stdio")
     finally:

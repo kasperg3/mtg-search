@@ -1,0 +1,19 @@
+# Unit tests and a package build on every push and pull request (no card data needed: tests use fixtures).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync
+      - run: uv run pytest -q
+      - run: uv build

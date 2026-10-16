@@ -62,3 +62,19 @@ Mirrors run outputs (`eval/experiments/runs`, `REGISTRY.md`, `eval/agentic/runs`
 `bench/precon/runs`) to the HF dataset `kasper-cbx/mtg-search-experiments`. This includes the
 gitignored per-episode outputs and transcripts. Run it after every experiment (and periodically
 during long runs), next to the git push. It refuses to upload if any file contains the GLM API key.
+
+## Releases (`bump_index.py`, `.github/workflows/publish.yml`)
+
+The package `mtg-search-mcp` pins one index snapshot (`INDEX_REVISION` in `src/mtg_search/config.py`) and is
+released whenever its version changes on `main`:
+
+```bash
+uv run python scripts/bump_index.py --latest   # point at the newest scryfall-* tag, bump the patch version
+git commit -am "Release X.Y.Z" && git push      # publish.yml: tests, PyPI, GitHub release, Docker image
+```
+
+`publish.yml` skips versions already on PyPI, so other pushes are no-ops. The refresh workflow runs the same
+bump after a refresh that tagged a new snapshot and dispatches `publish.yml` itself (a push made with
+`GITHUB_TOKEN` does not trigger workflows). PyPI uses trusted publishing (no token): the project's trusted
+publisher is this repo, workflow `publish.yml`, environment `pypi`.
+

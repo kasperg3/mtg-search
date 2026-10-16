@@ -1,0 +1,124 @@
+# Publish mtg-search-mcp to PyPI, and the matching Docker image to GHCR, whenever the package version changes.
+#
+# Release: bump __version__ in src/mtg_search/__init__.py and push to main. This workflow tests and builds
+# that version, publishes it to PyPI, tags it vX.Y.Z with a GitHub release, and pushes the image as
+# ghcr.io/kasperg3/mtg-search:{latest, vX.Y.Z, <index snapshot>}. A version already on PyPI is skipped, so
+# pushes that do not change the version are no-ops. The weekly index refresh bumps the version itself
+# (scripts/bump_index.py) and dispatches this workflow.
+#
+# One-time setup:
+#   PyPI: add a trusted publisher for project mtg-search-mcp (https://pypi.org/manage/account/publishing/):
+#         owner kasperg3, repository mtg-search, workflow publish.yml, environment pypi.
+#   GHCR: package mtg-search -> Package settings -> Manage Actions access -> add kasperg3/mtg-search (Write).
+name: publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/mtg_search/**"
+      - "pyproject.toml"
+      - "README.md"
+      - "LICENSE"
+      - "docker/**"
+      - ".github/workflows/publish.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+      index: ${{ steps.v.outputs.index }}
+      new: ${{ steps.v.outputs.new }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: v
+        name: Is this version on PyPI yet?
+        run: |
+          version=$(PYTHONPATH=src python3 -c "from mtg_search import __version__; print(__version__)")
+          index=$(PYTHONPATH=src python3 -c "from mtg_search import config; print(config.INDEX_REVISION)")
+          code=$(curl -s -o /dev/null -w '%{http_code}' "https://pypi.org/pypi/mtg-search-mcp/$version/json")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "index=$index" >> "$GITHUB_OUTPUT"
+          if [ "$code" = 404 ]; then echo "new=true" >> "$GITHUB_OUTPUT"; else echo "new=false" >> "$GITHUB_OUTPUT"; fi
+          echo "mtg-search-mcp $version (index $index): PyPI says $code"
+
+  build:
+    needs: check
+    if: needs.check.outputs.new == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync
+      - run: uv run pytest -q
+      - run: uv build
+      - name: The build is the version being released
+        run: ls dist/ && test -f "dist/mtg_search_mcp-${{ needs.check.outputs.version }}-py3-none-any.whl"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  pypi:
+    needs: [check, build]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/mtg-search-mcp/${{ needs.check.outputs.version }}/
+    permissions:
+      id-token: write # trusted publishing: no token stored anywhere
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@release/v1
+
+  release:
+    needs: [check, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Tag and GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v="v${{ needs.check.outputs.version }}"
+          gh release create "$v" dist/* --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "$v" \
+            --notes "Card index: kasper-cbx/mtg-search-index@${{ needs.check.outputs.index }}. Install: \`claude mcp add --scope user mtg-search -- uvx mtg-search-mcp\`"
+
+  image:
+    needs: [check, pypi]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Free disk space for a 4 GB image
+        run: sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push ghcr.io/kasperg3/mtg-search
+        run: |
+          img=ghcr.io/kasperg3/mtg-search
+          index="${{ needs.check.outputs.index }}"
+          bash docker/build.sh --revision "$index" --tag "$img:$index" -- --label "org.opencontainers.image.version=$index"
+          docker tag "$img:$index" "$img:latest"
+          docker tag "$img:$index" "$img:v${{ needs.check.outputs.version }}"
+          for t in "$index" latest "v${{ needs.check.outputs.version }}"; do docker push "$img:$t"; done

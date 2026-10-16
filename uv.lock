@@ -359,8 +359,7 @@ wheels = [
 ]
 
 [[package]]
-name = "mtg-search"
-version = "0.1.0"
+name = "mtg-search-mcp"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },

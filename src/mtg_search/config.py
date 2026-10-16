@@ -26,6 +26,20 @@ BULK_TYPES = ("oracle_cards", "oracle_tags", "rulings")
 
 HF_REPO = "kasper-cbx/mtg-search-index"
 HF_REPO_TYPE = "dataset"
+# The index snapshot this code release searches (a scryfall-<stamp> tag of HF_REPO). An installed package
+# (uvx / pip) downloads it on first use into index_home(); override with MTG_SEARCH_INDEX_REVISION.
+INDEX_REVISION = os.environ.get("MTG_SEARCH_INDEX_REVISION", "scryfall-20261014090155")
+
+
+def index_base() -> Path:
+    """Where an installed package keeps its downloads: $MTG_SEARCH_HOME, else <user cache>/mtg-search.
+    One folder per index snapshot (``<base>/<revision>/{data,embeddings}``) and one shared query encoder
+    (``<base>/models/…``: it is pinned to one model revision, so snapshots never re-download its 1.28 GB)."""
+    return Path(os.environ.get("MTG_SEARCH_HOME") or Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache") / "mtg-search")
+
+
+def index_home(revision: str = INDEX_REVISION) -> Path:
+    return index_base() / revision
 
 LATE_MODEL = "lightonai/mLateOn"  # the only retriever (mlateon.py)
 # where its artifacts sit under an index root (here, so the Docker download stage needs only config + artifacts)

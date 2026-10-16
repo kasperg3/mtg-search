@@ -29,6 +29,9 @@ image at all**:
 
 ## Register with Claude Code
 
+Without Docker, the PyPI package runs the same server: `uvx mtg-search-mcp --download && claude mcp add
+--scope user mtg-search -- uvx mtg-search-mcp` (see the top-level README). With Docker:
+
 The image is published as `ghcr.io/kasperg3/mtg-search`. Pull it first (about 1.8 GB), so the first
 start does not run into the client's connection timeout:
 

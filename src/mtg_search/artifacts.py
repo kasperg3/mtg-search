@@ -47,14 +47,14 @@ PATTERNS = {
 def download_query_model(dest: str | Path) -> Path:
     """Fetch the fp32 ONNX query encoder (public repo, pinned revision), verify hashes, write source.json."""
     import hashlib
-    import shutil
 
     from huggingface_hub import hf_hub_download
 
     out = Path(dest) / FP32_MODEL_DIR
     out.mkdir(parents=True, exist_ok=True)
     for f, sha in QUERY_MODEL_FILES.items():
-        p = hf_hub_download(QUERY_MODEL_REPO, f, revision=QUERY_MODEL_REVISION, token=False)
+        # straight into ``out`` (no second copy in the HF cache: the encoder alone is 1.28 GB)
+        p = hf_hub_download(QUERY_MODEL_REPO, f, revision=QUERY_MODEL_REVISION, token=False, local_dir=out)
         if sha:
             h = hashlib.sha256()
             with open(p, "rb") as fh:
@@ -62,8 +62,6 @@ def download_query_model(dest: str | Path) -> Path:
                     h.update(chunk)
             if h.hexdigest() != sha:
                 raise RuntimeError(f"{QUERY_MODEL_REPO}@{QUERY_MODEL_REVISION}/{f}: sha256 {h.hexdigest()} != {sha}")
-        (out / f).unlink(missing_ok=True)  # cache blobs can be read-only; replace, don't overwrite
-        shutil.copyfile(p, out / f)
     (out / "source.json").write_text(json.dumps({"repo": QUERY_MODEL_REPO, "revision": QUERY_MODEL_REVISION,
                                                   "sha256": {f: s for f, s in QUERY_MODEL_FILES.items() if s}},
                                                  indent=1) + "\n")
@@ -95,6 +93,58 @@ def download(
         token=token,
     )
     return dest
+
+
+COMPLETE = ".complete"  # written last, so an interrupted download is resumed rather than used
+
+
+def _stderr(msg: str) -> None:  # stdout belongs to MCP's JSON-RPC
+    print(msg, file=sys.stderr, flush=True)
+
+
+def _model_ready(base: Path) -> bool:
+    src = base / FP32_MODEL_DIR / "source.json"
+    return src.exists() and json.loads(src.read_text()).get("revision") == QUERY_MODEL_REVISION
+
+
+def _tidy(*dirs: Path) -> None:
+    import shutil
+
+    for d in dirs:  # huggingface_hub's local_dir bookkeeping, not needed once a part is complete
+        shutil.rmtree(d / ".cache", ignore_errors=True)
+
+
+def complete_revisions(base: Path | None = None) -> list[str]:
+    """Snapshots fully downloaded under ``base`` whose card tables this code can read, oldest first."""
+    base = Path(base) if base else config.index_base()
+    out = []
+    for d in sorted(base.glob("scryfall-*")) if base.is_dir() else []:
+        try:
+            ok = (d / COMPLETE).exists() and json.loads((d / "data" / "manifest.json").read_text()).get(
+                "schema_version") == config.SCHEMA_VERSION
+        except (OSError, ValueError):
+            ok = False
+        if ok:
+            out.append(d.name)
+    return out
+
+
+def ensure_index(revision: str | None = None, home: str | Path | None = None, *, log=_stderr) -> tuple[Path, Path]:
+    """The local copy of what the server needs, downloading whatever is missing: (snapshot root with ``data/``
+    and ``embeddings/…``, query-encoder dir). ``home`` is the base folder (default ``config.index_base()``)."""
+    revision = revision or config.INDEX_REVISION
+    base = Path(home) if home else config.index_base()
+    root = base / revision
+    if not _model_ready(base):
+        log(f"mtg-search: downloading the query encoder {QUERY_MODEL_REPO} (1.28 GB, once) to {base}")
+        download_query_model(base)
+        _tidy(base / FP32_MODEL_DIR)
+    if not (root / COMPLETE).exists():
+        log(f"mtg-search: downloading the card index {config.HF_REPO}@{revision} (about 0.6 GB) to {root}")
+        download(root, revision=revision, parts=("data", "embeddings"))
+        _tidy(root)
+        (root / COMPLETE).write_text(json.dumps({"repo": config.HF_REPO, "revision": revision}) + "\n")
+    return root, base / FP32_MODEL_DIR
 
 
 def main(argv: list[str] | None = None) -> None:
