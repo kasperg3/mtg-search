@@ -1,6 +1,6 @@
 # EXP-020 plan: does `get_deck` let the agent work on a deck it is only told about?
 
-**Status: pre-registered 2026-10-16, before any model run.** Design: [`docs/deck_tool.md`](../../docs/deck_tool.md).
+**Status: pre-registered 2026-10-16, before any model run; run the same day, results in [`deck_tool.md`](deck_tool.md).** Design: [`docs/deck_tool.md`](../../docs/deck_tool.md).
 
 `get_deck` gathers data: it loads the list of a deck the user names, links or pastes, so that the work the user
 asked for (cutting, adding, swapping cards) is done on the real deck. It is not meant to replace searching. The
