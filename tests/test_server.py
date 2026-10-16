@@ -199,9 +199,10 @@ def _listed(svc=None):
     return {t.name: t for t in asyncio.run(server.build_mcp(svc).list_tools())}
 
 
-def test_three_read_only_tools_with_small_schemas():
+def test_read_only_tools_with_small_schemas():
     tools = _listed()
-    assert set(tools) == {"search_cards", "find_similar", "get_card"}
+    assert set(tools) == {"search_cards", "find_similar", "get_card", "get_deck"}
+    assert set(tools["get_deck"].input_schema["properties"]) == {"deck", "format"}
     flt = {"color_identity", "format", "types", "mana_value_min", "mana_value_max", "limit"}
     assert set(tools["search_cards"].input_schema["properties"]) == {"queries", *flt}
     assert set(tools["find_similar"].input_schema["properties"]) == {"card_name", *flt}
@@ -298,6 +299,9 @@ def _all_tool_outputs(svc, names: list[str]) -> list[str]:
     for n in names:
         outs.append(svc.get_card(n))
         outs.append(svc.find_similar(n, limit=10))
+    deck = "\n".join(f"1 {n}" for n in names)
+    for fmt in (None, "commander", "modern", "vintage"):
+        outs.append(svc.get_deck(deck, format=fmt))
     return outs
 
 
