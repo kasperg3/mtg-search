@@ -92,7 +92,7 @@ All card data comes from [Scryfall bulk data](https://scryfall.com/docs/api/bulk
 
 ### MTGJSON decklists
 
-`data/precons.parquet` is built from MTGJSON's [`AllDeckFiles.tar.gz`](https://mtgjson.com/api/v5/AllDeckFiles.tar.gz) (build 5.3.0+20261015), downloaded with an identifying User-Agent and checked against its published `.sha256`; the weekly refresh requests it again only when MTGJSON has a newer build. Only deck names, types, set codes, release dates, the publisher's decklist link, and per card the `oracle_id`, name, count and section are kept: MTGJSON's prices, purchase links, ranks and printing fields are dropped. Card bundles that are not decks (Secret Lair drops, land packs, MTGO redemption lists, Deck Builder's Toolkits and similar) are left out.
+`data/precons.parquet` is built from MTGJSON's [`AllDeckFiles.tar.gz`](https://mtgjson.com/api/v5/AllDeckFiles.tar.gz) (build 5.3.0+20261015), downloaded with an identifying User-Agent and checked against its published `.sha256`; each refresh requests it again only when MTGJSON has a newer build. Only deck names, types, set codes, release dates, the publisher's decklist link, and per card the `oracle_id`, name, count and section are kept: MTGJSON's prices, purchase links, ranks and printing fields are dropped. Card bundles that are not decks (Secret Lair drops, land packs, MTGO redemption lists, Deck Builder's Toolkits and similar) are left out.
 
 MTGJSON's data is MIT licensed:
 
@@ -324,7 +324,7 @@ The other systems' embeddings are in revisions up to `9776f07` (see [History](#h
 
 ## Update process
 
-[`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/refresh.py) keeps this repo in sync with Scryfall, run weekly by a GitHub Action (`.github/workflows/refresh.yml`, Mondays 06:00 UTC). Prices and popularity never trigger an update; legality and text changes always do.
+[`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/refresh.py) keeps this repo in sync with Scryfall, run monthly by a GitHub Action (`.github/workflows/refresh.yml`, the 1st of each month at 06:00 UTC) and by hand when needed, e.g. after a set release or a ban announcement. Prices and popularity never trigger an update; legality and text changes always do.
 
 | Tier | When | What happens |
 |---|---|---|

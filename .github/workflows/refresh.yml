@@ -1,4 +1,6 @@
-# Weekly index refresh: Scryfall oracle_cards -> HF dataset kasper-cbx/mtg-search-index.
+# Monthly index refresh: Scryfall oracle_cards -> HF dataset kasper-cbx/mtg-search-index.
+# Refresh by hand at any time (e.g. after a set release or a ban announcement):
+#   gh workflow run refresh.yml --repo kasperg3/mtg-search        (or Actions -> refresh-index -> Run workflow)
 #
 # Required repository secret:
 #   HF_TOKEN  - Hugging Face token (user kasper-cbx) with WRITE access to the dataset
@@ -18,7 +20,7 @@ name: refresh-index
 
 on:
   schedule:
-    - cron: "0 6 * * 1" # Mondays 06:00 UTC
+    - cron: "0 6 1 * *" # the 1st of each month, 06:00 UTC
   workflow_dispatch:
     inputs:
       force:

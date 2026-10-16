@@ -98,7 +98,7 @@ and card-attribute tasks):
 ## How it works
 
 - **Data:** Scryfall's Oracle cards (one entry per card, current official wording), Tagger function
-  tags, the official rulings and MTGJSON's official precon decklists, refreshed weekly by [`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/README.md).
+  tags, the official rulings and MTGJSON's official precon decklists, refreshed monthly (and by hand when needed) by [`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/README.md).
 - **Search:** exact late interaction with mLateOn. Queries go through the model's fp32 ONNX encoder;
   every card is scored by exact MaxSim against its precomputed token vectors, about 100–150 ms per query
   on a 6-core desktop CPU. Nothing is approximated, so the shipped server ranks exactly like the
@@ -123,7 +123,7 @@ src/mtg_search/   the MCP server, ingest, filters and the mLateOn search
 docker/           the image (Dockerfile, build script, smoke test)
 eval/             search benchmark, agent tasks and harness, experiment write-ups (eval/experiments/)
 bench/precon/     the Commander precon benchmark: data build, agent harness, scorer, deck-fit judge
-scripts/          weekly index refresh, dataset publishing, result sync
+scripts/          monthly index refresh, dataset publishing, result sync
 jobs/             the GPU encoding job for the card embeddings
 docs/             dataset cards, findings page, plan and design notes
 tests/            unit tests and the Docker integration test

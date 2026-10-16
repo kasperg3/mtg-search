@@ -13,7 +13,7 @@ The two benchmarks were built on the index snapshot `scryfall-20261014090155` (`
 Raw run outputs (episodes, transcripts) are mirrored to `kasper-cbx/mtg-search-experiments` by `scripts/sync_results.py`. That is a backup, not a dataset to cite.
 
 **Rebuilding:**
-- `mtg-search-index` is rebuilt by `scripts/refresh.py`, weekly, which tags every new snapshot `scryfall-<stamp>`.
+- `mtg-search-index` is rebuilt by `scripts/refresh.py`, monthly or by hand, which tags every new snapshot `scryfall-<stamp>`.
 - The two benchmark datasets are built by `scripts/publish_datasets.py` (`bench`, `precon-fit`; the base precon files by `bench/precon/build_dataset.py` and `bench/precon/upload_hf.py`).
 
 **Sources and terms:**
