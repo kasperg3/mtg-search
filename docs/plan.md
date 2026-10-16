@@ -1,6 +1,6 @@
 # MTG semantic search MCP — exploration & MVP plan
 
-_Written 2026-10-14. Facts below were checked against live sources that day unless marked "unverified". Historical: since 2026-10-15 the repo, the image and the datasets are public; see the README._
+_Written 2026-10-14. Facts below were checked against live sources that day unless marked "unverified". Historical: since 2026-10-15 the repo, the image and the datasets are public, so the advice below to keep the card data private is superseded; see the README._
 
 ## 1. Exploration summary
 

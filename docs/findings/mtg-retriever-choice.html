@@ -271,7 +271,7 @@ footer { border-top: 1px solid var(--rule); padding-top: 18px; display: grid; ga
         </figure>
       </div>
       <div class="prose">
-        <p>So mtg-search runs mLateOn, and its tool description tells the agent to write queries the way card text is worded. The Docker image returns exactly the same top 10 as the tested search on every benchmark query, in 130–340 ms per search. It has three read-only tools, <code>search_cards</code>, <code>get_card</code> and <code>find_similar</code>, with five filters.</p>
+        <p>So mtg-search runs mLateOn, and its tool description tells the agent to write queries the way card text is worded. The Docker image returns exactly the same top 10 as the tested search on every benchmark query, in 130–340 ms per search. It has three read-only search tools, <code>search_cards</code>, <code>get_card</code> and <code>find_similar</code>, with five filters; version 0.2.0 added <code>get_deck</code>, which loads a deck to work on.</p>
         <p>The agent searches only when told when to. Offered the tools without a cue, Sonnet made 0 tool calls in 42 deck tasks. Each tool description therefore opens with <span class="rules">“Before recommending cards for a deck, call this to find candidates instead of listing them from memory.”</span> With that sentence the agent searched in 25 of 30 tasks on the tuning decks; without it, in 10 of 30.</p>
       </div>
     </section>

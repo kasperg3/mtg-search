@@ -321,12 +321,27 @@ def verify_embeddings(expected_digest: str) -> dict:
     return meta
 
 
+def check_jobs_access(api) -> None:
+    """Fail before anything is uploaded when the token cannot start HF Jobs (a fine-grained token needs the
+    Jobs permission): uploading new tables without the encode job would leave main's embeddings misaligned."""
+    try:
+        api.list_jobs()
+    except Exception as e:  # HfHubHTTPError 401/403
+        raise RuntimeError("the HF token cannot use HF Jobs, which a re-encode needs; give it the 'Jobs' "
+                           f"permission (huggingface.co/settings/tokens). Nothing was uploaded. ({type(e).__name__})") from e
+
+
 def download_late_embeddings() -> None:
     from huggingface_hub import snapshot_download
+
+    from mtg_search import artifacts
 
     snapshot_download(config.HF_REPO, repo_type=config.HF_REPO_TYPE, local_dir=str(config.INDEX_DIR),
                       allow_patterns=[f"embeddings/late/{LATE_SLUG}/*"])
     log(f"downloaded embeddings/late/{LATE_SLUG} -> {config.INDEX_DIR}")
+    if not (config.INDEX_DIR / config.MODEL_SUBDIR / "source.json").exists():  # a fresh runner has no encoder
+        artifacts.download_query_model(config.INDEX_DIR)
+        log(f"downloaded the query encoder -> {config.INDEX_DIR / config.MODEL_SUBDIR}")
 
 
 def eval_smoke(rebuild_labels: bool) -> None:
@@ -384,6 +399,8 @@ def main(argv: list[str] | None = None) -> int:
     from huggingface_hub import HfApi
 
     api = HfApi()
+    if tier == TIER_REENCODE:
+        check_jobs_access(api)
     # 0) keep the snapshot currently on main reachable before overwriting it
     ensure_tag(api, status.hub)
 

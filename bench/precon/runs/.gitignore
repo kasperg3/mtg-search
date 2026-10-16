@@ -1,2 +1,3 @@
-# per-episode outputs, gold-bearing metrics and transcripts stay local (private labels)
+# per-episode outputs, gold-bearing metrics and transcripts are not in git; scripts/sync_results.py mirrors them
+# to the HF dataset kasper-cbx/mtg-search-experiments
 */

@@ -2,7 +2,8 @@
 #
 # Required repository secret:
 #   HF_TOKEN  - Hugging Face token (user kasper-cbx) with WRITE access to the dataset
-#               kasper-cbx/mtg-search-index and permission to run HF Jobs (paid account).
+#               kasper-cbx/mtg-search-index and permission to run HF Jobs (paid account; a
+#               fine-grained token needs the 'Jobs' permission, or re-encode weeks stop before uploading).
 #               Settings -> Secrets and variables -> Actions -> New repository secret.
 #
 # Tiers (scripts/refresh.py --dry-run exit code; see scripts/README.md):

@@ -146,8 +146,8 @@ def tier_setup(manifests, monkeypatch, raw_cards, raw_tags, raw_rulings):
     manifests["local"] = {"scryfall_updated_at": OLD}
     monkeypatch.setattr(refresh, "fetch_scryfall_updated_at", lambda client=None: NEW)
     calls: list[str] = []
-    for name in ("upload_data", "launch_encode_job", "wait_for_job", "verify_embeddings", "ensure_tag",
-                 "download_late_embeddings", "eval_smoke", "build_image"):
+    for name in ("check_jobs_access", "upload_data", "launch_encode_job", "wait_for_job", "verify_embeddings",
+                 "ensure_tag", "download_late_embeddings", "eval_smoke", "build_image"):
         monkeypatch.setattr(refresh, name, lambda *a, _n=name, **k: calls.append(_n) or "job")
 
     def use(cards):
@@ -198,8 +198,20 @@ def test_legality_change_is_metadata_only(tier_setup, raw_cards):
 def test_oracle_text_change_reencodes(tier_setup, raw_cards):
     tier_setup.use(_edit(raw_cards, "Lightning Bolt", _errata))
     assert refresh.main([]) == 0
-    assert tier_setup.calls == ["ensure_tag", "upload_data", "launch_encode_job", "wait_for_job",
+    assert tier_setup.calls == ["check_jobs_access", "ensure_tag", "upload_data", "launch_encode_job", "wait_for_job",
                                 "verify_embeddings", "download_late_embeddings", "eval_smoke", "ensure_tag"]
+
+
+def test_reencode_without_jobs_access_uploads_nothing(tier_setup, raw_cards, monkeypatch):
+    tier_setup.use(_edit(raw_cards, "Lightning Bolt", _errata))
+
+    def refuse(api):
+        raise RuntimeError("the HF token cannot use HF Jobs")
+
+    monkeypatch.setattr(refresh, "check_jobs_access", refuse)
+    with pytest.raises(RuntimeError, match="HF Jobs"):
+        refresh.main([])
+    assert tier_setup.calls == []  # no tag moved, nothing uploaded
 
 
 def test_force_turns_noop_into_reencode(tier_setup, raw_cards):
