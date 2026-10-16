@@ -163,7 +163,7 @@ Done on 2026-10-16:
 4. **README:** a row in the tools table.
 5. **First published snapshot with precons:** `kasper-cbx/mtg-search-index@scryfall-20261015210157`.
 
-Still to do: point the package at that snapshot and release it (a version bump on `main`).
+The package points at that snapshot from 0.2.0 (`config.INDEX_REVISION`); merging to `main` releases it.
 
 Benchmark runs: a precon lookup returns the deck's name, set and date, which the pasted-deck prompts hide
 (leakage control T2b), so `bench/precon/harness/tools.py` turns lookups on only for named-deck runs
@@ -176,6 +176,9 @@ Benchmark runs: a precon lookup returns the deck's name, set and date, which the
   and MTGJSON sometimes pick different face commanders), not by product type ("the Pioneer Challenger deck").
   MTGJSON lists each Duel Deck half as its own deck ("Jace", "Chandra"). The list shows MTGJSON's commander.
 - Links are read once per call; a deck the user edits after the call is not reread unless asked again.
+- Two Edge of Eternities precons (World Shaper, Counter Intelligence) list a legendary Spacecraft as the commander.
+  It is not a creature, so the tool reports "cannot be a commander"; EDHREC files those decks under a legendary
+  creature in the 99 (Szarel, Kilo), and a lookup by that name finds them.
 - The commander section must be marked unless the list follows one of the layouts detection knows (commander
   first or last, after a blank line).
 - The token figure is estimated from character counts, not measured with a tokenizer.

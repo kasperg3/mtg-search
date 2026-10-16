@@ -223,6 +223,7 @@ def test_precon_by_name_commander_and_url(svc):
     assert "problems: none found" in by_name and "85 Snow-Covered Island" in by_name  # foil + non-foil merged
     assert svc.get_deck("my atraxa precon") == by_name
     assert svc.get_deck("Test Prolifferation") == by_name  # fuzzy
+    assert svc.get_deck("Test Proliferation Atraxa, Praetors' Voice") == by_name  # EXP-020: name + commander
     assert svc.get_deck("https://mtgjson.com/api/v5/decks/TestProliferation_TST.json") == by_name
     assert "problems (1):" in svc.get_deck("Test Proliferation", format="modern")
 

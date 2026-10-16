@@ -238,8 +238,9 @@ class CardService:
 
     def find_precons(self, query: str) -> list[int]:
         """Precon rows matching ``query`` by deck name or commander name, best first: exact, then prefix, then
-        whole word, then the exact name of another legendary creature in the deck, then a misspelling (edit
-        similarity >= 85). Retried without "my", "precon", "deck" and the like."""
+        whole word, then a deck or commander name inside the query, then the name of another legendary creature
+        in the deck, then a misspelling (edit similarity >= 85). Retried without "my", "precon", "deck" and the
+        like."""
         from rapidfuzz import fuzz
 
         keys = self._precon_keys
@@ -256,12 +257,16 @@ class CardService:
                     tiers[i] = 1
                 elif len(q) >= 3 and (pat.search(name) or any(pat.search(c) for c in cmds)):
                     tiers[i] = 2
+            if not tiers:  # the deck or commander name inside a longer query ("<deck> <commander>")
+                padded = f" {q} "
+                tiers = {i: 3 for i, (name, cmds, _tie, _leg) in enumerate(keys)
+                         if any(len(k) >= 6 and f" {k} " in padded for k in [name, *cmds])}
             if not tiers:
-                tiers = {i: 3 for i, k in enumerate(keys) if any(g == q or g.startswith(q + " ") for g in k[3])}
+                tiers = {i: 4 for i, k in enumerate(keys) if any(g == q or g.startswith(q + " ") for g in k[3])}
             if not tiers:
                 for i, (name, cmds, _tie, _leg) in enumerate(keys):
                     if max(fuzz.ratio(q, k) for k in [name, *cmds]) >= 85:
-                        tiers[i] = 4
+                        tiers[i] = 5
             if tiers:
                 return sorted(tiers, key=lambda i: (tiers[i], keys[i][2]))
         return []

@@ -28,7 +28,7 @@ HF_REPO = "kasper-cbx/mtg-search-index"
 HF_REPO_TYPE = "dataset"
 # The index snapshot this code release searches (a scryfall-<stamp> tag of HF_REPO). An installed package
 # (uvx / pip) downloads it on first use into index_home(); override with MTG_SEARCH_INDEX_REVISION.
-INDEX_REVISION = os.environ.get("MTG_SEARCH_INDEX_REVISION", "scryfall-20261014090155")
+INDEX_REVISION = os.environ.get("MTG_SEARCH_INDEX_REVISION", "scryfall-20261015210157")
 
 
 def index_base() -> Path:
