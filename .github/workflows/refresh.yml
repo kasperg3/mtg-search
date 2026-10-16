@@ -11,7 +11,7 @@
 #   10 metadata-only: gameplay fields (legalities/bans, tags, rulings, ...) changed but no
 #      doc_text -> upload tables + manifest and tag; no HF encode job, no eval smoke.
 #   11 re-encode: doc_text changed or cards added/removed -> full pipeline: one t4-small
-#      HF Job (~5 min of GPU) + eval smoke on the runner's CPU (`models` extra, ~10 min).
+#      HF Job (~5 min of GPU) + eval smoke on the runner's CPU (~10 min).
 # The dry run already downloads and ingests into data/; the refresh step reuses it.
 name: refresh-index
 

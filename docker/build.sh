@@ -39,7 +39,7 @@ export HF_TOKEN
 
 ARGS=(-f "$ROOT/docker/Dockerfile" -t "$TAG" --build-arg "SOURCE=$SOURCE")
 if [[ "$SOURCE" == local ]]; then
-  for f in data/cards.parquet data/tags.parquet data/rulings.parquet data/manifest.json \
+  for f in data/cards.parquet data/tags.parquet data/rulings.parquet data/precons.parquet data/manifest.json \
            index/embeddings/late/lightonai__mLateOn/tokens.npy; do
     [[ -f "$ROOT/$f" ]] || { echo "missing $ROOT/$f" >&2; exit 1; }
   done

@@ -77,6 +77,26 @@ def build_table(decks: Iterable[tuple[str, dict[str, Any]]]) -> pl.DataFrame:
     return pl.DataFrame(rows, schema=SCHEMA).sort("release_date", "name", descending=[True, False])
 
 
+def fingerprint(df: pl.DataFrame) -> str:
+    """SHA-256 of the table's rows as canonical JSON, in ``file`` order: changes only when a list changes."""
+    h = hashlib.sha256()
+    for row in df.sort("file").iter_rows(named=True):
+        h.update(json.dumps(row, sort_keys=True, default=str).encode())
+        h.update(b"\n")
+    return h.hexdigest()
+
+
+def archive_meta(path: str | Path) -> dict[str, Any]:
+    """MTGJSON's build ``{date, version}``, from the first deck file in the archive."""
+    with tarfile.open(path) as tf:
+        for m in tf:
+            if m.isfile() and m.name.endswith(".json"):
+                fh = tf.extractfile(m)
+                if fh is not None:
+                    return dict(json.load(fh).get("meta") or {})
+    return {}
+
+
 def read_archive(path: str | Path) -> Iterator[tuple[str, dict[str, Any]]]:
     """(file name, Deck) for every deck file in MTGJSON's AllDeckFiles archive."""
     with tarfile.open(path) as tf:

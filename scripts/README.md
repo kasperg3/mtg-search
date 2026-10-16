@@ -16,13 +16,13 @@ Price fluctuations never trigger a corpus update; legality changes always do. Sc
 `updated_at` changes almost daily (mostly prices), so it only decides whether to look:
 
 1. Compare Scryfall `updated_at` with `data/manifest.json` on the HF dataset's `main`. Equal: stop (exit 0, nothing downloaded).
-2. Otherwise download and ingest into the local `data/` (`python -m mtg_search.ingest`; `--dry-run` does this too, it never touches the hub), check that the card count is between 33k and 36k, and compute the content fingerprint.
+2. Otherwise download and ingest into the local `data/` (`python -m mtg_search.ingest`; `--dry-run` does this too, it never touches the hub), check that the card count is between 33k and 36k, build `data/precons.parquet` from MTGJSON's AllDeckFiles (downloaded into `data/raw/mtgjson/`, again only when MTGJSON has a newer build), and compute the content fingerprint.
 3. Compare the fingerprint with the published manifest to pick a tier:
 
    | Tier | When | What runs | `--dry-run` exit |
    |---|---|---|---|
    | no-op | all hashes equal: only volatile fields changed (prices, EDHREC rank, printing metadata) | nothing uploaded or tagged; logs "up to date (only volatile fields changed)" | 0 |
-   | metadata-only | `gameplay_hash` or `aux_hash` changed, `text_hash` and `oracle_ids_sha256` equal (bans/legalities, tags, rulings, ...) | upload tables + manifest, check the published embeddings still match `oracle_ids_sha256`, tag. No HF encode job, no eval smoke | 10 |
+   | metadata-only | `gameplay_hash`, `aux_hash` or `precons_hash` changed, `text_hash` and `oracle_ids_sha256` equal (bans/legalities, tags, rulings, precon lists, ...) | upload tables + manifest, check the published embeddings still match `oracle_ids_sha256`, tag. No HF encode job, no eval smoke | 10 |
    | re-encode | `text_hash` or `oracle_ids_sha256` changed (oracle text, cards added/removed), or the published manifest has no fingerprint | the full pipeline below | 11 |
 
 Full (re-encode) pipeline:
@@ -46,6 +46,7 @@ Computed by `mtg_search.ingest.fingerprint`. Each hash is SHA-256 over the rows 
 - `oracle_ids_sha256`: the row-alignment digest the embeddings carry (same as in `meta.json`).
 - `gameplay_hash`: `oracle_id`, `name`, `face_names`, `faces` (per face: name, mana cost, type line, oracle text, P/T, loyalty, defense, is_permanent), `mana_cost`, `face_costs`, `pips_W`/`U`/`B`/`R`/`G`/`C`, `generic`, `has_x`, `has_hybrid`, `has_phyrexian`, `cmc`, `colors`, `color_identity`, `type_line`, `supertypes`, `types`, `subtypes`, `keywords`, `legalities`, `game_changer`, `reserved`, `layout`, `produced_mana`, `is_funny`, `is_permanent`, `is_legendary`, `can_be_commander`, `partner_kind`, `power`, `toughness`, `loyalty`, `defense`, `tags`.
 - `aux_hash`: all of `tags.parquet` and `rulings.parquet` (row order ignored).
+- `precons_hash`: all of `precons.parquet`, canonical JSON per row in `file` order (`mtg_search.precons.fingerprint`). The manifest's `precons` field records the MTGJSON build and the deck count.
 - Not hashed (volatile): `edhrec_rank`, `image_uri`, `scryfall_uri`, and the representative printing's `set`, `set_type`, `released_at`, `rarity`. Prices are not stored at all.
 
 Old builds stay reproducible: pin `revision="scryfall-..."` in `hf_hub_download` or `snapshot_download`. After a refresh, the dense, sparse and answerai embeddings on `main` still belong to the previous snapshot. They are not shipped; re-encode them by hand if you need them.

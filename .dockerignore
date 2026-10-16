@@ -5,6 +5,7 @@
 !data/cards.parquet
 !data/tags.parquet
 !data/rulings.parquet
+!data/precons.parquet
 !data/manifest.json
 !index/embeddings/late/lightonai__mLateOn/**
 !index/models/lightonai__mLateOn-fp32/**
