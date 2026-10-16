@@ -1,5 +1,5 @@
 ---
-pretty_name: MTG Search Index (Scryfall Oracle cards + mLateOn embeddings)
+pretty_name: MTG Search Index (Scryfall Oracle cards + mLateOn embeddings + MTGJSON precons)
 license: other
 license_name: derived-scryfall-wotc-fan-content
 license_link: https://company.wizards.com/en/legal/fancontentpolicy
@@ -29,6 +29,10 @@ configs:
     data_files:
       - split: train
         path: data/rulings.parquet
+  - config_name: precons
+    data_files:
+      - split: train
+        path: data/precons.parquet
   - config_name: popularity
     data_files:
       - split: train
@@ -39,17 +43,19 @@ configs:
 
 The card corpus and search index of **mtg-search**, an MCP server that gives an AI agent semantic search over every Magic: The Gathering card for deck building. Ask for "counter target spell unless its controller pays, legal in pauper" and it returns the cards whose rules text does that, filtered by colour identity, format, type and mana value.
 
-- **One entry per distinct card** (Scryfall `oracle_id`), whatever its printings: **34,646 cards**, 4,577 Tagger function tags and 78,973 rulings.
-- **Snapshot:** Scryfall `oracle_cards` `updated_at` **2026-10-14T09:01:55.948+00:00**, tagged **`scryfall-20261014090155`**.
+- **One entry per distinct card** (Scryfall `oracle_id`), whatever its printings: **34,646 cards**, 4,579 Tagger function tags and 78,973 rulings.
+- **Official precon decklists:** 1,871 preconstructed decks from [MTGJSON](https://mtgjson.com) (MIT), 197 of them Commander decks, keyed by `oracle_id`. The server's `get_deck` tool loads them by deck or commander name.
+- **Snapshot:** Scryfall `oracle_cards` `updated_at` **2026-10-15T21:01:57.844+00:00**, MTGJSON 5.3.0+20261015, tagged **`scryfall-20261015210157`**.
 - **Search:** [`lightonai/mLateOn`](https://huggingface.co/lightonai/mLateOn) late interaction (multi-vector, MaxSim), exact over all cards: no approximate index. Queries are encoded with mLateOn's published fp32 ONNX model at the revision the cards were encoded with. The shipped server returns exactly the same top 10 as the benchmark reference on all 363 benchmark queries.
 - **Evaluation data that never reaches the server:** `eval/popularity.parquet` (EDHREC rank), used only to analyse popularity bias.
 
-**Related datasets** (same project, same card snapshot):
+**Related datasets** (same project; both were built on the card snapshot `scryfall-20261014090155`):
 - [`kasper-cbx/mtg-search-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-search-bench): the search benchmark (363 queries), the 113 agent search tasks, and graded relevance labels.
 - [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench): the precon deck benchmark (player add/cut rates from EDHREC, and deck-fit grades).
 
 > This dataset contains card names and rules text derived from Scryfall bulk data
-> (© Wizards of the Coast), published as the search index of the mtg-search MCP server.
+> (© Wizards of the Coast) and decklists from MTGJSON (MIT), published as the search index of the
+> mtg-search MCP server.
 > See [Data sources and terms](#data-sources-and-terms).
 
 ## Citation
@@ -63,7 +69,7 @@ Cite a tagged snapshot, so the cards and embeddings are fixed:
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-index}},
-  note         = {Revision scryfall-20261014090155 (Scryfall oracle\_cards 2026-10-14). Card data from Scryfall, \textcopyright{} Wizards of the Coast}
+  note         = {Revision scryfall-20261015210157 (Scryfall oracle\_cards 2026-10-15). Card data from Scryfall, decklists from MTGJSON, \textcopyright{} Wizards of the Coast}
 }
 ```
 
@@ -77,18 +83,36 @@ All card data comes from [Scryfall bulk data](https://scryfall.com/docs/api/bulk
 
 | Bulk type | Scryfall `updated_at` | File |
 |---|---|---|
-| `oracle_cards` | 2026-10-14T09:01:55.948+00:00 | https://data.scryfall.io/oracle-cards/oracle-cards-20261014090155.jsonl.gz |
-| `oracle_tags` | 2026-10-14T09:00:35.830+00:00 | https://data.scryfall.io/oracle-tags/oracle-tags-20261014090035.jsonl.gz |
-| `rulings` | 2026-10-14T09:00:34.088+00:00 | https://data.scryfall.io/rulings/rulings-20261014090034.jsonl.gz |
+| `oracle_cards` | 2026-10-15T21:01:57.844+00:00 | https://data.scryfall.io/oracle-cards/oracle-cards-20261015210157.jsonl.gz |
+| `oracle_tags` | 2026-10-15T21:00:33.145+00:00 | https://data.scryfall.io/oracle-tags/oracle-tags-20261015210033.jsonl.gz |
+| `rulings` | 2026-10-15T21:00:37.150+00:00 | https://data.scryfall.io/rulings/rulings-20261015210037.jsonl.gz |
 
 - **Oracle tags** are community annotations from [Scryfall Tagger](https://tagger.scryfall.com), such as `sacrifice-outlet`, `ramp` and `removal-creature`.
 - **Rulings** are the official Wizards of the Coast rulings plus Scryfall's notes, as Scryfall publishes them.
+
+### MTGJSON decklists
+
+`data/precons.parquet` is built from MTGJSON's [`AllDeckFiles.tar.gz`](https://mtgjson.com/api/v5/AllDeckFiles.tar.gz) (build 5.3.0+20261015), downloaded with an identifying User-Agent and checked against its published `.sha256`; the weekly refresh requests it again only when MTGJSON has a newer build. Only deck names, types, set codes, release dates, the publisher's decklist link, and per card the `oracle_id`, name, count and section are kept: MTGJSON's prices, purchase links, ranks and printing fields are dropped. Card bundles that are not decks (Secret Lair drops, land packs, MTGO redemption lists, Deck Builder's Toolkits and similar) are left out.
+
+MTGJSON's data is MIT licensed:
+
+> MIT License
+>
+> Copyright © 2018-Present Zachary Halpern
+>
+> Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+>
+> The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+>
+> THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+The card names in the decklists are © Wizards of the Coast, as below.
 
 ### Terms, copyright and affiliation
 
 - **Card content.** Card names, rules text, mana costs and type lines are © **Wizards of the Coast LLC**. They are used under the [Wizards of the Coast Fan Content Policy](https://company.wizards.com/en/legal/fancontentpolicy). This is unofficial Fan Content, not approved or endorsed by Wizards. Portions of the materials used are property of Wizards of the Coast. © Wizards of the Coast LLC.
 - **Scryfall.** Use of Scryfall data follows the [Scryfall API terms](https://scryfall.com/docs/api). This dataset is the search index of the mtg-search tool: the card tables ship together with the embeddings and tags they were built for. The `license: other` in the metadata reflects that it is derived data, not openly licensed.
-- **No affiliation.** This project is **not affiliated with, endorsed by, or sponsored by Scryfall or Wizards of the Coast**.
+- **No affiliation.** This project is **not affiliated with, endorsed by, or sponsored by Scryfall, MTGJSON or Wizards of the Coast**.
 - **Images.** Card images are not stored here. `image_uri` and `scryfall_uri` are links to Scryfall.
 
 ### Model
@@ -106,8 +130,9 @@ All card data comes from [Scryfall bulk data](https://scryfall.com/docs/api/bulk
 | `data/cards.parquet` | 8.5 MB | One row per card: text, costs, types, legalities, tags, deck-building fields. Config `cards`. |
 | `data/tags.parquet` | 3.6 MB | One row per Tagger function tag, with its direct taggings. Config `tags`. |
 | `data/rulings.parquet` | 2.3 MB | One row per ruling. Config `rulings`. |
+| `data/precons.parquet` | 0.9 MB | One row per official preconstructed deck, from MTGJSON. Config `precons`. |
 | `data/manifest.json` | 1 KB | Snapshot metadata: Scryfall `updated_at` and URIs per bulk file, row counts, build time, and the [content fingerprint](#content-fingerprint). |
-| `embeddings/late/lightonai__mLateOn/tokens.npy` | 557.9 MB | float16 `(2,179,176, 128)`: per-token card embeddings, concatenated in card order. |
+| `embeddings/late/lightonai__mLateOn/tokens.npy` | 557.9 MB | float16 `(2,179,160, 128)`: per-token card embeddings, concatenated in card order. |
 | `embeddings/late/lightonai__mLateOn/offsets.npy` | 0.3 MB | int64 `(34,647,)`: card *i* is `tokens[offsets[i]:offsets[i+1]]`. |
 | `embeddings/late/lightonai__mLateOn/meta.json` | 1 KB | Model, revision, prompts, alignment hash, build info. |
 | `eval/popularity.parquet` | 0.8 MB | `oracle_id`, `edhrec_rank`. **Evaluation only**: the server never loads, shows or ranks by it, and the Docker image does not contain it. Config `popularity`. |
@@ -155,7 +180,7 @@ All card data comes from [Scryfall bulk data](https://scryfall.com/docs/api/bulk
 
 Prices are not stored (removed in manifest `schema_version` 2): they change daily, the server does not use them, and they would make every snapshot look new.
 
-### `data/tags.parquet` (4,577 rows)
+### `data/tags.parquet` (4,579 rows)
 
 | Column | Type | Meaning |
 |---|---|---|
@@ -164,7 +189,7 @@ Prices are not stored (removed in manifest `schema_version` 2): they change dail
 | `description` | string | Tagger description (often empty). |
 | `aliases` | list[string] | Alternative slugs. |
 | `parent_slugs` / `child_slugs` | list[string] | Tag hierarchy. Relevance in the eval uses the closure over `child_slugs`. |
-| `card_count` | int64 | Number of cards in this corpus tagged *directly*. 4,409 tags have at least one. |
+| `card_count` | int64 | Number of cards in this corpus tagged *directly*. 4,410 tags have at least one. |
 | `oracle_ids` | list[string] | Directly tagged oracle ids, restricted to this corpus. |
 
 ### `data/rulings.parquet` (78,973 rows)
@@ -178,12 +203,29 @@ Prices are not stored (removed in manifest `schema_version` 2): they change dail
 
 Only rulings for cards that appear in `cards.parquet` are kept. They are sorted by `(oracle_id, published_at)`.
 
+### `data/precons.parquet` (1,871 rows)
+
+Every preconstructed deck in MTGJSON's AllDeckFiles except card bundles: Jumpstart (570), Theme Deck (220), Commander Deck (197), Intro Pack (167), Arena Starter Deck (101) and 25 more types, released 1993-12-10 to 2026-10-02. Sorted by `release_date` (newest first), then `name`.
+
+| Column | Type | Meaning |
+|---|---|---|
+| `file` | string | MTGJSON deck file name, e.g. `CallingAllAngels_FDC` (`mtgjson.com/api/v5/decks/<file>.json`). |
+| `name` | string | Deck name. |
+| `type` | string | MTGJSON deck type: `Commander Deck`, `Jumpstart`, `Duel Deck`, `Historic Brawl Precon Deck`, … |
+| `set_code` | string | Set code of the product. |
+| `release_date` | string | Release date (`YYYY-MM-DD`). |
+| `source` | string (nullable) | The publisher's decklist page, when MTGJSON has one. |
+| `commanders` | list[string] | Commander names (empty for non-Commander decks). |
+| `cards` | list[struct] | Per card: `oracle_id` (join to `cards`), `name`, `qty`, `section` (`commander`, `main` or `sideboard`). Foil and non-foil copies of a card are merged. |
+
+50,663 card rows; every one has an `oracle_id`. 164 of them (Planechase planes and Theros Challenge Deck cards in box sets) are cards that `cards.parquet` leaves out by layout.
+
 ### `eval/popularity.parquet` (34,646 rows, evaluation only)
 
 | Column | Type | Meaning |
 |---|---|---|
 | `oracle_id` | string | Card (join to `cards`). |
-| `edhrec_rank` | int64 (nullable) | EDHREC's overall popularity rank at snapshot time (1 = most played; null for 2,306 cards). Used only to measure popularity bias in evaluations. It is not part of the content fingerprint, so a rank change never triggers a refresh. |
+| `edhrec_rank` | int64 (nullable) | EDHREC's overall popularity rank at snapshot time (1 = most played; null for 2,305 cards). Used only to measure popularity bias in evaluations. It is not part of the content fingerprint, so a rank change never triggers a refresh. |
 
 ### Content fingerprint
 
@@ -195,9 +237,10 @@ Only rulings for cards that appear in `cards.parquet` are kept. They are sorted 
 | `oracle_ids_sha256` | `oracle_id` order (same digest as the embedding `meta.json` files) | Cards were added, removed or reordered: re-encode. |
 | `gameplay_hash` | `oracle_id`, `name`, `face_names`, `faces`, `mana_cost`, `face_costs`, `pips_W` … `pips_C`, `generic`, `has_x`, `has_hybrid`, `has_phyrexian`, `cmc`, `colors`, `color_identity`, `type_line`, `supertypes`, `types`, `subtypes`, `keywords`, `legalities`, `game_changer`, `reserved`, `layout`, `produced_mana`, `is_funny`, `is_permanent`, `is_legendary`, `can_be_commander`, `partner_kind`, `power`, `toughness`, `loyalty`, `defense`, `tags` | Rules facts changed (e.g. a ban or new tags): publish new tables, reuse the embeddings. |
 | `aux_hash` | all of `tags.parquet` and `rulings.parquet` (row order ignored) | Publish new tables, reuse the embeddings. |
+| `precons_hash` | all of `precons.parquet`, as canonical JSON per row in `file` order (`mtg_search.precons.fingerprint`) | An official decklist changed or a deck was added: publish new tables, reuse the embeddings. |
 | (not hashed) | `image_uri`, `scryfall_uri`, and the representative printing's `set`, `set_type`, `released_at`, `rarity` | Nothing: these are volatile and never trigger a refresh on their own. |
 
-Current values: `text_hash` `d046da6d…`, `gameplay_hash` `43058ab9…`, `aux_hash` `edbdd173…`, `oracle_ids_sha256` `1bff7b49…`.
+Current values: `text_hash` `18caede2…`, `gameplay_hash` `e4399316…`, `aux_hash` `df8d47a7…`, `precons_hash` `df3c39a0…`, `oracle_ids_sha256` `1bff7b49…`. The manifest's `precons` field records the MTGJSON build and the deck count.
 
 ### How `doc_text` is built
 
@@ -240,11 +283,11 @@ Rules applied by `src/mtg_search/ingest.py` to the 38k-object `oracle_cards` fil
 
 ## Embedding artifacts
 
-The embeddings were computed by [`jobs/encode.py`](https://github.com/kasperg3/mtg-search/blob/main/jobs/encode.py), a PEP-723 uv script, on Hugging Face Jobs (`t4-small`, Tesla T4), with torch 2.14.1+cu130, transformers 5.19.0 and sentence-transformers 6.1.0. The input is `data/cards.parquet` (`oracle_id`, `doc_text`).
+The embeddings were computed by [`jobs/encode.py`](https://github.com/kasperg3/mtg-search/blob/main/jobs/encode.py), a PEP-723 uv script, on Hugging Face Jobs (`t4-small`, Tesla T4), with torch 2.14.1+cu130, transformers 5.20.0 and sentence-transformers 6.1.0. The input is `data/cards.parquet` (`oracle_id`, `doc_text`).
 
 | Artifact | Format | Dim | Query prompt | Doc prompt | Doc max len | Doc tokens p50 / max | Truncated | Encode time (T4) |
 |---|---|---|---|---|---|---|---|---|
-| late `lightonai/mLateOn` | `tokens.npy` fp16 + `offsets.npy` int64; 2,179,176 tokens | 128 | `[Q] ` | `[D] ` | 8192 | 59 / 398 | 0 | 207 s |
+| late `lightonai/mLateOn` | `tokens.npy` fp16 + `offsets.npy` int64; 2,179,160 tokens | 128 | `[Q] ` | `[D] ` | 8192 | 59 / 398 | 0 | 213 s |
 
 **Row alignment.** Row *i* of the embeddings belongs to row *i* of `data/cards.parquet` (sorted by `name`). `meta.json` records `oracle_ids_sha256`, the SHA-256 of all `oracle_id`s in that order, each followed by `\n`. Check it before using the embeddings with a `cards.parquet` from another revision:
 
@@ -286,7 +329,7 @@ The other systems' embeddings are in revisions up to `9776f07` (see [History](#h
 | Tier | When | What happens |
 |---|---|---|
 | **No-op** | All content hashes equal: only volatile fields changed. | Nothing is uploaded or tagged. |
-| **Metadata-only** | `gameplay_hash` or `aux_hash` changed, but `text_hash` and `oracle_ids_sha256` did not (bans, tags, rulings, …). | Upload `data/*`, check that the embeddings still match `oracle_ids_sha256`, tag. No re-encoding. |
+| **Metadata-only** | `gameplay_hash`, `aux_hash` or `precons_hash` changed, but `text_hash` and `oracle_ids_sha256` did not (bans, tags, rulings, precon lists, …). | Upload `data/*`, check that the embeddings still match `oracle_ids_sha256`, tag. No re-encoding. |
 | **Re-encode** | `text_hash` or `oracle_ids_sha256` changed (errata, new cards). | Upload `data/*`, re-encode mLateOn on an HF Job, verify alignment, run the eval smoke test (fails if mLateOn nDCG@10 drops more than 3 points), tag. |
 
 Every publishing refresh tags the new snapshot `scryfall-<YYYYMMDDHHMMSS>` (from Scryfall's `updated_at`), and tags the snapshot it replaces if it has no tag yet. To reproduce or cite a build, pin `revision="scryfall-…"`.
@@ -299,7 +342,7 @@ The repo is public, so no login is needed.
 
 ```python
 from datasets import load_dataset
-cards = load_dataset("kasper-cbx/mtg-search-index", "cards", split="train", revision="scryfall-20261014090155")
+cards = load_dataset("kasper-cbx/mtg-search-index", "cards", split="train", revision="scryfall-20261015210157")
 ```
 
 ```python
@@ -307,7 +350,7 @@ import polars as pl
 from huggingface_hub import hf_hub_download
 
 path = hf_hub_download("kasper-cbx/mtg-search-index", "data/cards.parquet", repo_type="dataset",
-                       revision="scryfall-20261014090155")
+                       revision="scryfall-20261015210157")
 cards = pl.read_parquet(path)
 cards.filter(
     pl.col("legalities").struct.field("pauper").is_in(["legal", "restricted"]),
@@ -320,11 +363,11 @@ The MCP server (Docker; the build pulls this dataset with `HF_TOKEN` as a BuildK
 
 ```bash
 git clone https://github.com/kasperg3/mtg-search && cd mtg-search
-docker/build.sh --revision scryfall-20261014090155
+docker/build.sh --revision scryfall-20261015210157
 claude mcp add mtg-search -- docker run -i --rm mtg-search
 ```
 
-The server has three read-only tools: `search_cards` (1–4 queries, filters for colour identity, format, types and mana value), `get_card` and `find_similar`. Results are ordered by text relevance only. Tool output carries rules and print facts only: no popularity, price or other crowd-derived data. `game_changer` is shown because it is the official Commander bracket designation.
+The server's read-only tools: `search_cards` (1–4 queries, filters for colour identity, format, types and mana value), `get_card`, `find_similar` and, from mtg-search-mcp 0.2.0, `get_deck` (a Moxfield or Archidekt link, an official precon from `data/precons.parquet`, or a pasted list, checked against its format's deck rules). Results are ordered by text relevance only. Tool output carries rules and print facts only: no popularity, price or other crowd-derived data. `game_changer` is shown because it is the official Commander bracket designation.
 
 ---
 
@@ -340,4 +383,5 @@ The server has three read-only tools: `search_cards` (1–4 queries, filters for
 ## History
 
 - **Up to revision `9776f07`:** this repo also held the retrievers compared in the search benchmark and then retired: dense `google/embeddinggemma-2`, learned sparse `opensearch-neural-sparse-encoding-doc-v3-gte` and `Linkup-Platform/linkup-sparseup-embed-v1`, late `answerdotai/answerai-colbert-small-v1`, and a re-quantized int8 mLateOn query encoder for the earlier NextPlaid image. They were removed from `main` when the server moved to exact mLateOn search. Pin `9776f07` to reproduce those experiments.
+- **`scryfall-20261015210157`** (2026-10-16): the first snapshot with `data/precons.parquet` (MTGJSON's official decklists) and `precons_hash` in the manifest. The search and precon benchmarks stay on `scryfall-20261014090155`.
 - **Schema 2** (manifest `schema_version` 2): prices were dropped. `edhrec_rank` moved from `data/cards.parquet` to `eval/popularity.parquet`, so the server's tables carry no popularity data.

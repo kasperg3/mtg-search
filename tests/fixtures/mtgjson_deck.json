@@ -1,0 +1,304 @@
+{
+ "meta": {
+  "date": "2026-10-13",
+  "version": "5.3.0+20261013"
+ },
+ "data": {
+  "code": "TST",
+  "name": "Test Proliferation",
+  "type": "Commander Deck",
+  "releaseDate": "2026-01-02",
+  "source": "https://example.invalid/decklist",
+  "sealedProductUuids": [],
+  "sourceSetCodes": [
+   "TST"
+  ],
+  "commander": [
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Atraxa, Praetors' Voice",
+    "setCode": "TST",
+    "number": "1",
+    "uuid": "00000000-0000-5000-8000-000000000001",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "7e6b9b59-cd68-4e3c-827b-38833c92d6eb",
+     "scryfallId": "d0d33d52-3d28-4635-b985-51e126289259"
+    }
+   }
+  ],
+  "displayCommander": [],
+  "mainBoard": [
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Counterspell",
+    "setCode": "TST",
+    "number": "2",
+    "uuid": "00000000-0000-5000-8000-000000000002",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "cc187110-1148-4090-bbb8-e205694a39f5",
+     "scryfallId": "4f616706-ec97-4923-bb1e-11a69fbaa1f8"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Llanowar Elves",
+    "setCode": "TST",
+    "number": "3",
+    "uuid": "00000000-0000-5000-8000-000000000003",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "68954295-54e3-4303-a6bc-fc4547a4e3a3",
+     "scryfallId": "6a0b230b-d391-4998-a3f7-7b158a0ec2cd"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Sol Ring",
+    "setCode": "TST",
+    "number": "4",
+    "uuid": "00000000-0000-5000-8000-000000000004",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "6ad8011d-3471-4369-9d68-b264cc027487",
+     "scryfallId": "8ee443cc-e17a-493b-9c93-1f9e141a30e4"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Rhystic Study",
+    "setCode": "TST",
+    "number": "5",
+    "uuid": "00000000-0000-5000-8000-000000000005",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "53236dd7-845a-444c-96d5-f41ed7325d8f",
+     "scryfallId": "9f37c5b6-a59c-45cd-9a99-e9357fe9ea1b"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Thoughtseize",
+    "setCode": "TST",
+    "number": "6",
+    "uuid": "00000000-0000-5000-8000-000000000006",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "edd8d1e8-be43-4c38-bb3a-83081fbaf0b5",
+     "scryfallId": "b281a308-ab6b-47b6-bec7-632c9aaecede"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Kitchen Finks",
+    "setCode": "TST",
+    "number": "7",
+    "uuid": "00000000-0000-5000-8000-000000000007",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "5470dcfa-4eff-43da-abf7-19922841f719",
+     "scryfallId": "a844d537-df73-422d-a154-f1c6b92d0469"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Spectral Procession",
+    "setCode": "TST",
+    "number": "8",
+    "uuid": "00000000-0000-5000-8000-000000000008",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "376271a6-80f0-47a6-990a-5ec5517aae42",
+     "scryfallId": "9964629e-d79e-46e4-b3fd-e7d1759cbc60"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Ornithopter",
+    "setCode": "TST",
+    "number": "9",
+    "uuid": "00000000-0000-5000-8000-000000000009",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "a3a98bc9-caa0-49b7-951c-fe4e4f54e4ba",
+     "scryfallId": "305078a5-ac18-4721-bba2-3434eba5b1cf"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Mana Leak",
+    "setCode": "TST",
+    "number": "10",
+    "uuid": "00000000-0000-5000-8000-000000000010",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "c61fe162-2202-4e56-9ba0-393547f9875f",
+     "scryfallId": "179236d9-6fe2-4db6-bdfb-f851e8d531a2"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Cryptic Command",
+    "setCode": "TST",
+    "number": "11",
+    "uuid": "00000000-0000-5000-8000-000000000011",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "a3e51a35-09df-4189-b131-08a21e6a557d",
+     "scryfallId": "30f6fca9-003b-4f6b-9d6e-1e88adda4155"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Jace, the Mind Sculptor",
+    "setCode": "TST",
+    "number": "12",
+    "uuid": "00000000-0000-5000-8000-000000000012",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "7f77a84e-5a4b-4834-aefa-3cecc175ae8e",
+     "scryfallId": "c8817585-0d32-4d56-9142-0d29512e86a9"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Delver of Secrets // Insectile Aberration",
+    "setCode": "TST",
+    "number": "13",
+    "uuid": "00000000-0000-5000-8000-000000000013",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "edd531b9-f615-4399-8c8c-1c5e18c4acbf",
+     "scryfallId": "6904ea20-e504-47da-95a0-08739fdde260"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Viscera Seer",
+    "setCode": "TST",
+    "number": "14",
+    "uuid": "00000000-0000-5000-8000-000000000014",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "f82a4e85-526d-4456-b700-7760043a31be",
+     "scryfallId": "f511830b-1c1f-4d30-aa5d-4314726d142e"
+    }
+   },
+   {
+    "count": 1,
+    "isFoil": false,
+    "name": "Eldrazi Displacer",
+    "setCode": "TST",
+    "number": "15",
+    "uuid": "00000000-0000-5000-8000-000000000015",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "9b1f552a-bddc-4fcb-ac67-b4a65b2f48ba",
+     "scryfallId": "f0bb1a5c-0f59-4951-827f-fe9df968232d"
+    }
+   },
+   {
+    "count": 80,
+    "isFoil": false,
+    "name": "Snow-Covered Island",
+    "setCode": "TST",
+    "number": "90",
+    "uuid": "00000000-0000-5000-8000-000000000090",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "5b2460a5-6ae5-4cad-ba94-1a9e98e6e4c0",
+     "scryfallId": "3bfa5ebc-5623-4eec-89ea-dc187489ee4a"
+    }
+   },
+   {
+    "count": 5,
+    "isFoil": true,
+    "name": "Snow-Covered Island",
+    "setCode": "TST",
+    "number": "90",
+    "uuid": "00000000-0000-5000-8000-000000000090",
+    "edhrecRank": 123,
+    "purchaseUrls": {
+     "tcgplayer": "https://example.invalid/buy"
+    },
+    "identifiers": {
+     "scryfallOracleId": "5b2460a5-6ae5-4cad-ba94-1a9e98e6e4c0",
+     "scryfallId": "3bfa5ebc-5623-4eec-89ea-dc187489ee4a"
+    }
+   }
+  ],
+  "sideBoard": [],
+  "planes": [],
+  "schemes": [],
+  "tokens": [
+   {
+    "count": 1,
+    "name": "Tyranid",
+    "uuid": "00000000-0000-5000-8000-000000000999"
+   }
+  ]
+ }
+}

@@ -40,7 +40,7 @@ RUN --mount=type=secret,id=hf_token,env=HF_TOKEN,required=false \
 
 # ---- artifacts from the build context (dev): ./data, ./index/embeddings, ./index/models -------
 FROM scratch AS fetch-local
-COPY data/cards.parquet data/tags.parquet data/rulings.parquet data/manifest.json /artifacts/data/
+COPY data/cards.parquet data/tags.parquet data/rulings.parquet data/precons.parquet data/manifest.json /artifacts/data/
 COPY index/embeddings/late/lightonai__mLateOn/ /artifacts/embeddings/late/lightonai__mLateOn/
 COPY index/models/lightonai__mLateOn-fp32/ /artifacts/models/lightonai__mLateOn-fp32/
 
@@ -49,7 +49,7 @@ FROM fetch-${SOURCE} AS fetch
 # ---- final ------------------------------------------------------------------------------------
 FROM base
 LABEL org.opencontainers.image.title="mtg-search" \
-      org.opencontainers.image.description="MCP server: semantic search over every Magic: The Gathering card (Scryfall Oracle text, lightonai/mLateOn) for deck-building agents. Card text (c) Wizards of the Coast; data from Scryfall." \
+      org.opencontainers.image.description="MCP server: semantic search over every Magic: The Gathering card (Scryfall Oracle text, lightonai/mLateOn) for deck-building agents. Card text (c) Wizards of the Coast; data from Scryfall; precon decklists from MTGJSON." \
       org.opencontainers.image.url="https://www.grontved.xyz/blog/agent-search-vs-grep/" \
       org.opencontainers.image.source="https://github.com/kasperg3/mtg-search" \
       org.opencontainers.image.licenses="MIT"
@@ -57,7 +57,7 @@ RUN useradd -m -u 1000 app
 COPY --from=fetch /artifacts/models/lightonai__mLateOn-fp32/ /app/model/
 COPY --from=fetch /artifacts/embeddings/late/lightonai__mLateOn/ /app/embeddings/
 COPY --from=fetch /artifacts/data/cards.parquet /artifacts/data/tags.parquet \
-     /artifacts/data/rulings.parquet /artifacts/data/manifest.json /app/data/
+     /artifacts/data/rulings.parquet /artifacts/data/precons.parquet /artifacts/data/manifest.json /app/data/
 COPY src/mtg_search /app/src/mtg_search
 ENV MTG_SEARCH_DATA_DIR=/app/data \
     MTG_SEARCH_EMBEDDINGS_DIR=/app/embeddings \

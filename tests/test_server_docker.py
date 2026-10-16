@@ -63,7 +63,7 @@ def test_initialize_list_and_call(proc):
 
     _send(proc, {"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     tools = {t["name"] for t in _recv(proc, 2)["result"]["tools"]}
-    assert tools == {"search_cards", "find_similar", "get_card"}
+    assert tools == {"search_cards", "find_similar", "get_card", "get_deck"}
 
     _send(proc, {"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params": {
         "name": "search_cards",

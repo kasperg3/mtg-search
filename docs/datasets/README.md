@@ -4,11 +4,11 @@ The project's data lives in three public Hugging Face datasets. Their cards are 
 
 | dataset | what | cite revision | commit |
 |---|---|---|---|
-| [`kasper-cbx/mtg-search-index`](https://huggingface.co/datasets/kasper-cbx/mtg-search-index) | The card corpus (Scryfall Oracle cards, 34,646), tags and rulings; mLateOn embeddings the server searches; eval-only EDHREC rank | `scryfall-20261014090155` | `c2b5455` |
+| [`kasper-cbx/mtg-search-index`](https://huggingface.co/datasets/kasper-cbx/mtg-search-index) | The card corpus (Scryfall Oracle cards, 34,646), tags and rulings; official precon decklists (MTGJSON, 1,871 decks); mLateOn embeddings the server searches; eval-only EDHREC rank | `scryfall-20261015210157` | `c6db034` |
 | [`kasper-cbx/mtg-search-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-search-bench) | The search benchmark (363 queries), the 113 agent search tasks, every relevance grade (EXP-016/018/019 and the 2026-10-15 rescore) and the final relevance labels | `v1.1` | `38028e1` |
 | [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench) | Precon deck benchmark: official decklists, EDHREC add/cut rates, deck-fit grades (EXP-017) | `v1.0` | `c6fe41f` |
 
-`mtg-search-bench` `v1.0` (`33e2c6b`) is kept; `v1.1` adds 3 grades and rescored qrels after a fix to the agent scorer's name matching (2026-10-15).
+The two benchmarks were built on the index snapshot `scryfall-20261014090155` (`c2b5455`), which stays tagged. `mtg-search-bench` `v1.0` (`33e2c6b`) is kept; `v1.1` adds 3 grades and rescored qrels after a fix to the agent scorer's name matching (2026-10-15).
 
 Raw run outputs (episodes, transcripts) are mirrored to `kasper-cbx/mtg-search-experiments` by `scripts/sync_results.py`. That is a backup, not a dataset to cite.
 
@@ -30,7 +30,7 @@ Raw run outputs (episodes, transcripts) are mirrored to `kasper-cbx/mtg-search-e
   year         = {2026},
   publisher    = {Hugging Face},
   howpublished = {\url{https://huggingface.co/datasets/kasper-cbx/mtg-search-index}},
-  note         = {Revision scryfall-20261014090155 (Scryfall oracle\_cards 2026-10-14). Card data from Scryfall, \textcopyright{} Wizards of the Coast}
+  note         = {Revision scryfall-20261015210157 (Scryfall oracle\_cards 2026-10-15). Card data from Scryfall, decklists from MTGJSON, \textcopyright{} Wizards of the Coast}
 }
 
 @misc{mtgsearch_bench_2026,

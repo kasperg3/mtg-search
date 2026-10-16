@@ -150,10 +150,13 @@ class ShippedToolset(Toolset):
     name = "shipped"
 
     def __init__(self, surface: str = "shipped", backend: str = "local", denylist: dict | None = None,
-                 data_dir: Path = ROOT / "data", retriever: Any = None, image: str = "mtg-search"):
+                 data_dir: Path = ROOT / "data", retriever: Any = None, image: str = "mtg-search", precons: bool = False):
+        """``precons``: get_deck can look up official precons (``data/precons.parquet``). Off by default: a lookup
+        by commander name returns the deck's name, set and date, which a pasted-deck prompt hides (T2b). The
+        named-deck prompts turn it on. get_deck never opens links here: the service gets no fetcher (T9)."""
         from .surfaces import SURFACES
 
-        self.surface, self.backend_name = surface, backend
+        self.surface, self.backend_name, self.precons = surface, backend, precons
         tags_df = pl.read_parquet(data_dir / "tags.parquet") if (data_dir / "tags.parquet").exists() else None
         self.deny = denied_tags(tags_df["slug"].to_list(), denylist) if tags_df is not None else set()
         if backend == "docker":
@@ -176,7 +179,11 @@ class ShippedToolset(Toolset):
 
                 retriever = MLateOn.local(cards["oracle_id"].to_list())
             tags = tags_df.filter(~pl.col("slug").is_in(list(self.deny))) if tags_df is not None else None
-            self.svc = CardService(cards, retriever, tags=tags, rulings_path=data_dir / "rulings.parquet")
+            pp = data_dir / "precons.parquet"
+            if precons and not pp.exists():
+                raise FileNotFoundError(f"{pp}: build it with python -m mtg_search.precons")
+            self.svc = CardService(cards, retriever, tags=tags, rulings_path=data_dir / "rulings.parquet",
+                                   precons_path=pp if precons else None)
             self.mcp = build_mcp(self.svc, SURFACES[surface])
             self.instructions = self.mcp.instructions
             listed = anyio.run(self.mcp.list_tools)
@@ -187,7 +194,8 @@ class ShippedToolset(Toolset):
         self.tool_names = tuple(sc["function"]["name"] for sc in self._schemas)
 
     def config(self) -> dict:
-        return {"tools": "shipped", "surface": self.surface, "backend": self.backend_name, "n_denied_tags": len(self.deny),
+        return {"tools": "shipped", "surface": self.surface, "backend": self.backend_name, "precons": self.precons,
+                "n_denied_tags": len(self.deny),
                 "surface_chars": len(self.instructions or "") + sum(len(json.dumps(s)) for s in self._schemas)}
 
     def schemas(self) -> list[dict]:

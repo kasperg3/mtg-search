@@ -15,7 +15,7 @@ sys.path.insert(0, str(ROOT))
 from bench.precon.harness.agent import parse_final, run_episode  # noqa: E402
 from bench.precon.harness.leakage import PromptLeak, identifying_strings, preflight  # noqa: E402
 from bench.precon.harness.llm import Budget, BudgetExceeded, FakeLLM, cost_usd  # noqa: E402
-from bench.precon.harness.prompts import render_deck, system_prompt, user_prompt  # noqa: E402
+from bench.precon.harness.prompts import render_deck, system_prompt, user_prompt, user_prompt_named  # noqa: E402
 from bench.precon.harness.tools import LeakError, Toolset, check_tool_output, denied_tags  # noqa: E402
 from bench.precon.loader import Deck  # noqa: E402
 
@@ -93,9 +93,9 @@ def test_shipped_surfaces_pass_tool_text_preflight():
     """Every shipped/frozen surface's text is free of card names from a gold-like set (here: the old example)."""
     from bench.precon.harness.leakage import check_tool_text
     from bench.precon.harness.surfaces import SURFACES
-    from mtg_search.server import SIMILAR_DOC
+    from mtg_search.server import GET_DECK_DOC, SIMILAR_DOC
 
-    texts = [SIMILAR_DOC] + [v for s in SURFACES.values() for v in s.values() if isinstance(v, str)]
+    texts = [SIMILAR_DOC, GET_DECK_DOC] + [v for s in SURFACES.values() for v in s.values() if isinstance(v, str)]
     for t in texts:
         check_tool_text(t, forbidden_gold={"Rhystic Study"}, identifying=set())
 
@@ -156,6 +156,44 @@ def test_system_prompt_budget_and_rules():
     assert "tool calls" not in s and '"cuts"' in s
     u = user_prompt("cut", "DECK ...")
     assert u.startswith("TASK: Identify the 10 cards")
+
+
+def test_named_deck_prompts_and_preflight():
+    s = system_prompt("cut", "shipped", "W", named=True)
+    assert s.startswith("You are an expert") and "names the official preconstructed Commander deck" in s
+    assert "given a complete 100-card" not in s
+    u = user_prompt_named("cut", "Aura of Courage", ["Galea, Kindler of Hope"])
+    assert u.startswith('My deck is the official precon "Aura of Courage" (commander: Galea, Kindler of Hope)')
+    assert "Each must be a card in the deck and" in u and "below" not in u
+    assert "(commanders: A and B)" in user_prompt_named("add", "X", ["A", "B"])
+    metas = {"own": {"deck_name": "Aura of Courage", "set_code": "AFC"}, "other": {"deck_name": "Draconic Rage"}}
+    ids = identifying_strings(metas)
+    ok = {"deck_names": [], "forbidden_gold": set(), "few_shots": [], "few_shot_splits": [], "tool_names": []}
+    with pytest.raises(PromptLeak):
+        preflight(s, u, identifying=ids, **ok)  # as a pasted-deck prompt: the deck name is forbidden
+    preflight(s, u, identifying=ids - identifying_strings({"own": metas["own"]}), **ok)  # run.py, named mode
+    with pytest.raises(PromptLeak):
+        preflight(s, u + " Draconic Rage", identifying=ids - identifying_strings({"own": metas["own"]}), **ok)
+
+
+def test_shipped_toolset_get_deck_has_no_links_and_precons_on_request(tmp_path):
+    import polars as pl
+
+    from bench.precon.harness.tools import ShippedToolset
+
+    class Stub:
+        def search_many(self, *a, **k):
+            return []
+
+    cards = pl.DataFrame({"oracle_id": ["o1"], "name": ["Sol Ring"]})
+    cards.write_parquet(tmp_path / "cards.parquet")
+    off = ShippedToolset(data_dir=tmp_path, retriever=Stub())
+    assert "get_deck" in off.tool_names and off.svc.fetch_deck is None and off.svc.precons_path is None
+    assert "does not open deck links here" in off.call("get_deck", {"deck": "https://moxfield.com/decks/abcdef1"})
+    with pytest.raises(FileNotFoundError):
+        ShippedToolset(data_dir=tmp_path, retriever=Stub(), precons=True)
+    three = ShippedToolset(surface="three_tools", data_dir=tmp_path, retriever=Stub())
+    assert "get_deck" not in three.tool_names
 
 
 # ------------------------------------------------------------------ agent loop

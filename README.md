@@ -39,7 +39,8 @@ docker pull ghcr.io/kasperg3/mtg-search && claude mcp add --scope user mtg-searc
 ```
 
 Then ask for cards the way a player would: *"upgrade my Auntie Ool precon"*, *"cheap ways to protect my
-commander in Selesnya"*, *"what else works like Smothering Tithe?"*
+commander in Selesnya"*, *"what else works like Smothering Tithe?"*, or point it at your own list:
+*"swap ten cards in https://moxfield.com/decks/…"*
 
 ## Tools
 
@@ -48,6 +49,7 @@ commander in Selesnya"*, *"what else works like Smothering Tithe?"*
 | `search_cards` | 1–4 rules-text queries, fused, with filters: `color_identity`, `format`, `types`, `mana_value_min` / `mana_value_max`. Only cards that pass the filters compete, so a filtered search never comes back empty because the best matches were cut. |
 | `get_card` | One card by (fuzzy) name: full text, legality in every format, roles, official rulings and the Scryfall link. |
 | `find_similar` | Cards whose text is closest to a given card's, with the same filters. |
+| `get_deck` | Loads a deck to work on: a Moxfield or Archidekt link, an official precon by name or commander (lists from [MTGJSON](https://mtgjson.com)), or a pasted decklist. Returns every card with its roles and checks the deck against its format's rules (size, copies, commander and colour identity, bans, Game Changers). |
 
 What the agent gets back, for `search_cards(queries=["Deals 3 damage to any target."], color_identity="R",
 types=["instant"], mana_value_max=1, format="commander", limit=3)`:
@@ -96,7 +98,7 @@ and card-attribute tasks):
 ## How it works
 
 - **Data:** Scryfall's Oracle cards (one entry per card, current official wording), Tagger function
-  tags and the official rulings, refreshed weekly by [`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/README.md).
+  tags, the official rulings and MTGJSON's official precon decklists, refreshed weekly by [`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/README.md).
 - **Search:** exact late interaction with mLateOn. Queries go through the model's fp32 ONNX encoder;
   every card is scored by exact MaxSim against its precomputed token vectors, about 100–150 ms per query
   on a 6-core desktop CPU. Nothing is approximated, so the shipped server ranks exactly like the
@@ -109,7 +111,7 @@ All on Hugging Face; cite a tagged revision ([BibTeX](https://github.com/kasperg
 
 | dataset | contents |
 |---|---|
-| [`kasper-cbx/mtg-search-index`](https://huggingface.co/datasets/kasper-cbx/mtg-search-index) | the card tables, tags, rulings and mLateOn embeddings the server searches |
+| [`kasper-cbx/mtg-search-index`](https://huggingface.co/datasets/kasper-cbx/mtg-search-index) | the card tables, tags, rulings, precon decklists and mLateOn embeddings the server searches |
 | [`kasper-cbx/mtg-search-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-search-bench) | 363 search queries, 113 agent tasks, every relevance grade and the final labels |
 | [`kasper-cbx/mtg-precon-bench`](https://huggingface.co/datasets/kasper-cbx/mtg-precon-bench) | Commander precon decklists, EDHREC add/cut rates and deck-fit grades |
 | [`kasper-cbx/mtg-search-experiments`](https://huggingface.co/datasets/kasper-cbx/mtg-search-experiments) | raw run outputs: episodes and transcripts |
