@@ -138,3 +138,8 @@ is unofficial Fan Content, not approved or endorsed by Wizards. Card data comes 
 [Scryfall](https://scryfall.com), function tags from [Scryfall Tagger](https://tagger.scryfall.com),
 precon decklists from [MTGJSON](https://mtgjson.com) and precon add/cut rates from
 [EDHREC](https://edhrec.com). This project is not affiliated with any of them.
+
+## License
+
+The code is MIT licensed ([LICENSE](LICENSE)). The card data and the benchmarks keep their sources'
+terms, described above.

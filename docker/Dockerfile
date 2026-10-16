@@ -50,7 +50,9 @@ FROM fetch-${SOURCE} AS fetch
 FROM base
 LABEL org.opencontainers.image.title="mtg-search" \
       org.opencontainers.image.description="MCP server: semantic search over every Magic: The Gathering card (Scryfall Oracle text, lightonai/mLateOn) for deck-building agents. Card text (c) Wizards of the Coast; data from Scryfall." \
-      org.opencontainers.image.url="https://www.grontved.xyz/blog/agent-search-vs-grep/"
+      org.opencontainers.image.url="https://www.grontved.xyz/blog/agent-search-vs-grep/" \
+      org.opencontainers.image.source="https://github.com/kasperg3/mtg-search" \
+      org.opencontainers.image.licenses="MIT"
 RUN useradd -m -u 1000 app
 COPY --from=fetch /artifacts/models/lightonai__mLateOn-fp32/ /app/model/
 COPY --from=fetch /artifacts/embeddings/late/lightonai__mLateOn/ /app/embeddings/
