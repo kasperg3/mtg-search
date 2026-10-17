@@ -324,7 +324,7 @@ The other systems' embeddings are in revisions up to `9776f07` (see [History](#h
 
 ## Update process
 
-[`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/refresh.py) keeps this repo in sync with Scryfall, run monthly by a GitHub Action (`.github/workflows/refresh.yml`, the 1st of each month at 06:00 UTC) and by hand when needed, e.g. after a set release or a ban announcement. Prices and popularity never trigger an update; legality and text changes always do.
+[`scripts/refresh.py`](https://github.com/kasperg3/mtg-search/blob/main/scripts/refresh.py) keeps this repo in sync with Scryfall, run by hand when needed (e.g. after a set release or a ban announcement) through a GitHub Action, `.github/workflows/refresh.yml`. Prices and popularity never trigger an update; legality and text changes always do.
 
 | Tier | When | What happens |
 |---|---|---|

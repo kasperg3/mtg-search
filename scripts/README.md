@@ -51,7 +51,7 @@ Computed by `mtg_search.ingest.fingerprint`. Each hash is SHA-256 over the rows 
 
 Old builds stay reproducible: pin `revision="scryfall-..."` in `hf_hub_download` or `snapshot_download`. After a refresh, the dense, sparse and answerai embeddings on `main` still belong to the previous snapshot. They are not shipped; re-encode them by hand if you need them.
 
-To run it in CI, use `.github/workflows/refresh.yml`. It runs monthly (the 1st, 06:00 UTC) and on manual dispatch (`gh workflow run refresh.yml`, with optional `-f force=true` / `-f skip_eval=true`), runs the dry run to pick the tier (step output `tier` = `none` / `metadata` / `reencode`) and then the refresh, and needs the repository secret `HF_TOKEN`. That token must have write access to the dataset and must be allowed to run HF Jobs.
+To run it in CI, use `.github/workflows/refresh.yml`. It has no schedule: run it by hand (`gh workflow run refresh.yml`, with optional `-f force=true` / `-f skip_eval=true`). It runs the dry run to pick the tier (step output `tier` = `none` / `metadata` / `reencode`) and then the refresh, and needs the repository secret `HF_TOKEN`. That token must have write access to the dataset and must be allowed to run HF Jobs.
 
 ## Experiment results sync (`sync_results.py`)
 

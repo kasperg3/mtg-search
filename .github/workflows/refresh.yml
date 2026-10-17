@@ -1,11 +1,11 @@
-# Monthly index refresh: Scryfall oracle_cards -> HF dataset kasper-cbx/mtg-search-index.
-# Refresh by hand at any time (e.g. after a set release or a ban announcement):
+# Index refresh: Scryfall oracle_cards -> HF dataset kasper-cbx/mtg-search-index.
+# Manual only (no schedule): run it when needed, e.g. after a set release or a ban announcement:
 #   gh workflow run refresh.yml --repo kasperg3/mtg-search        (or Actions -> refresh-index -> Run workflow)
 #
 # Required repository secret:
 #   HF_TOKEN  - Hugging Face token (user kasper-cbx) with WRITE access to the dataset
 #               kasper-cbx/mtg-search-index and permission to run HF Jobs (paid account; a
-#               fine-grained token needs the 'Jobs' permission, or re-encode weeks stop before uploading).
+#               fine-grained token needs the 'Jobs' permission, or a re-encode stops before uploading).
 #               Settings -> Secrets and variables -> Actions -> New repository secret.
 #
 # Tiers (scripts/refresh.py --dry-run exit code; see scripts/README.md):
@@ -19,8 +19,6 @@
 name: refresh-index
 
 on:
-  schedule:
-    - cron: "0 6 1 * *" # the 1st of each month, 06:00 UTC
   workflow_dispatch:
     inputs:
       force:

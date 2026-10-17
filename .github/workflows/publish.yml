@@ -3,7 +3,7 @@
 # Release: bump __version__ in src/mtg_search/__init__.py and push to main. This workflow tests and builds
 # that version, publishes it to PyPI, tags it vX.Y.Z with a GitHub release, and pushes the image as
 # ghcr.io/kasperg3/mtg-search:{latest, vX.Y.Z, <index snapshot>}. A version already on PyPI is skipped, so
-# pushes that do not change the version are no-ops. The index refresh (monthly, or run by hand) bumps the version itself
+# pushes that do not change the version are no-ops. The index refresh (run by hand) bumps the version itself
 # (scripts/bump_index.py) and dispatches this workflow.
 #
 # One-time setup:
